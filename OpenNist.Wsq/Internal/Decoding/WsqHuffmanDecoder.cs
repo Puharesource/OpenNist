@@ -20,14 +20,16 @@ internal static class WsqHuffmanDecoder
         var blockSizes = WsqQuantizationDecoder.ComputeBlockSizes(container.QuantizationTable, waveletTree, quantizationTree);
         var quantizedCoefficients = new short[blockSizes.Sum()];
         var coefficientOffset = 0;
+        var decodingTables = new Dictionary<byte, WsqHuffmanDecodingTable>(container.HuffmanTables.Count);
 
         for (var blockIndex = 0; blockIndex < container.Blocks.Count; blockIndex++)
         {
+            var block = container.Blocks[blockIndex];
             var blockCoefficientCount = blockSizes[blockIndex];
 
             if (blockCoefficientCount == 0)
             {
-                if (container.Blocks[blockIndex].EncodedByteCount != 0)
+                if (block.EncodedByteCount != 0)
                 {
                     throw new InvalidDataException(
                         $"WSQ block {blockIndex + 1} contains encoded data even though its quantized coefficient region is empty.");
@@ -36,8 +38,15 @@ internal static class WsqHuffmanDecoder
                 continue;
             }
 
+            if (!decodingTables.TryGetValue(block.HuffmanTableId, out var decodingTable))
+            {
+                decodingTable = WsqHuffmanDecodingTable.Create(block.HuffmanTable);
+                decodingTables.Add(block.HuffmanTableId, decodingTable);
+            }
+
             DecodeBlock(
-                container.Blocks[blockIndex],
+                block.EncodedData,
+                decodingTable,
                 quantizedCoefficients.AsSpan(coefficientOffset, blockCoefficientCount));
 
             coefficientOffset += blockCoefficientCount;
@@ -46,15 +55,17 @@ internal static class WsqHuffmanDecoder
         return quantizedCoefficients;
     }
 
-    private static void DecodeBlock(WsqBlock block, Span<short> destination)
+    private static void DecodeBlock(
+        ReadOnlySpan<byte> encodedData,
+        WsqHuffmanDecodingTable decodingTable,
+        Span<short> destination)
     {
         if (destination.IsEmpty)
         {
             return;
         }
 
-        var decodingTable = WsqHuffmanDecodingTable.Create(block.HuffmanTable);
-        var bitReader = new WsqBitReader(block.EncodedData);
+        var bitReader = new WsqBitReader(encodedData);
         var destinationIndex = 0;
 
         while (destinationIndex < destination.Length)

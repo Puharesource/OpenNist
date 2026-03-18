@@ -14,18 +14,26 @@ internal sealed class WsqHuffmanDecodingTable
     {
         ArgumentNullException.ThrowIfNull(table);
 
-        if (table.CodeLengthCounts.Count != WsqConstants.MaxHuffmanBits)
+        var codeLengthCounts = GetValueSpan(table.CodeLengthCounts);
+        var values = GetValueSpan(table.Values);
+
+        if (codeLengthCounts.Length != WsqConstants.MaxHuffmanBits)
         {
             throw new InvalidDataException(
                 $"WSQ Huffman table {table.TableId} must define {WsqConstants.MaxHuffmanBits} code-length counts.");
         }
 
-        var codeCount = table.CodeLengthCounts.Sum(static value => value);
+        var codeCount = 0;
 
-        if (codeCount != table.Values.Count)
+        for (var index = 0; index < codeLengthCounts.Length; index++)
+        {
+            codeCount += codeLengthCounts[index];
+        }
+
+        if (codeCount != values.Length)
         {
             throw new InvalidDataException(
-                $"WSQ Huffman table {table.TableId} declares {codeCount} code values but contains {table.Values.Count}.");
+                $"WSQ Huffman table {table.TableId} declares {codeCount} code values but contains {values.Length}.");
         }
 
         var sizes = new int[codeCount + 1];
@@ -33,7 +41,7 @@ internal sealed class WsqHuffmanDecodingTable
 
         for (var codeSize = 1; codeSize <= WsqConstants.MaxHuffmanBits; codeSize++)
         {
-            for (var occurrence = 0; occurrence < table.CodeLengthCounts[codeSize - 1]; occurrence++)
+            for (var occurrence = 0; occurrence < codeLengthCounts[codeSize - 1]; occurrence++)
             {
                 sizes[sizeIndex++] = codeSize;
             }
@@ -80,7 +88,7 @@ internal sealed class WsqHuffmanDecodingTable
 
         for (var codeLength = 1; codeLength <= WsqConstants.MaxHuffmanBits; codeLength++)
         {
-            var count = table.CodeLengthCounts[codeLength - 1];
+            var count = codeLengthCounts[codeLength - 1];
 
             if (count == 0)
             {
@@ -99,7 +107,18 @@ internal sealed class WsqHuffmanDecodingTable
             MaxCodes = maxCodes,
             MinCodes = minCodes,
             ValuePointers = valuePointers,
-            Values = table.Values.ToArray(),
+            Values = table.Values is byte[] valuesArray
+                ? valuesArray
+                : table.Values.ToArray(),
         };
+    }
+
+    private static ReadOnlySpan<byte> GetValueSpan(IReadOnlyList<byte> values)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+
+        return values is byte[] array
+            ? array
+            : values.ToArray();
     }
 }

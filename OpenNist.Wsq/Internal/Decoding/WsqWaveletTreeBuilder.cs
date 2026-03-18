@@ -39,7 +39,7 @@ internal static class WsqWaveletTreeBuilder
         int lenx;
         int lenx2;
 
-        if ((waveletTree[1].Width % 2) == 0)
+        if (waveletTree[1].Width % 2 == 0)
         {
             lenx = waveletTree[1].Width / 2;
             lenx2 = lenx;
@@ -53,7 +53,7 @@ internal static class WsqWaveletTreeBuilder
         int leny;
         int leny2;
 
-        if ((waveletTree[1].Height % 2) == 0)
+        if (waveletTree[1].Height % 2 == 0)
         {
             leny = waveletTree[1].Height / 2;
             leny2 = leny;
@@ -70,11 +70,11 @@ internal static class WsqWaveletTreeBuilder
 
         waveletTree[19].X = 0;
         waveletTree[19].Y = 0;
-        waveletTree[19].Width = (waveletTree[15].Width % 2) == 0
+        waveletTree[19].Width = waveletTree[15].Width % 2 == 0
             ? waveletTree[15].Width / 2
             : (waveletTree[15].Width + 1) / 2;
 
-        waveletTree[19].Height = (waveletTree[15].Height % 2) == 0
+        waveletTree[19].Height = waveletTree[15].Height % 2 == 0
             ? waveletTree[15].Height / 2
             : (waveletTree[15].Height + 1) / 2;
     }

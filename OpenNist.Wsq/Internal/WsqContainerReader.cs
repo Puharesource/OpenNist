@@ -10,10 +10,26 @@ internal static class WsqContainerReader
     {
         ArgumentNullException.ThrowIfNull(wsqStream);
 
+        if (wsqStream is MemoryStream memoryStream && memoryStream.TryGetBuffer(out var bufferSegment))
+        {
+            var remainingLength = checked((int)(memoryStream.Length - memoryStream.Position));
+            return Read(bufferSegment.AsSpan(checked((int)memoryStream.Position), remainingLength));
+        }
+
+        if (wsqStream.CanSeek)
+        {
+            var remainingLength = checked((int)(wsqStream.Length - wsqStream.Position));
+            var exactBuffer = GC.AllocateUninitializedArray<byte>(remainingLength);
+            await wsqStream.ReadExactlyAsync(exactBuffer.AsMemory(), cancellationToken).ConfigureAwait(false);
+            return Read(exactBuffer);
+        }
+
         using var buffer = new MemoryStream();
         await wsqStream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
 
-        return Read(buffer.ToArray());
+        return buffer.TryGetBuffer(out var bufferedData)
+            ? Read(bufferedData.AsSpan(0, checked((int)buffer.Length)))
+            : Read(buffer.ToArray());
     }
 
     public static WsqContainer Read(ReadOnlySpan<byte> wsqData)
@@ -216,7 +232,7 @@ internal static class WsqContainerReader
 
     private static WsqCommentSegment ReadComment(ref WsqBufferReader reader)
     {
-        var payload = reader.ReadSegmentPayload().ToArray();
+        var payload = reader.ReadSegmentPayload();
         var text = Encoding.ASCII.GetString(payload);
         var fields = ParseNistComFields(text);
         return new(text, fields);
@@ -295,7 +311,7 @@ internal static class WsqContainerReader
         int filterLength)
     {
         var coefficients = new float[filterLength];
-        var pivot = (storedTail.Length - 1);
+        var pivot = storedTail.Length - 1;
 
         for (var index = 0; index < storedTail.Length; index++)
         {
@@ -325,7 +341,7 @@ internal static class WsqContainerReader
         int filterLength)
     {
         var coefficients = new float[filterLength];
-        var pivot = (storedTail.Length - 1);
+        var pivot = storedTail.Length - 1;
 
         for (var index = 0; index < storedTail.Length; index++)
         {
@@ -359,7 +375,7 @@ internal static class WsqContainerReader
     {
         if (!text.StartsWith("NIST_COM", StringComparison.Ordinal))
         {
-            return new Dictionary<string, string>(0, StringComparer.Ordinal);
+            return new(0, StringComparer.Ordinal);
         }
 
         var fields = new Dictionary<string, string>(StringComparer.Ordinal);

@@ -18,7 +18,7 @@ internal sealed class WsqReferenceEncodingContractTests
 
     private static WsqCodec CreateCodec()
     {
-        return new WsqCodec();
+        return new();
     }
 
     private static async Task AssertEncodedOutputMatchesReferenceAsync(

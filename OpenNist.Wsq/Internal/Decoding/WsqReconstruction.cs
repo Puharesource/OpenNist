@@ -34,14 +34,14 @@ internal static class WsqReconstruction
         ArgumentNullException.ThrowIfNull(waveletTree);
         ArgumentNullException.ThrowIfNull(transformTable);
 
-        var lowPassFilter = transformTable.LowPassFilterCoefficients.ToArray();
-        var highPassFilter = transformTable.HighPassFilterCoefficients.ToArray();
+        var lowPassFilter = GetFilterSpan(transformTable.LowPassFilterCoefficients);
+        var highPassFilter = GetFilterSpan(transformTable.HighPassFilterCoefficients);
         var temporaryBuffer = new float[waveletData.Length];
 
         for (var nodeIndex = waveletTree.Length - 1; nodeIndex >= 0; nodeIndex--)
         {
             var node = waveletTree[nodeIndex];
-            var baseOffset = (node.Y * width) + node.X;
+            var baseOffset = node.Y * width + node.X;
 
             JoinLets(
                 temporaryBuffer,
@@ -73,366 +73,215 @@ internal static class WsqReconstruction
         return waveletData;
     }
 
-    private static unsafe void JoinLets(
-        float[] destination,
+    private static ReadOnlySpan<float> GetFilterSpan(IReadOnlyList<float> coefficients)
+    {
+        ArgumentNullException.ThrowIfNull(coefficients);
+
+        return coefficients is float[] array
+            ? array
+            : coefficients.ToArray();
+    }
+
+    private static void JoinLets(
+        Span<float> destination,
         int destinationBaseOffset,
-        float[] source,
+        ReadOnlySpan<float> source,
         int sourceBaseOffset,
         int len1,
         int len2,
         int pitch,
         int stride,
-        float[] highPassFilter,
-        float[] lowPassFilter,
+        ReadOnlySpan<float> highPassFilter,
+        ReadOnlySpan<float> lowPassFilter,
         bool invert)
     {
-        fixed (float* destinationStart = destination)
-        fixed (float* sourceStart = source)
-        fixed (float* highPassStart = highPassFilter)
-        fixed (float* lowPassStart = lowPassFilter)
-        {
-            float* @new = destinationStart + destinationBaseOffset;
-            float* old = sourceStart + sourceBaseOffset;
-            float* hi = highPassStart;
-            float* lo = lowPassStart;
+        var newValues = destination[destinationBaseOffset..];
+        var oldValues = source[sourceBaseOffset..];
+        var lowPassLength = lowPassFilter.Length;
+        var highPassLength = highPassFilter.Length;
+        float[]? mutableHighPassBuffer = null;
+        ReadOnlySpan<float> highPass = highPassFilter;
 
-            float* lp0;
-            float* lp1;
-            float* hp0;
-            float* hp1;
-            float* lopass;
-            float* hipass;
-            float* limg;
-            float* himg;
-            int clRw;
-            int i;
-            var daEv = len2 % 2;
-            int loc;
-            int hoc;
-            int hlen;
-            int llen;
-            var nstr = -stride;
-            var pstr = stride;
-            int tap;
-            var fiEv = lowPassFilter.Length % 2;
-            int olle;
-            int ohle;
-            int olre;
-            int ohre;
-            int lle;
-            int lle2;
-            int lre;
-            int lre2;
-            int hle;
-            int hle2;
-            int hre;
-            int hre2;
-            float* lpx;
-            float* lspx;
-            int lpxstr;
-            int lspxstr;
-            int lstap;
-            int lotap;
-            float* hpx;
-            float* hspx;
-            int hpxstr;
-            int hspxstr;
-            int hstap;
-            int hotap;
-            int asym;
-            var fhre = 0;
-            int ofhre;
-            float ssfac;
-            float osfac;
-            float sfac;
+        int lp0;
+        int lp1;
+        int hp0;
+        int hp1;
+        int lopass;
+        int hipass;
+        int limg;
+        int himg;
+        int clRw;
+        int i;
+        var daEv = len2 % 2;
+        int loc;
+        int hoc;
+        int hlen;
+        int llen;
+        var nstr = -stride;
+        var pstr = stride;
+        int tap;
+        var fiEv = lowPassLength % 2;
+        int olle;
+        int ohle;
+        int olre;
+        int ohre;
+        int lle;
+        int lle2;
+        int lre;
+        int lre2;
+        int hle;
+        int hle2;
+        int hre;
+        int hre2;
+        int lpx;
+        int lspx;
+        int lpxstr;
+        int lspxstr;
+        int lstap;
+        int lotap;
+        int hpx;
+        int hspx;
+        int hpxstr;
+        int hspxstr;
+        int hstap;
+        int hotap;
+        int asym;
+        var fhre = 0;
+        int ofhre;
+        float ssfac;
+        float osfac;
+        float sfac;
+
+        if (daEv != 0)
+        {
+            llen = (len2 + 1) / 2;
+            hlen = llen - 1;
+        }
+        else
+        {
+            llen = len2 / 2;
+            hlen = llen;
+        }
+
+        if (fiEv != 0)
+        {
+            asym = 0;
+            ssfac = 1.0f;
+            ofhre = 0;
+            loc = (lowPassLength - 1) / 4;
+            hoc = (highPassLength + 1) / 4 - 1;
+            lotap = (lowPassLength - 1) / 2 % 2;
+            hotap = (highPassLength + 1) / 2 % 2;
 
             if (daEv != 0)
             {
-                llen = (len2 + 1) / 2;
-                hlen = llen - 1;
+                olle = 0;
+                olre = 0;
+                ohle = 1;
+                ohre = 1;
             }
             else
             {
-                llen = len2 / 2;
-                hlen = llen;
+                olle = 0;
+                olre = 1;
+                ohle = 1;
+                ohre = 0;
             }
+        }
+        else
+        {
+            asym = 1;
+            ssfac = -1.0f;
+            ofhre = 2;
+            loc = lowPassLength / 4 - 1;
+            hoc = highPassLength / 4 - 1;
+            lotap = lowPassLength / 2 % 2;
+            hotap = highPassLength / 2 % 2;
 
-            if (fiEv != 0)
+            if (daEv != 0)
             {
-                asym = 0;
-                ssfac = 1.0f;
-                ofhre = 0;
-                loc = (lowPassFilter.Length - 1) / 4;
-                hoc = ((highPassFilter.Length + 1) / 4) - 1;
-                lotap = ((lowPassFilter.Length - 1) / 2) % 2;
-                hotap = ((highPassFilter.Length + 1) / 2) % 2;
-
-                if (daEv != 0)
-                {
-                    olle = 0;
-                    olre = 0;
-                    ohle = 1;
-                    ohre = 1;
-                }
-                else
-                {
-                    olle = 0;
-                    olre = 1;
-                    ohle = 1;
-                    ohre = 0;
-                }
+                olle = 1;
+                olre = 0;
+                ohle = 1;
+                ohre = 1;
             }
             else
             {
-                asym = 1;
-                ssfac = -1.0f;
-                ofhre = 2;
-                loc = (lowPassFilter.Length / 4) - 1;
-                hoc = (highPassFilter.Length / 4) - 1;
-                lotap = (lowPassFilter.Length / 2) % 2;
-                hotap = (highPassFilter.Length / 2) % 2;
-
-                if (daEv != 0)
-                {
-                    olle = 1;
-                    olre = 0;
-                    ohle = 1;
-                    ohre = 1;
-                }
-                else
-                {
-                    olle = 1;
-                    olre = 1;
-                    ohle = 1;
-                    ohre = 1;
-                }
-
-                if (loc == -1)
-                {
-                    loc = 0;
-                    olle = 0;
-                }
-
-                if (hoc == -1)
-                {
-                    hoc = 0;
-                    ohle = 0;
-                }
-
-                for (i = 0; i < highPassFilter.Length; i++)
-                {
-                    hi[i] *= -1.0f;
-                }
+                olle = 1;
+                olre = 1;
+                ohle = 1;
+                ohre = 1;
             }
 
-            for (clRw = 0; clRw < len1; clRw++)
+            if (loc == -1)
             {
-                limg = @new + (clRw * pitch);
-                himg = limg;
-                *himg = 0.0f;
-                *(himg + stride) = 0.0f;
+                loc = 0;
+                olle = 0;
+            }
 
-                if (invert)
-                {
-                    hipass = old + (clRw * pitch);
-                    lopass = hipass + (stride * hlen);
-                }
-                else
-                {
-                    lopass = old + (clRw * pitch);
-                    hipass = lopass + (stride * llen);
-                }
+            if (hoc == -1)
+            {
+                hoc = 0;
+                ohle = 0;
+            }
 
-                lp0 = lopass;
-                lp1 = lp0 + ((llen - 1) * stride);
-                lspx = lp0 + (loc * stride);
-                lspxstr = nstr;
-                lstap = lotap;
-                lle2 = olle;
-                lre2 = olre;
+            mutableHighPassBuffer = GC.AllocateUninitializedArray<float>(highPassLength);
+            highPassFilter.CopyTo(mutableHighPassBuffer);
 
-                hp0 = hipass;
-                hp1 = hp0 + ((hlen - 1) * stride);
-                hspx = hp0 + (hoc * stride);
-                hspxstr = nstr;
-                hstap = hotap;
-                hle2 = ohle;
-                hre2 = ohre;
-                osfac = ssfac;
+            for (i = 0; i < highPassLength; i++)
+            {
+                mutableHighPassBuffer[i] *= -1.0f;
+            }
 
-                for (var pix = 0; pix < hlen; pix++)
-                {
-                    for (tap = lstap; tap >= 0; tap--)
-                    {
-                        lle = lle2;
-                        lre = lre2;
-                        lpx = lspx;
-                        lpxstr = lspxstr;
-                        var lowValue = *lpx * lo[tap];
+            highPass = mutableHighPassBuffer;
+        }
 
-                        for (i = tap + 2; i < lowPassFilter.Length; i += 2)
-                        {
-                            if (lpx == lp0)
-                            {
-                                if (lle != 0)
-                                {
-                                    lpxstr = 0;
-                                    lle = 0;
-                                }
-                                else
-                                {
-                                    lpxstr = pstr;
-                                }
-                            }
+        for (clRw = 0; clRw < len1; clRw++)
+        {
+            limg = clRw * pitch;
+            himg = limg;
+            newValues[himg] = 0.0f;
+            newValues[himg + stride] = 0.0f;
 
-                            if (lpx == lp1)
-                            {
-                                if (lre != 0)
-                                {
-                                    lpxstr = 0;
-                                    lre = 0;
-                                }
-                                else
-                                {
-                                    lpxstr = nstr;
-                                }
-                            }
+            if (invert)
+            {
+                hipass = clRw * pitch;
+                lopass = hipass + stride * hlen;
+            }
+            else
+            {
+                lopass = clRw * pitch;
+                hipass = lopass + stride * llen;
+            }
 
-                            lpx += lpxstr;
-                            lowValue = MathF.FusedMultiplyAdd(*lpx, lo[i], lowValue);
-                        }
+            lp0 = lopass;
+            lp1 = lp0 + (llen - 1) * stride;
+            lspx = lp0 + loc * stride;
+            lspxstr = nstr;
+            lstap = lotap;
+            lle2 = olle;
+            lre2 = olre;
 
-                        *limg = lowValue;
-                        limg += stride;
-                    }
+            hp0 = hipass;
+            hp1 = hp0 + (hlen - 1) * stride;
+            hspx = hp0 + hoc * stride;
+            hspxstr = nstr;
+            hstap = hotap;
+            hle2 = ohle;
+            hre2 = ohre;
+            osfac = ssfac;
 
-                    if (lspx == lp0)
-                    {
-                        if (lle2 != 0)
-                        {
-                            lspxstr = 0;
-                            lle2 = 0;
-                        }
-                        else
-                        {
-                            lspxstr = pstr;
-                        }
-                    }
-
-                    lspx += lspxstr;
-                    lstap = 1;
-
-                    for (tap = hstap; tap >= 0; tap--)
-                    {
-                        hle = hle2;
-                        hre = hre2;
-                        hpx = hspx;
-                        hpxstr = hspxstr;
-                        fhre = ofhre;
-                        sfac = osfac;
-                        var highValue = *himg;
-
-                        for (i = tap; i < highPassFilter.Length; i += 2)
-                        {
-                            if (hpx == hp0)
-                            {
-                                if (hle != 0)
-                                {
-                                    hpxstr = 0;
-                                    hle = 0;
-                                }
-                                else
-                                {
-                                    hpxstr = pstr;
-                                    sfac = 1.0f;
-                                }
-                            }
-
-                            if (hpx == hp1)
-                            {
-                                if (hre != 0)
-                                {
-                                    hpxstr = 0;
-                                    hre = 0;
-
-                                    if (asym != 0 && daEv != 0)
-                                    {
-                                        hre = 1;
-                                        fhre--;
-                                        sfac = fhre;
-
-                                        if (sfac == 0.0f)
-                                        {
-                                            hre = 0;
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    hpxstr = nstr;
-
-                                    if (asym != 0)
-                                    {
-                                        sfac = -1.0f;
-                                    }
-                                }
-                            }
-
-                            highValue = MathF.FusedMultiplyAdd(*hpx * hi[i], sfac, highValue);
-                            hpx += hpxstr;
-                        }
-
-                        *himg = highValue;
-                        himg += stride;
-                    }
-
-                    if (hspx == hp0)
-                    {
-                        if (hle2 != 0)
-                        {
-                            hspxstr = 0;
-                            hle2 = 0;
-                        }
-                        else
-                        {
-                            hspxstr = pstr;
-                            osfac = 1.0f;
-                        }
-                    }
-
-                    hspx += hspxstr;
-                    hstap = 1;
-                }
-
-                if (daEv != 0)
-                {
-                    if (lotap != 0)
-                    {
-                        lstap = 1;
-                    }
-                    else
-                    {
-                        lstap = 0;
-                    }
-                }
-                else if (lotap != 0)
-                {
-                    lstap = 2;
-                }
-                else
-                {
-                    lstap = 1;
-                }
-
-                for (tap = 1; tap >= lstap; tap--)
+            for (var pix = 0; pix < hlen; pix++)
+            {
+                for (tap = lstap; tap >= 0; tap--)
                 {
                     lle = lle2;
                     lre = lre2;
                     lpx = lspx;
                     lpxstr = lspxstr;
-                    var lowValue = *lpx * lo[tap];
+                    var lowValue = oldValues[lpx] * lowPassFilter[tap];
 
-                    for (i = tap + 2; i < lowPassFilter.Length; i += 2)
+                    for (i = tap + 2; i < lowPassLength; i += 2)
                     {
                         if (lpx == lp0)
                         {
@@ -461,54 +310,40 @@ internal static class WsqReconstruction
                         }
 
                         lpx += lpxstr;
-                        lowValue = MathF.FusedMultiplyAdd(*lpx, lo[i], lowValue);
+                        lowValue = MathF.FusedMultiplyAdd(oldValues[lpx], lowPassFilter[i], lowValue);
                     }
 
-                    *limg = lowValue;
+                    newValues[limg] = lowValue;
                     limg += stride;
                 }
 
-                if (daEv != 0)
+                if (lspx == lp0)
                 {
-                    if (hotap != 0)
+                    if (lle2 != 0)
                     {
-                        hstap = 1;
+                        lspxstr = 0;
+                        lle2 = 0;
                     }
                     else
                     {
-                        hstap = 0;
-                    }
-
-                    if (highPassFilter.Length == 2)
-                    {
-                        hspx -= hspxstr;
-                        fhre = 1;
+                        lspxstr = pstr;
                     }
                 }
-                else if (hotap != 0)
-                {
-                    hstap = 2;
-                }
-                else
-                {
-                    hstap = 1;
-                }
 
-                for (tap = 1; tap >= hstap; tap--)
+                lspx += lspxstr;
+                lstap = 1;
+
+                for (tap = hstap; tap >= 0; tap--)
                 {
                     hle = hle2;
                     hre = hre2;
                     hpx = hspx;
                     hpxstr = hspxstr;
+                    fhre = ofhre;
                     sfac = osfac;
-                    var highValue = *himg;
+                    var highValue = newValues[himg];
 
-                    if (highPassFilter.Length != 2)
-                    {
-                        fhre = ofhre;
-                    }
-
-                    for (i = tap; i < highPassFilter.Length; i += 2)
+                    for (i = tap; i < highPassLength; i += 2)
                     {
                         if (hpx == hp0)
                         {
@@ -554,26 +389,193 @@ internal static class WsqReconstruction
                             }
                         }
 
-                        highValue = MathF.FusedMultiplyAdd(*hpx * hi[i], sfac, highValue);
+                        highValue = MathF.FusedMultiplyAdd(oldValues[hpx] * highPass[i], sfac, highValue);
                         hpx += hpxstr;
                     }
 
-                    *himg = highValue;
+                    newValues[himg] = highValue;
                     himg += stride;
                 }
+
+                if (hspx == hp0)
+                {
+                    if (hle2 != 0)
+                    {
+                        hspxstr = 0;
+                        hle2 = 0;
+                    }
+                    else
+                    {
+                        hspxstr = pstr;
+                        osfac = 1.0f;
+                    }
+                }
+
+                hspx += hspxstr;
+                hstap = 1;
             }
 
-            if (fiEv == 0)
+            if (daEv != 0)
             {
-                for (i = 0; i < highPassFilter.Length; i++)
+                if (lotap != 0)
                 {
-                    hi[i] *= -1.0f;
+                    lstap = 1;
                 }
+                else
+                {
+                    lstap = 0;
+                }
+            }
+            else if (lotap != 0)
+            {
+                lstap = 2;
+            }
+            else
+            {
+                lstap = 1;
+            }
+
+            for (tap = 1; tap >= lstap; tap--)
+            {
+                lle = lle2;
+                lre = lre2;
+                lpx = lspx;
+                lpxstr = lspxstr;
+                var lowValue = oldValues[lpx] * lowPassFilter[tap];
+
+                for (i = tap + 2; i < lowPassLength; i += 2)
+                {
+                    if (lpx == lp0)
+                    {
+                        if (lle != 0)
+                        {
+                            lpxstr = 0;
+                            lle = 0;
+                        }
+                        else
+                        {
+                            lpxstr = pstr;
+                        }
+                    }
+
+                    if (lpx == lp1)
+                    {
+                        if (lre != 0)
+                        {
+                            lpxstr = 0;
+                            lre = 0;
+                        }
+                        else
+                        {
+                            lpxstr = nstr;
+                        }
+                    }
+
+                    lpx += lpxstr;
+                    lowValue = MathF.FusedMultiplyAdd(oldValues[lpx], lowPassFilter[i], lowValue);
+                }
+
+                newValues[limg] = lowValue;
+                limg += stride;
+            }
+
+            if (daEv != 0)
+            {
+                if (hotap != 0)
+                {
+                    hstap = 1;
+                }
+                else
+                {
+                    hstap = 0;
+                }
+
+                if (highPassLength == 2)
+                {
+                    hspx -= hspxstr;
+                    fhre = 1;
+                }
+            }
+            else if (hotap != 0)
+            {
+                hstap = 2;
+            }
+            else
+            {
+                hstap = 1;
+            }
+
+            for (tap = 1; tap >= hstap; tap--)
+            {
+                hle = hle2;
+                hre = hre2;
+                hpx = hspx;
+                hpxstr = hspxstr;
+                sfac = osfac;
+                var highValue = newValues[himg];
+
+                if (highPassLength != 2)
+                {
+                    fhre = ofhre;
+                }
+
+                for (i = tap; i < highPassLength; i += 2)
+                {
+                    if (hpx == hp0)
+                    {
+                        if (hle != 0)
+                        {
+                            hpxstr = 0;
+                            hle = 0;
+                        }
+                        else
+                        {
+                            hpxstr = pstr;
+                            sfac = 1.0f;
+                        }
+                    }
+
+                    if (hpx == hp1)
+                    {
+                        if (hre != 0)
+                        {
+                            hpxstr = 0;
+                            hre = 0;
+
+                            if (asym != 0 && daEv != 0)
+                            {
+                                hre = 1;
+                                fhre--;
+                                sfac = fhre;
+
+                                if (sfac == 0.0f)
+                                {
+                                    hre = 0;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            hpxstr = nstr;
+
+                            if (asym != 0)
+                            {
+                                sfac = -1.0f;
+                            }
+                        }
+                    }
+
+                    highValue = MathF.FusedMultiplyAdd(oldValues[hpx] * highPass[i], sfac, highValue);
+                    hpx += hpxstr;
+                }
+
+                newValues[himg] = highValue;
+                himg += stride;
             }
         }
     }
 
-    private static byte[] ConvertToBytePixels(float[] image, int width, int height, float shift, float scale)
+    private static byte[] ConvertToBytePixels(ReadOnlySpan<float> image, int width, int height, float shift, float scale)
     {
         var pixels = new byte[width * height];
         var imageIndex = 0;

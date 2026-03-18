@@ -15,34 +15,37 @@ internal static class WsqQuantizationDecoder
         ArgumentNullException.ThrowIfNull(waveletTree);
         ArgumentNullException.ThrowIfNull(quantizationTree);
 
+        var quantizationBins = GetValueSpan(quantizationTable.QuantizationBins);
+        ReadOnlySpan<WsqWaveletNode> waveletNodes = waveletTree;
+        ReadOnlySpan<WsqQuantizationNode> quantizationNodes = quantizationTree;
         var blockSizes = new int[WsqConstants.BlockCount];
-        blockSizes[0] = waveletTree[14].Width * waveletTree[14].Height;
-        blockSizes[1] = (waveletTree[5].Height * waveletTree[1].Width)
-            + (waveletTree[4].Width * waveletTree[4].Height);
-        blockSizes[2] = (waveletTree[2].Width * waveletTree[2].Height)
-            + (waveletTree[3].Width * waveletTree[3].Height);
+        blockSizes[0] = waveletNodes[14].Width * waveletNodes[14].Height;
+        blockSizes[1] = waveletNodes[5].Height * waveletNodes[1].Width
+            + waveletNodes[4].Width * waveletNodes[4].Height;
+        blockSizes[2] = waveletNodes[2].Width * waveletNodes[2].Height
+            + waveletNodes[3].Width * waveletNodes[3].Height;
 
         for (var node = 0; node < WsqConstants.StartSubband2; node++)
         {
-            if ((float)quantizationTable.QuantizationBins[node] == 0.0f)
+            if ((float)quantizationBins[node] == 0.0f)
             {
-                blockSizes[0] -= quantizationTree[node].Width * quantizationTree[node].Height;
+                blockSizes[0] -= quantizationNodes[node].Width * quantizationNodes[node].Height;
             }
         }
 
         for (var node = WsqConstants.StartSubband2; node < WsqConstants.StartSubband3; node++)
         {
-            if ((float)quantizationTable.QuantizationBins[node] == 0.0f)
+            if ((float)quantizationBins[node] == 0.0f)
             {
-                blockSizes[1] -= quantizationTree[node].Width * quantizationTree[node].Height;
+                blockSizes[1] -= quantizationNodes[node].Width * quantizationNodes[node].Height;
             }
         }
 
         for (var node = WsqConstants.StartSubband3; node < WsqConstants.StartSubbandDelete; node++)
         {
-            if ((float)quantizationTable.QuantizationBins[node] == 0.0f)
+            if ((float)quantizationBins[node] == 0.0f)
             {
-                blockSizes[2] -= quantizationTree[node].Width * quantizationTree[node].Height;
+                blockSizes[2] -= quantizationNodes[node].Width * quantizationNodes[node].Height;
             }
         }
 
@@ -60,30 +63,35 @@ internal static class WsqQuantizationDecoder
         ArgumentNullException.ThrowIfNull(quantizationTree);
         ArgumentNullException.ThrowIfNull(quantizedCoefficients);
 
+        var quantizationBins = GetValueSpan(quantizationTable.QuantizationBins);
+        var zeroBins = GetValueSpan(quantizationTable.ZeroBins);
+        ReadOnlySpan<WsqQuantizationNode> quantizationNodes = quantizationTree;
+        ReadOnlySpan<short> coefficients = quantizedCoefficients;
         var pixels = new float[width * height];
+        var pixelSpan = pixels.AsSpan();
         var coefficientIndex = 0;
         var binCenter = (float)quantizationTable.BinCenter;
 
         for (var subband = 0; subband < WsqConstants.NumberOfSubbands; subband++)
         {
-            var quantizationBin = (float)quantizationTable.QuantizationBins[subband];
+            var quantizationBin = (float)quantizationBins[subband];
 
             if (quantizationBin == 0.0f)
             {
                 continue;
             }
 
-            var zeroBin = (float)quantizationTable.ZeroBins[subband];
-            var node = quantizationTree[subband];
-            var rowStart = (node.Y * width) + node.X;
+            var halfZeroBin = (float)(zeroBins[subband] / 2.0);
+            var node = quantizationNodes[subband];
+            var rowStart = node.Y * width + node.X;
 
             for (var row = 0; row < node.Height; row++)
             {
-                var pixelIndex = rowStart + (row * width);
+                var pixelIndex = rowStart + row * width;
 
                 for (var column = 0; column < node.Width; column++)
                 {
-                    var quantizedValue = quantizedCoefficients[coefficientIndex++];
+                    var quantizedValue = coefficients[coefficientIndex++];
                     float pixelValue;
 
                     switch (quantizedValue)
@@ -93,25 +101,34 @@ internal static class WsqQuantizationDecoder
                             break;
                         case > 0:
                             pixelValue = quantizationBin * (quantizedValue - binCenter);
-                            pixelValue = (float)(pixelValue + (zeroBin / 2.0));
+                            pixelValue += halfZeroBin;
                             break;
                         default:
                             pixelValue = quantizationBin * (quantizedValue + binCenter);
-                            pixelValue = (float)(pixelValue - (zeroBin / 2.0));
+                            pixelValue -= halfZeroBin;
                             break;
                     }
 
-                    pixels[pixelIndex + column] = pixelValue;
+                    pixelSpan[pixelIndex + column] = pixelValue;
                 }
             }
         }
 
-        if (coefficientIndex != quantizedCoefficients.Length)
+        if (coefficientIndex != coefficients.Length)
         {
             throw new InvalidDataException(
-                $"Consumed {coefficientIndex} quantized coefficients, but decoded {quantizedCoefficients.Length}.");
+                $"Consumed {coefficientIndex} quantized coefficients, but decoded {coefficients.Length}.");
         }
 
         return pixels;
+    }
+
+    private static ReadOnlySpan<double> GetValueSpan(IReadOnlyList<double> values)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+
+        return values is double[] array
+            ? array
+            : values.ToArray();
     }
 }
