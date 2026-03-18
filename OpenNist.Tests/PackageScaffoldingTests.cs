@@ -1,35 +1,39 @@
-using FluentAssertions;
-
 namespace OpenNist.Tests;
 
-/// <summary>
-/// Verifies the baseline scaffolding for the OpenNist package graph.
-/// </summary>
-public sealed class PackageScaffoldingTests
+[Category("Unit: Scaffolding - Package Graph")]
+internal sealed class PackageScaffoldingTests
 {
-    /// <summary>
-    /// Ensures the public package markers expose the expected package identifiers.
-    /// </summary>
-    [Fact]
-    public void PackageMarkersExposeExpectedPackageIds()
+    [Test]
+    [DisplayName("should expose the expected package identifiers from the public package markers")]
+    public async Task PackageMarkersExposeExpectedPackageIds()
     {
-        OpenNist.Core.PackageInfo.PackageId.Should().Be("OpenNist.Core");
-        OpenNist.Nist.PackageInfo.PackageId.Should().Be("OpenNist.Nist");
-        OpenNist.Wsq.PackageInfo.PackageId.Should().Be("OpenNist.Wsq");
-        OpenNist.Jp2000.PackageInfo.PackageId.Should().Be("OpenNist.Jp2000");
-        OpenNist.Nfiq.PackageInfo.PackageId.Should().Be("OpenNist.Nfiq");
+        var corePackageId = OpenNist.Core.PackageInfo.PackageId;
+        var nistPackageId = OpenNist.Nist.PackageInfo.PackageId;
+        var wsqPackageId = OpenNist.Wsq.PackageInfo.PackageId;
+        var jp2000PackageId = OpenNist.Jp2000.PackageInfo.PackageId;
+        var nfiqPackageId = OpenNist.Nfiq.PackageInfo.PackageId;
+
+        await Assert.That(corePackageId).IsEqualTo("OpenNist.Core");
+        await Assert.That(nistPackageId).IsEqualTo("OpenNist.Nist");
+        await Assert.That(wsqPackageId).IsEqualTo("OpenNist.Wsq");
+        await Assert.That(jp2000PackageId).IsEqualTo("OpenNist.Jp2000");
+        await Assert.That(nfiqPackageId).IsEqualTo("OpenNist.Nfiq");
     }
 
-    /// <summary>
-    /// Ensures internals from each package assembly are visible to the shared test project.
-    /// </summary>
-    [Fact]
-    public void PackageInternalsAreVisibleToTheTestAssembly()
+    [Test]
+    [DisplayName("should expose package internals to the shared test assembly")]
+    public async Task PackageInternalsAreVisibleToTheTestAssembly()
     {
-        OpenNist.Core.InternalVisibilityProbe.PackageId.Should().Be("OpenNist.Core");
-        OpenNist.Nist.InternalVisibilityProbe.PackageId.Should().Be("OpenNist.Nist");
-        OpenNist.Wsq.InternalVisibilityProbe.PackageId.Should().Be("OpenNist.Wsq");
-        OpenNist.Jp2000.InternalVisibilityProbe.PackageId.Should().Be("OpenNist.Jp2000");
-        OpenNist.Nfiq.InternalVisibilityProbe.PackageId.Should().Be("OpenNist.Nfiq");
+        var corePackageId = OpenNist.Core.InternalVisibilityProbe.PackageId;
+        var nistPackageId = OpenNist.Nist.InternalVisibilityProbe.PackageId;
+        var wsqPackageId = OpenNist.Wsq.InternalVisibilityProbe.PackageId;
+        var jp2000PackageId = OpenNist.Jp2000.InternalVisibilityProbe.PackageId;
+        var nfiqPackageId = OpenNist.Nfiq.InternalVisibilityProbe.PackageId;
+
+        await Assert.That(corePackageId).IsEqualTo("OpenNist.Core");
+        await Assert.That(nistPackageId).IsEqualTo("OpenNist.Nist");
+        await Assert.That(wsqPackageId).IsEqualTo("OpenNist.Wsq");
+        await Assert.That(jp2000PackageId).IsEqualTo("OpenNist.Jp2000");
+        await Assert.That(nfiqPackageId).IsEqualTo("OpenNist.Nfiq");
     }
 }

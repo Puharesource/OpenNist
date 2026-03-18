@@ -1,6 +1,6 @@
 # OpenNist
 
-OpenNist is a planned .NET library suite for working with biometric and NIST-related formats, standards, and quality tooling.
+OpenNist is a .NET library suite for working with biometric and NIST-related formats, standards, and quality tooling.
 
 The repository is currently in an early scaffolding stage. The focus at this point is solution structure, packaging conventions, test setup, and shared repository hygiene for a reusable multi-package NuGet ecosystem.
 
@@ -54,7 +54,7 @@ dotnet build OpenNist.slnx
 ### Test
 
 ```bash
-dotnet test OpenNist.slnx
+dotnet test --solution OpenNist.slnx
 ```
 
 ## Packaging notes
