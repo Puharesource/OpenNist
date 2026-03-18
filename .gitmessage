@@ -1,0 +1,17 @@
+# <type>(optional-scope): <short summary>
+#
+# Examples:
+# feat(core): add record parser scaffold
+# fix(nist): guard null transaction payload
+# docs: describe package responsibilities
+# chore(repo): align analyzer settings
+#
+# Allowed types:
+# build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test
+#
+# Body (optional):
+# Explain why the change exists and any important context.
+#
+# Breaking changes:
+# Add ! after the type/scope, for example:
+# feat(core)!: rename public record model

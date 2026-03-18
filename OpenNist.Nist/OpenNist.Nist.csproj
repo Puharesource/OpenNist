@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>ANSI/NIST-related types and scaffolding for the OpenNist ecosystem.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenNist.Core\OpenNist.Core.csproj" />
+  </ItemGroup>
+</Project>

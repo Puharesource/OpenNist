@@ -1,0 +1,5 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Shared primitives and common abstractions for the OpenNist package suite.</Description>
+  </PropertyGroup>
+</Project>
