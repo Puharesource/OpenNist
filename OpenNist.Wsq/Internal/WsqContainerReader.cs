@@ -63,7 +63,7 @@ internal static class WsqContainerReader
         {
             if (marker == WsqMarker.StartOfBlock)
             {
-                var block = ReadBlock(ref reader, out var nextMarker);
+                var block = ReadBlock(ref reader, huffmanTables, out var nextMarker);
                 blocks.Add(block);
                 marker = nextMarker;
                 continue;
@@ -141,18 +141,17 @@ internal static class WsqContainerReader
     private static WsqTransformTable ReadTransformTable(ref WsqBufferReader reader)
     {
         var segmentReader = new WsqBufferReader(reader.ReadSegmentPayload());
-        var lowPassFilterLength = segmentReader.ReadByte();
         var highPassFilterLength = segmentReader.ReadByte();
+        var lowPassFilterLength = segmentReader.ReadByte();
+        var storedLowPassTail = ReadFilterTail(ref segmentReader, highPassFilterLength);
+        var storedHighPassTail = ReadFilterTail(ref segmentReader, lowPassFilterLength);
 
-        var lowPassFilterCoefficients = ExpandFilter(
-            ReadFilterTail(ref segmentReader, lowPassFilterLength),
-            lowPassFilterLength,
-            mirrorWithSameSign: true);
-
-        var highPassFilterCoefficients = ExpandFilter(
-            ReadFilterTail(ref segmentReader, highPassFilterLength),
-            highPassFilterLength,
-            mirrorWithSameSign: (highPassFilterLength & 1) == 1);
+        var highPassFilterCoefficients = ExpandStoredLowPassTailToHighPassFilter(
+            storedLowPassTail,
+            highPassFilterLength);
+        var lowPassFilterCoefficients = ExpandStoredHighPassTailToLowPassFilter(
+            storedHighPassTail,
+            lowPassFilterLength);
 
         return new(
             highPassFilterLength,
@@ -161,10 +160,10 @@ internal static class WsqContainerReader
             highPassFilterCoefficients);
     }
 
-    private static double[] ReadFilterTail(ref WsqBufferReader reader, int filterLength)
+    private static float[] ReadFilterTail(ref WsqBufferReader reader, int filterLength)
     {
         var coefficientCount = (filterLength + 1) / 2;
-        var coefficients = new double[coefficientCount];
+        var coefficients = new float[coefficientCount];
 
         for (var index = 0; index < coefficientCount; index++)
         {
@@ -248,7 +247,10 @@ internal static class WsqContainerReader
             softwareImplementationNumber);
     }
 
-    private static WsqBlock ReadBlock(ref WsqBufferReader reader, out WsqMarker nextMarker)
+    private static WsqBlock ReadBlock(
+        ref WsqBufferReader reader,
+        Dictionary<byte, WsqHuffmanTable> huffmanTables,
+        out WsqMarker nextMarker)
     {
         var segmentReader = new WsqBufferReader(reader.ReadSegmentPayload());
         var huffmanTableId = segmentReader.ReadByte();
@@ -258,11 +260,16 @@ internal static class WsqContainerReader
             throw new InvalidDataException("WSQ block header contains unexpected trailing data.");
         }
 
-        nextMarker = reader.ReadCompressedDataUntilNextMarker(out var encodedByteCount);
-        return new(huffmanTableId, encodedByteCount);
+        if (!huffmanTables.TryGetValue(huffmanTableId, out var huffmanTable))
+        {
+            throw new InvalidDataException($"WSQ block references undefined Huffman table {huffmanTableId}.");
+        }
+
+        var encodedData = reader.ReadCompressedDataUntilNextMarker(out nextMarker).ToArray();
+        return new(huffmanTableId, huffmanTable, encodedData);
     }
 
-    private static double ReadScaledCoefficient(ref WsqBufferReader reader)
+    private static float ReadScaledCoefficient(ref WsqBufferReader reader)
     {
         var sign = reader.ReadByte();
         var scale = reader.ReadByte();
@@ -270,45 +277,82 @@ internal static class WsqContainerReader
         return sign == 0 ? value : -value;
     }
 
-    private static double ScaleUnsignedValue(uint rawValue, byte scale)
+    private static float ScaleUnsignedValue(uint rawValue, byte scale)
     {
-        var value = (double)rawValue;
+        var value = (float)rawValue;
 
         while (scale > 0)
         {
-            value /= 10.0;
+            value = (float)(value / 10.0);
             scale--;
         }
 
         return value;
     }
 
-    private static double[] ExpandFilter(
-        double[] filterTail,
-        int filterLength,
-        bool mirrorWithSameSign)
+    private static float[] ExpandStoredLowPassTailToHighPassFilter(
+        float[] storedTail,
+        int filterLength)
     {
-        var coefficients = new double[filterLength];
-        var rightStartIndex = filterLength / 2;
+        var coefficients = new float[filterLength];
+        var pivot = (storedTail.Length - 1);
 
-        for (var index = 0; index < filterTail.Length; index++)
+        for (var index = 0; index < storedTail.Length; index++)
         {
-            var rightIndex = rightStartIndex + index;
-            coefficients[rightIndex] = filterTail[index];
-
-            var leftIndex = (filterLength & 1) == 1
-                ? rightStartIndex - index
-                : rightStartIndex - 1 - index;
-
-            if (leftIndex == rightIndex)
+            if ((filterLength & 1) == 1)
             {
-                continue;
-            }
+                var rightIndex = index + pivot;
+                coefficients[rightIndex] = IntSign(index) * storedTail[index];
 
-            coefficients[leftIndex] = mirrorWithSameSign ? filterTail[index] : -filterTail[index];
+                if (index > 0)
+                {
+                    coefficients[pivot - index] = coefficients[rightIndex];
+                }
+            }
+            else
+            {
+                var rightIndex = index + pivot + 1;
+                coefficients[rightIndex] = IntSign(index) * storedTail[index];
+                coefficients[pivot - index] = -coefficients[rightIndex];
+            }
         }
 
         return coefficients;
+    }
+
+    private static float[] ExpandStoredHighPassTailToLowPassFilter(
+        float[] storedTail,
+        int filterLength)
+    {
+        var coefficients = new float[filterLength];
+        var pivot = (storedTail.Length - 1);
+
+        for (var index = 0; index < storedTail.Length; index++)
+        {
+            if ((filterLength & 1) == 1)
+            {
+                var rightIndex = index + pivot;
+                coefficients[rightIndex] = IntSign(index) * storedTail[index];
+
+                if (index > 0)
+                {
+                    coefficients[pivot - index] = coefficients[rightIndex];
+                }
+            }
+            else
+            {
+                var rightIndex = index + pivot + 1;
+                coefficients[rightIndex] = IntSign(index + 1) * storedTail[index];
+                coefficients[pivot - index] = coefficients[rightIndex];
+            }
+        }
+
+        return coefficients;
+    }
+
+    private static int IntSign(int power)
+    {
+        return (power & 1) == 0 ? 1 : -1;
     }
 
     private static Dictionary<string, string> ParseNistComFields(string text)

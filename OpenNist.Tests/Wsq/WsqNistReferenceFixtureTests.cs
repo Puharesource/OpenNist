@@ -15,6 +15,22 @@ internal sealed class WsqNistReferenceFixtureTests
         await Assert.That(Directory.GetFiles(WsqNistReferenceFixtureCatalog.ReferenceBitRate075Directory, "*.wsq").Length).IsEqualTo(40);
         await Assert.That(Directory.GetFiles(WsqNistReferenceFixtureCatalog.ReferenceBitRate225Directory, "*.wsq").Length).IsEqualTo(40);
         await Assert.That(Directory.GetFiles(WsqNistReferenceFixtureCatalog.NonStandardFilterTapSetsDirectory, "*.wsq").Length).IsEqualTo(6);
+        await Assert.That(Directory.GetFiles(WsqNistReferenceFixtureCatalog.ReferenceReconstructionBitRate075Directory, "*.raw").Length)
+            .IsEqualTo(40);
+        await Assert.That(Directory.GetFiles(WsqNistReferenceFixtureCatalog.ReferenceReconstructionBitRate075Directory, "*.ncm").Length)
+            .IsEqualTo(40);
+        await Assert.That(Directory.GetFiles(WsqNistReferenceFixtureCatalog.ReferenceReconstructionBitRate225Directory, "*.raw").Length)
+            .IsEqualTo(40);
+        await Assert.That(Directory.GetFiles(WsqNistReferenceFixtureCatalog.ReferenceReconstructionBitRate225Directory, "*.ncm").Length)
+            .IsEqualTo(40);
+        await Assert.That(
+                Directory.GetFiles(WsqNistReferenceFixtureCatalog.ReferenceReconstructionNonStandardFilterTapSetsDirectory, "*.raw")
+                    .Length)
+            .IsEqualTo(6);
+        await Assert.That(
+                Directory.GetFiles(WsqNistReferenceFixtureCatalog.ReferenceReconstructionNonStandardFilterTapSetsDirectory, "*.ncm")
+                    .Length)
+            .IsEqualTo(6);
     }
 
     [Test]

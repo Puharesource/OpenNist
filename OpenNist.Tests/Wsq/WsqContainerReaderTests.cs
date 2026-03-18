@@ -20,8 +20,10 @@ internal sealed class WsqContainerReaderTests
         await Assert.That(container.FrameHeader.Height).IsEqualTo((ushort)testCase.RawImage.Height);
         await Assert.That(container.FrameHeader.Black).IsEqualTo((byte)0);
         await Assert.That(container.FrameHeader.White).IsEqualTo((byte)255);
-        await Assert.That(container.TransformTable.LowPassFilterCoefficients.Count).IsEqualTo(9);
-        await Assert.That(container.TransformTable.HighPassFilterCoefficients.Count).IsEqualTo(7);
+        await Assert.That(container.TransformTable.HighPassFilterLength).IsEqualTo((byte)9);
+        await Assert.That(container.TransformTable.LowPassFilterLength).IsEqualTo((byte)7);
+        await Assert.That(container.TransformTable.HighPassFilterCoefficients.Count).IsEqualTo(9);
+        await Assert.That(container.TransformTable.LowPassFilterCoefficients.Count).IsEqualTo(7);
         await Assert.That(container.QuantizationTable.QuantizationBins.Count).IsEqualTo(64);
         await Assert.That(container.QuantizationTable.ZeroBins.Count).IsEqualTo(64);
         await Assert.That(container.HuffmanTables.Count > 0).IsTrue();

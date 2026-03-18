@@ -34,4 +34,18 @@ internal static class WsqNistReferenceDataSources
                 DisplayName: $"should encode {fixture.FileName} to the exact NIST 2.25 WSQ reference image");
         }
     }
+
+    public static IEnumerable<TestDataRow<WsqDecodingReferenceCase>> AllDecodeReferenceCases()
+    {
+        return WsqNistReferenceFixtureCatalog.DecodeFixtures.Select(static testCase => new TestDataRow<WsqDecodingReferenceCase>(
+            testCase,
+            DisplayName: $"should decode {testCase.FileName} to the exact NBIS reference reconstruction from {testCase.ReferenceSet}"));
+    }
+
+    public static IEnumerable<TestDataRow<WsqDecodingReferenceCase>> NonStandardDecodeCases()
+    {
+        return WsqNistReferenceFixtureCatalog.NonStandardDecodeFixtures.Select(static testCase => new TestDataRow<WsqDecodingReferenceCase>(
+            testCase,
+            DisplayName: $"should decode {testCase.FileName} to the exact NBIS reference reconstruction from the non-standard tap-set corpus"));
+    }
 }

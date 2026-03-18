@@ -22,8 +22,8 @@ internal sealed record WsqFrameHeader(
 internal sealed record WsqTransformTable(
     byte HighPassFilterLength,
     byte LowPassFilterLength,
-    IReadOnlyList<double> LowPassFilterCoefficients,
-    IReadOnlyList<double> HighPassFilterCoefficients);
+    IReadOnlyList<float> LowPassFilterCoefficients,
+    IReadOnlyList<float> HighPassFilterCoefficients);
 
 internal sealed record WsqQuantizationTable(
     double BinCenter,
@@ -44,4 +44,8 @@ internal sealed record WsqCommentSegment(
 
 internal sealed record WsqBlock(
     byte HuffmanTableId,
-    int EncodedByteCount);
+    WsqHuffmanTable HuffmanTable,
+    byte[] EncodedData)
+{
+    public int EncodedByteCount => EncodedData.Length;
+}

@@ -45,7 +45,7 @@ desktop.ini
 *.tmp
 *.temp
 *.cache
-tmp/
+**/tmp/
 temp/
 
 # Optional frontend folders

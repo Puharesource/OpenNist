@@ -71,7 +71,7 @@ internal ref struct WsqBufferReader
         return ReadBytes(segmentLength - sizeof(ushort));
     }
 
-    public WsqMarker ReadCompressedDataUntilNextMarker(out int encodedByteCount)
+    public ReadOnlySpan<byte> ReadCompressedDataUntilNextMarker(out WsqMarker nextMarker)
     {
         var blockStart = _position;
 
@@ -104,8 +104,9 @@ internal ref struct WsqBufferReader
                     $"Encountered invalid WSQ marker candidate 0x{markerValue:X4} inside compressed block data.");
             }
 
-            encodedByteCount = _position - blockStart - sizeof(ushort);
-            return (WsqMarker)markerValue;
+            var encodedByteCount = _position - blockStart - sizeof(ushort);
+            nextMarker = (WsqMarker)markerValue;
+            return _buffer.Slice(blockStart, encodedByteCount);
         }
 
         throw new InvalidDataException("WSQ compressed block terminated without a following marker.");

@@ -1,6 +1,7 @@
 namespace OpenNist.Wsq;
 
 using OpenNist.Wsq.Internal;
+using OpenNist.Wsq.Internal.Decoding;
 
 /// <summary>
 /// Default WSQ codec entry point.
@@ -32,8 +33,35 @@ public sealed class WsqCodec : IWsqCodec
         ArgumentNullException.ThrowIfNull(rawImageStream);
 
         var container = await WsqContainerReader.ReadAsync(wsqStream, cancellationToken).ConfigureAwait(false);
+        WsqWaveletTreeBuilder.Build(
+            container.FrameHeader.Width,
+            container.FrameHeader.Height,
+            out var waveletTree,
+            out var quantizationTree);
 
-        throw new NotSupportedException(
-            $"WSQ decoding is not implemented yet. The current build can parse a {container.FrameHeader.Width}x{container.FrameHeader.Height} WSQ bitstream with {container.Blocks.Count} encoded block(s).");
+        var quantizedCoefficients = WsqHuffmanDecoder.DecodeQuantizedCoefficients(container, waveletTree, quantizationTree);
+        var floatingPointPixels = WsqQuantizationDecoder.Unquantize(
+            container.QuantizationTable,
+            quantizationTree,
+            quantizedCoefficients,
+            container.FrameHeader.Width,
+            container.FrameHeader.Height);
+
+        var rawPixels = WsqReconstruction.ReconstructToRawPixels(
+            floatingPointPixels,
+            container.FrameHeader.Width,
+            container.FrameHeader.Height,
+            waveletTree,
+            container.TransformTable,
+            (float)container.FrameHeader.Shift,
+            (float)container.FrameHeader.Scale);
+
+        await rawImageStream.WriteAsync(rawPixels, cancellationToken).ConfigureAwait(false);
+
+        return new(
+            container.FrameHeader.Width,
+            container.FrameHeader.Height,
+            BitsPerPixel: 8,
+            PixelsPerInch: container.PixelsPerInch ?? 500);
     }
 }
