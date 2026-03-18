@@ -34,4 +34,8 @@ NFIQ-related adapters, quality scoring helpers, and integration surface area.
 
 ## Current status
 
-The repository currently contains scaffolding only. Real protocol, image codec, or quality scoring implementations are intentionally deferred until package boundaries and public APIs are ready to harden.
+The repository is still early, but implementation has started.
+
+- `OpenNist.Wsq` now contains a managed WSQ bitstream parser foundation and official NIST reference fixtures in the test project.
+- Full WSQ encode/decode is still in progress and is not yet ready for FBI certification testing.
+- The remaining packages are still mostly at the project-structure stage.

@@ -2,7 +2,7 @@
 
 OpenNist is a .NET library suite for working with biometric and NIST-related formats, standards, and quality tooling.
 
-The repository is currently in an early scaffolding stage. The focus at this point is solution structure, packaging conventions, test setup, and shared repository hygiene for a reusable multi-package NuGet ecosystem.
+The repository is still early, but it is no longer scaffolding-only. The current WSQ work includes a managed bitstream parser foundation backed by the official NIST reference fixtures, while full WSQ encode/decode implementation is still in progress.
 
 OpenNist is licensed under the Apache License 2.0. See [`LICENSE`](LICENSE).
 
@@ -68,3 +68,5 @@ dotnet test --solution OpenNist.slnx
 ## Documentation
 
 Additional notes live in [`docs/`](docs/), starting with the package overview in [`docs/package-overview.md`](docs/package-overview.md).
+
+WSQ-specific implementation notes live in [`docs/wsq.md`](docs/wsq.md).

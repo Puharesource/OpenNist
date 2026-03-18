@@ -16,14 +16,13 @@ internal sealed class WsqReferenceEncodingContractTests
         await AssertEncodedOutputMatchesReferenceAsync(codec, testCase);
     }
 
-    private static IWsqCodec CreateCodec()
+    private static WsqCodec CreateCodec()
     {
-        throw new NotSupportedException(
-            "Provide a concrete IWsqCodec implementation when WSQ encoding is implemented.");
+        return new WsqCodec();
     }
 
     private static async Task AssertEncodedOutputMatchesReferenceAsync(
-        IWsqCodec codec,
+        WsqCodec codec,
         WsqEncodingReferenceCase testCase)
     {
         await using var rawStream = File.OpenRead(testCase.RawPath);

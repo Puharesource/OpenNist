@@ -1,0 +1,346 @@
+namespace OpenNist.Wsq.Internal;
+
+using System.Text;
+
+internal static class WsqContainerReader
+{
+    public static async ValueTask<WsqContainer> ReadAsync(
+        Stream wsqStream,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(wsqStream);
+
+        using var buffer = new MemoryStream();
+        await wsqStream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+        return Read(buffer.ToArray());
+    }
+
+    public static WsqContainer Read(ReadOnlySpan<byte> wsqData)
+    {
+        var reader = new WsqBufferReader(wsqData);
+
+        var startMarker = reader.ReadMarker();
+
+        if (startMarker != WsqMarker.StartOfImage)
+        {
+            throw new InvalidDataException($"WSQ bitstream must start with SOI, but started with {startMarker}.");
+        }
+
+        WsqTransformTable? transformTable = null;
+        WsqQuantizationTable? quantizationTable = null;
+        var huffmanTables = new Dictionary<byte, WsqHuffmanTable>();
+        var comments = new List<WsqCommentSegment>();
+        var blocks = new List<WsqBlock>();
+        int? pixelsPerInch = null;
+
+        var marker = reader.ReadMarker();
+
+        while (marker != WsqMarker.StartOfFrame)
+        {
+            if (!marker.IsTableOrCommentBeforeFrame())
+            {
+                throw new InvalidDataException(
+                    $"Encountered unexpected WSQ marker {marker} before the frame header.");
+            }
+
+            ReadSegment(
+                marker,
+                ref reader,
+                ref transformTable,
+                ref quantizationTable,
+                huffmanTables,
+                comments,
+                ref pixelsPerInch);
+
+            marker = reader.ReadMarker();
+        }
+
+        var frameHeader = ReadFrameHeader(ref reader);
+        marker = reader.ReadMarker();
+
+        while (marker != WsqMarker.EndOfImage)
+        {
+            if (marker == WsqMarker.StartOfBlock)
+            {
+                var block = ReadBlock(ref reader, out var nextMarker);
+                blocks.Add(block);
+                marker = nextMarker;
+                continue;
+            }
+
+            if (!marker.IsTableOrCommentBeforeBlock())
+            {
+                throw new InvalidDataException(
+                    $"Encountered unsupported WSQ marker {marker} after the frame header.");
+            }
+
+            ReadSegment(
+                marker,
+                ref reader,
+                ref transformTable,
+                ref quantizationTable,
+                huffmanTables,
+                comments,
+                ref pixelsPerInch);
+
+            marker = reader.ReadMarker();
+        }
+
+        return new(
+            frameHeader,
+            transformTable ?? throw new InvalidDataException("WSQ transform table is missing."),
+            quantizationTable ?? throw new InvalidDataException("WSQ quantization table is missing."),
+            huffmanTables.Values.OrderBy(static table => table.TableId).ToArray(),
+            comments,
+            blocks,
+            pixelsPerInch);
+    }
+
+    private static void ReadSegment(
+        WsqMarker marker,
+        ref WsqBufferReader reader,
+        ref WsqTransformTable? transformTable,
+        ref WsqQuantizationTable? quantizationTable,
+        Dictionary<byte, WsqHuffmanTable> huffmanTables,
+        List<WsqCommentSegment> comments,
+        ref int? pixelsPerInch)
+    {
+        switch (marker)
+        {
+            case WsqMarker.DefineTransformTable:
+                transformTable = ReadTransformTable(ref reader);
+                break;
+            case WsqMarker.DefineQuantizationTable:
+                quantizationTable = ReadQuantizationTable(ref reader);
+                break;
+            case WsqMarker.DefineHuffmanTable:
+                foreach (var table in ReadHuffmanTables(ref reader))
+                {
+                    huffmanTables[table.TableId] = table;
+                }
+
+                break;
+            case WsqMarker.Comment:
+                var comment = ReadComment(ref reader);
+                comments.Add(comment);
+
+                if (pixelsPerInch is null
+                    && comment.Fields.TryGetValue("PPI", out var ppiValue)
+                    && int.TryParse(ppiValue, out var parsedPpi))
+                {
+                    pixelsPerInch = parsedPpi;
+                }
+
+                break;
+            default:
+                throw new InvalidDataException($"Unsupported WSQ segment marker {marker}.");
+        }
+    }
+
+    private static WsqTransformTable ReadTransformTable(ref WsqBufferReader reader)
+    {
+        var segmentReader = new WsqBufferReader(reader.ReadSegmentPayload());
+        var lowPassFilterLength = segmentReader.ReadByte();
+        var highPassFilterLength = segmentReader.ReadByte();
+
+        var lowPassFilterCoefficients = ExpandFilter(
+            ReadFilterTail(ref segmentReader, lowPassFilterLength),
+            lowPassFilterLength,
+            mirrorWithSameSign: true);
+
+        var highPassFilterCoefficients = ExpandFilter(
+            ReadFilterTail(ref segmentReader, highPassFilterLength),
+            highPassFilterLength,
+            mirrorWithSameSign: (highPassFilterLength & 1) == 1);
+
+        return new(
+            highPassFilterLength,
+            lowPassFilterLength,
+            lowPassFilterCoefficients,
+            highPassFilterCoefficients);
+    }
+
+    private static double[] ReadFilterTail(ref WsqBufferReader reader, int filterLength)
+    {
+        var coefficientCount = (filterLength + 1) / 2;
+        var coefficients = new double[coefficientCount];
+
+        for (var index = 0; index < coefficientCount; index++)
+        {
+            coefficients[index] = ReadScaledCoefficient(ref reader);
+        }
+
+        return coefficients;
+    }
+
+    private static WsqQuantizationTable ReadQuantizationTable(ref WsqBufferReader reader)
+    {
+        var segmentReader = new WsqBufferReader(reader.ReadSegmentPayload());
+        var binCenterScale = segmentReader.ReadByte();
+        var binCenterRaw = segmentReader.ReadUInt16BigEndian();
+        var binCenter = ScaleUnsignedValue(binCenterRaw, binCenterScale);
+        var quantizationBins = new double[64];
+        var zeroBins = new double[64];
+
+        for (var index = 0; index < 64; index++)
+        {
+            var quantizationScale = segmentReader.ReadByte();
+            var quantizationValue = segmentReader.ReadUInt16BigEndian();
+            quantizationBins[index] = ScaleUnsignedValue(quantizationValue, quantizationScale);
+
+            var zeroScale = segmentReader.ReadByte();
+            var zeroValue = segmentReader.ReadUInt16BigEndian();
+            zeroBins[index] = ScaleUnsignedValue(zeroValue, zeroScale);
+        }
+
+        return new(binCenter, quantizationBins, zeroBins);
+    }
+
+    private static List<WsqHuffmanTable> ReadHuffmanTables(ref WsqBufferReader reader)
+    {
+        var segmentReader = new WsqBufferReader(reader.ReadSegmentPayload());
+        var tables = new List<WsqHuffmanTable>();
+
+        while (segmentReader.Remaining > 0)
+        {
+            var tableId = segmentReader.ReadByte();
+            var codeLengthCounts = segmentReader.ReadBytes(16).ToArray();
+            var valueCount = codeLengthCounts.Sum(static value => value);
+            var values = segmentReader.ReadBytes(valueCount).ToArray();
+
+            tables.Add(new(tableId, codeLengthCounts, values));
+        }
+
+        return tables;
+    }
+
+    private static WsqCommentSegment ReadComment(ref WsqBufferReader reader)
+    {
+        var payload = reader.ReadSegmentPayload().ToArray();
+        var text = Encoding.ASCII.GetString(payload);
+        var fields = ParseNistComFields(text);
+        return new(text, fields);
+    }
+
+    private static WsqFrameHeader ReadFrameHeader(ref WsqBufferReader reader)
+    {
+        var segmentReader = new WsqBufferReader(reader.ReadSegmentPayload());
+        var black = segmentReader.ReadByte();
+        var white = segmentReader.ReadByte();
+        var height = segmentReader.ReadUInt16BigEndian();
+        var width = segmentReader.ReadUInt16BigEndian();
+        var shiftScale = segmentReader.ReadByte();
+        var shiftValue = segmentReader.ReadUInt16BigEndian();
+        var scaleScale = segmentReader.ReadByte();
+        var scaleValue = segmentReader.ReadUInt16BigEndian();
+        var wsqEncoder = segmentReader.ReadByte();
+        var softwareImplementationNumber = segmentReader.ReadUInt16BigEndian();
+
+        return new(
+            black,
+            white,
+            height,
+            width,
+            ScaleUnsignedValue(shiftValue, shiftScale),
+            ScaleUnsignedValue(scaleValue, scaleScale),
+            wsqEncoder,
+            softwareImplementationNumber);
+    }
+
+    private static WsqBlock ReadBlock(ref WsqBufferReader reader, out WsqMarker nextMarker)
+    {
+        var segmentReader = new WsqBufferReader(reader.ReadSegmentPayload());
+        var huffmanTableId = segmentReader.ReadByte();
+
+        if (segmentReader.Remaining != 0)
+        {
+            throw new InvalidDataException("WSQ block header contains unexpected trailing data.");
+        }
+
+        nextMarker = reader.ReadCompressedDataUntilNextMarker(out var encodedByteCount);
+        return new(huffmanTableId, encodedByteCount);
+    }
+
+    private static double ReadScaledCoefficient(ref WsqBufferReader reader)
+    {
+        var sign = reader.ReadByte();
+        var scale = reader.ReadByte();
+        var value = ScaleUnsignedValue(reader.ReadUInt32BigEndian(), scale);
+        return sign == 0 ? value : -value;
+    }
+
+    private static double ScaleUnsignedValue(uint rawValue, byte scale)
+    {
+        var value = (double)rawValue;
+
+        while (scale > 0)
+        {
+            value /= 10.0;
+            scale--;
+        }
+
+        return value;
+    }
+
+    private static double[] ExpandFilter(
+        double[] filterTail,
+        int filterLength,
+        bool mirrorWithSameSign)
+    {
+        var coefficients = new double[filterLength];
+        var rightStartIndex = filterLength / 2;
+
+        for (var index = 0; index < filterTail.Length; index++)
+        {
+            var rightIndex = rightStartIndex + index;
+            coefficients[rightIndex] = filterTail[index];
+
+            var leftIndex = (filterLength & 1) == 1
+                ? rightStartIndex - index
+                : rightStartIndex - 1 - index;
+
+            if (leftIndex == rightIndex)
+            {
+                continue;
+            }
+
+            coefficients[leftIndex] = mirrorWithSameSign ? filterTail[index] : -filterTail[index];
+        }
+
+        return coefficients;
+    }
+
+    private static Dictionary<string, string> ParseNistComFields(string text)
+    {
+        if (!text.StartsWith("NIST_COM", StringComparison.Ordinal))
+        {
+            return new Dictionary<string, string>(0, StringComparer.Ordinal);
+        }
+
+        var fields = new Dictionary<string, string>(StringComparer.Ordinal);
+        var lines = text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        foreach (var line in lines)
+        {
+            var separatorIndex = line.IndexOfAny([' ', '\t']);
+
+            if (separatorIndex <= 0 || separatorIndex == line.Length - 1)
+            {
+                continue;
+            }
+
+            var key = line[..separatorIndex].Trim();
+            var value = line[(separatorIndex + 1)..].Trim();
+
+            if (key.Length == 0 || value.Length == 0)
+            {
+                continue;
+            }
+
+            fields[key] = value;
+        }
+
+        return fields;
+    }
+}
