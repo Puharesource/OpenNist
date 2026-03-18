@@ -1,6 +1,6 @@
-using JetBrains.Annotations;
-
 namespace OpenNist.Nfiq;
+
+using JetBrains.Annotations;
 
 /// <summary>
 /// Describes the OpenNist.Nfiq package.

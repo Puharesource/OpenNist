@@ -1,6 +1,6 @@
-using JetBrains.Annotations;
-
 namespace OpenNist.Jp2000;
+
+using JetBrains.Annotations;
 
 /// <summary>
 /// Describes the OpenNist.Jp2000 package.

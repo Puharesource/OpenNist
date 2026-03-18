@@ -1,6 +1,6 @@
-using JetBrains.Annotations;
-
 namespace OpenNist.Core;
+
+using JetBrains.Annotations;
 
 /// <summary>
 /// Describes the OpenNist.Core package.

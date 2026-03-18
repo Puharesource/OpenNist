@@ -1,6 +1,6 @@
-using JetBrains.Annotations;
-
 namespace OpenNist.Wsq;
+
+using JetBrains.Annotations;
 
 /// <summary>
 /// Describes the OpenNist.Wsq package.
