@@ -8,7 +8,7 @@ using OpenNist.Wsq;
 internal sealed class WsqReferenceEncodingContractTests
 {
     [Test]
-    [Skip("Enable when a concrete IWsqCodec encoder implementation is available.")]
+    [Skip("Enable when the managed WSQ encoder matches the official NIST reference codestreams byte-for-byte.")]
     [MethodDataSource(typeof(WsqNistReferenceDataSources), nameof(WsqNistReferenceDataSources.AllEncodeReferenceCases))]
     public async Task ShouldEncodeEveryOfficialRawFixtureToTheExactReferenceImage(WsqEncodingReferenceCase testCase)
     {

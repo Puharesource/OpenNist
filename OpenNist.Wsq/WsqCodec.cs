@@ -20,19 +20,19 @@ public sealed class WsqCodec : IWsqCodec
         ArgumentNullException.ThrowIfNull(rawImageStream);
         ArgumentNullException.ThrowIfNull(wsqStream);
 
-        return EncodeCoreAsync(rawImageStream, rawImage, options, cancellationToken);
+        return EncodeCoreAsync(rawImageStream, wsqStream, rawImage, options, cancellationToken);
     }
 
     private static async ValueTask EncodeCoreAsync(
         Stream rawImageStream,
+        Stream wsqStream,
         WsqRawImageDescription rawImage,
         WsqEncodeOptions options,
         CancellationToken cancellationToken)
     {
-        _ = await WsqEncoderAnalysisPipeline.AnalyzeAsync(rawImageStream, rawImage, options, cancellationToken).ConfigureAwait(false);
-
-        throw new NotSupportedException(
-            "WSQ bitstream emission is not implemented yet. The current build can normalize, decompose, and quantize raw images, but it cannot write WSQ markers, tables, Huffman blocks, or comments yet.");
+        var analysis = await WsqEncoderAnalysisPipeline.AnalyzeAsync(rawImageStream, rawImage, options, cancellationToken).ConfigureAwait(false);
+        var container = WsqEncoderContainerBuilder.Build(analysis, rawImage);
+        await WsqContainerWriter.WriteAsync(wsqStream, container, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
