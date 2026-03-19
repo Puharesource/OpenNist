@@ -257,7 +257,11 @@ internal static class WsqDecomposition
             }
 
             currentSourceIndex += currentSourceStride;
-            filteredSample += sourceSamples[currentSourceIndex] * filter[filterIndex];
+            // The NBIS reference encoder contracts this hot multiply-add path on ARM64.
+            filteredSample = MathF.FusedMultiplyAdd(
+                sourceSamples[currentSourceIndex],
+                filter[filterIndex],
+                filteredSample);
         }
 
         return filteredSample;

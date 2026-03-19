@@ -140,80 +140,16 @@ internal static class WsqContainerWriter
             writer.WriteByte(0);
         }
 
-        var scaledValue = ScaleToUInt32(value);
+        var scaledValue = WsqScaledValueCodec.ScaleToUInt32(value);
         writer.WriteByte(scaledValue.Scale);
         writer.WriteUInt32BigEndian(scaledValue.RawValue);
     }
 
     private static void WriteScaledUInt16(IBufferWriter<byte> writer, double value)
     {
-        var scaledValue = ScaleToUInt16(value);
+        var scaledValue = WsqScaledValueCodec.ScaleToUInt16(value);
         writer.WriteByte(scaledValue.Scale);
         writer.WriteUInt16BigEndian(scaledValue.RawValue);
-    }
-
-    private static ScaledUInt32 ScaleToUInt32(float value)
-    {
-        return ScaleToUInt32((double)value);
-    }
-
-    private static ScaledUInt32 ScaleToUInt32(double value)
-    {
-        if (Math.Abs(value) < double.Epsilon)
-        {
-            return new(0, 0);
-        }
-
-        if (value >= uint.MaxValue)
-        {
-            throw new InvalidOperationException($"WSQ transform coefficient is too large to be written: {value:R}.");
-        }
-
-        var scaledValue = value;
-        byte scale = 0;
-
-        while (scaledValue < uint.MaxValue)
-        {
-            scale++;
-            scaledValue *= 10.0;
-        }
-
-        scale--;
-        var rawValue = checked((uint)RoundNbis(scaledValue / 10.0));
-        return new(rawValue, scale);
-    }
-
-    private static ScaledUInt16 ScaleToUInt16(double value)
-    {
-        if (Math.Abs(value) < double.Epsilon)
-        {
-            return new(0, 0);
-        }
-
-        if (value >= ushort.MaxValue)
-        {
-            throw new InvalidOperationException($"WSQ scaled value is too large to be written: {value:R}.");
-        }
-
-        var scaledValue = value;
-        byte scale = 0;
-
-        while (scaledValue < ushort.MaxValue)
-        {
-            scale++;
-            scaledValue *= 10.0;
-        }
-
-        scale--;
-        var rawValue = checked((ushort)RoundNbis(scaledValue / 10.0));
-        return new(rawValue, scale);
-    }
-
-    private static double RoundNbis(double value)
-    {
-        return value < 0.0
-            ? value - 0.5
-            : value + 0.5;
     }
 
     private static float[] CollapseHighPassFilterToStoredLowPassTail(
@@ -275,14 +211,6 @@ internal static class WsqContainerWriter
 
         return values as float[] ?? [.. values];
     }
-
-    private readonly record struct ScaledUInt16(
-        ushort RawValue,
-        byte Scale);
-
-    private readonly record struct ScaledUInt32(
-        uint RawValue,
-        byte Scale);
 }
 
 internal static class WsqBufferWriterExtensions

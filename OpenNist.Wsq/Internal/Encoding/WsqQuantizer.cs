@@ -22,12 +22,17 @@ internal static class WsqQuantizer
         ArgumentNullException.ThrowIfNull(waveletTree);
         ArgumentNullException.ThrowIfNull(quantizationTree);
 
-        var variances = ComputeVariances(waveletData, quantizationTree, width);
+        var variances = WsqVarianceCalculator.Compute(waveletData, quantizationTree, width);
         var quantizationBins = new float[WsqConstants.MaxSubbands];
         var zeroBins = new float[WsqConstants.MaxSubbands];
         ComputeQuantizationBins(variances, bitRate, quantizationBins, zeroBins);
 
-        var quantizedCoefficients = QuantizeSubbands(waveletData, quantizationTree, width, quantizationBins, zeroBins);
+        var quantizedCoefficients = WsqCoefficientQuantizer.Quantize(
+            waveletData,
+            quantizationTree,
+            width,
+            quantizationBins,
+            zeroBins);
         var quantizationTable = new WsqQuantizationTable(
             BinCenter: 44.0,
             QuantizationBins: quantizationBins.Select(static value => (double)value).ToArray(),
@@ -35,90 +40,6 @@ internal static class WsqQuantizer
         var blockSizes = WsqQuantizationDecoder.ComputeBlockSizes(quantizationTable, waveletTree, quantizationTree);
 
         return new(quantizationTable, quantizedCoefficients, blockSizes);
-    }
-
-    private static float[] ComputeVariances(
-        ReadOnlySpan<float> waveletData,
-        ReadOnlySpan<WsqQuantizationNode> quantizationTree,
-        int width)
-    {
-        var variances = new float[WsqConstants.MaxSubbands];
-        var varianceSum = 0.0f;
-
-        for (var subband = 0; subband < WsqConstants.StartSizeRegion2; subband++)
-        {
-            variances[subband] = ComputeVariance(
-                waveletData,
-                quantizationTree[subband],
-                width,
-                useCroppedRegion: true);
-            varianceSum += variances[subband];
-        }
-
-        if (varianceSum < 20000.0)
-        {
-            for (var subband = 0; subband < WsqConstants.NumberOfSubbands; subband++)
-            {
-                variances[subband] = ComputeVariance(
-                    waveletData,
-                    quantizationTree[subband],
-                    width,
-                    useCroppedRegion: false);
-            }
-
-            return variances;
-        }
-
-        for (var subband = WsqConstants.StartSizeRegion2; subband < WsqConstants.NumberOfSubbands; subband++)
-        {
-            variances[subband] = ComputeVariance(
-                waveletData,
-                quantizationTree[subband],
-                width,
-                useCroppedRegion: true);
-        }
-
-        return variances;
-    }
-
-    private static float ComputeVariance(
-        ReadOnlySpan<float> waveletData,
-        WsqQuantizationNode node,
-        int width,
-        bool useCroppedRegion)
-    {
-        var startX = node.X;
-        var startY = node.Y;
-        var regionWidth = node.Width;
-        var regionHeight = node.Height;
-
-        if (useCroppedRegion)
-        {
-            startX += node.Width / 8;
-            startY += (9 * node.Height) / 32;
-            regionWidth = (3 * node.Width) / 4;
-            regionHeight = (7 * node.Height) / 16;
-        }
-
-        var rowStart = startY * width + startX;
-        var squaredSum = 0.0f;
-        var pixelSum = 0.0f;
-
-        for (var row = 0; row < regionHeight; row++)
-        {
-            var pixelIndex = rowStart + row * width;
-
-            for (var column = 0; column < regionWidth; column++)
-            {
-                var pixel = waveletData[pixelIndex + column];
-                pixelSum += pixel;
-                squaredSum += pixel * pixel;
-            }
-        }
-
-        var sampleCount = regionWidth * regionHeight;
-        var normalizedSum = (pixelSum * pixelSum) / sampleCount;
-        return (float)((squaredSum - normalizedSum) / (sampleCount - 1.0));
     }
 
     private static void ComputeQuantizationBins(
@@ -227,58 +148,6 @@ internal static class WsqQuantizer
             activeSubbands = workingSubbands;
             activeSubbandCount = nextActiveSubbandCount;
         }
-    }
-
-    private static short[] QuantizeSubbands(
-        ReadOnlySpan<float> waveletData,
-        ReadOnlySpan<WsqQuantizationNode> quantizationTree,
-        int width,
-        ReadOnlySpan<float> quantizationBins,
-        ReadOnlySpan<float> zeroBins)
-    {
-        var quantizedCoefficients = new short[waveletData.Length];
-        var coefficientIndex = 0;
-
-        for (var subband = 0; subband < WsqConstants.NumberOfSubbands; subband++)
-        {
-            if (quantizationBins[subband] == 0.0f)
-            {
-                continue;
-            }
-
-            var node = quantizationTree[subband];
-            var halfZeroBin = (float)(zeroBins[subband] / 2.0);
-            var rowStart = node.Y * width + node.X;
-
-            for (var row = 0; row < node.Height; row++)
-            {
-                var pixelIndex = rowStart + row * width;
-
-                for (var column = 0; column < node.Width; column++)
-                {
-                    var coefficient = waveletData[pixelIndex + column];
-                    short quantizedCoefficient;
-
-                    if (-halfZeroBin <= coefficient && coefficient <= halfZeroBin)
-                    {
-                        quantizedCoefficient = 0;
-                    }
-                    else if (coefficient > 0.0f)
-                    {
-                        quantizedCoefficient = checked((short)(((coefficient - halfZeroBin) / quantizationBins[subband]) + 1.0));
-                    }
-                    else
-                    {
-                        quantizedCoefficient = checked((short)(((coefficient + halfZeroBin) / quantizationBins[subband]) - 1.0));
-                    }
-
-                    quantizedCoefficients[coefficientIndex++] = quantizedCoefficient;
-                }
-            }
-        }
-
-        Array.Resize(ref quantizedCoefficients, coefficientIndex);
-        return quantizedCoefficients;
     }
 
     private static void SetReciprocalSubbandAreas(Span<float> reciprocalSubbandAreas)

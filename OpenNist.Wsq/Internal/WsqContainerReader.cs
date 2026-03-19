@@ -192,7 +192,7 @@ internal static class WsqContainerReader
         var segmentReader = new WsqBufferReader(reader.ReadSegmentPayload());
         var binCenterScale = segmentReader.ReadByte();
         var binCenterRaw = segmentReader.ReadUInt16BigEndian();
-        var binCenter = ScaleUnsignedValue(binCenterRaw, binCenterScale);
+        var binCenter = WsqScaledValueCodec.ScaleUInt16ToDouble(binCenterRaw, binCenterScale);
         var quantizationBins = new double[64];
         var zeroBins = new double[64];
 
@@ -200,11 +200,11 @@ internal static class WsqContainerReader
         {
             var quantizationScale = segmentReader.ReadByte();
             var quantizationValue = segmentReader.ReadUInt16BigEndian();
-            quantizationBins[index] = ScaleUnsignedValue(quantizationValue, quantizationScale);
+            quantizationBins[index] = WsqScaledValueCodec.ScaleUInt16ToDouble(quantizationValue, quantizationScale);
 
             var zeroScale = segmentReader.ReadByte();
             var zeroValue = segmentReader.ReadUInt16BigEndian();
-            zeroBins[index] = ScaleUnsignedValue(zeroValue, zeroScale);
+            zeroBins[index] = WsqScaledValueCodec.ScaleUInt16ToDouble(zeroValue, zeroScale);
         }
 
         return new(binCenter, quantizationBins, zeroBins);
@@ -255,8 +255,8 @@ internal static class WsqContainerReader
             white,
             height,
             width,
-            ScaleUnsignedValue(shiftValue, shiftScale),
-            ScaleUnsignedValue(scaleValue, scaleScale),
+            WsqScaledValueCodec.ScaleUInt16ToDouble(shiftValue, shiftScale),
+            WsqScaledValueCodec.ScaleUInt16ToDouble(scaleValue, scaleScale),
             wsqEncoder,
             softwareImplementationNumber);
     }
@@ -287,21 +287,8 @@ internal static class WsqContainerReader
     {
         var sign = reader.ReadByte();
         var scale = reader.ReadByte();
-        var value = ScaleUnsignedValue(reader.ReadUInt32BigEndian(), scale);
+        var value = WsqScaledValueCodec.ScaleUInt32ToSingle(reader.ReadUInt32BigEndian(), scale);
         return sign == 0 ? value : -value;
-    }
-
-    private static float ScaleUnsignedValue(uint rawValue, byte scale)
-    {
-        var value = (float)rawValue;
-
-        while (scale > 0)
-        {
-            value = (float)(value / 10.0);
-            scale--;
-        }
-
-        return value;
     }
 
     private static float[] ExpandStoredLowPassTailToHighPassFilter(
