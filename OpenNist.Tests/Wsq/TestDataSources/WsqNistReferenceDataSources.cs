@@ -35,6 +35,30 @@ internal static class WsqNistReferenceDataSources
         }
     }
 
+    public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> EncodeCoefficientReferenceCases()
+    {
+        foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures)
+        {
+            yield return new(
+                new(
+                    fixture.FileName,
+                    0.75,
+                    fixture.RawImage,
+                    fixture.RawPath,
+                    fixture.ReferenceBitRate075Path),
+                DisplayName: $"should produce the exact NIST quantized coefficient bins for {fixture.FileName} at 0.75 bpp");
+
+            yield return new(
+                new(
+                    fixture.FileName,
+                    2.25,
+                    fixture.RawImage,
+                    fixture.RawPath,
+                    fixture.ReferenceBitRate225Path),
+                DisplayName: $"should produce the exact NIST quantized coefficient bins for {fixture.FileName} at 2.25 bpp");
+        }
+    }
+
     public static IEnumerable<TestDataRow<WsqDecodingReferenceCase>> AllDecodeReferenceCases()
     {
         return WsqNistReferenceFixtureCatalog.DecodeFixtures.Select(static testCase => new TestDataRow<WsqDecodingReferenceCase>(

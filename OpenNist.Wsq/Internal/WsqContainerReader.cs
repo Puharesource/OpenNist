@@ -1,7 +1,5 @@
 namespace OpenNist.Wsq.Internal;
 
-using System.Text;
-
 internal static class WsqContainerReader
 {
     public static async ValueTask<WsqContainer> ReadAsync(
@@ -233,7 +231,7 @@ internal static class WsqContainerReader
     private static WsqCommentSegment ReadComment(ref WsqBufferReader reader)
     {
         var payload = reader.ReadSegmentPayload();
-        var text = Encoding.ASCII.GetString(payload);
+        var text = System.Text.Encoding.ASCII.GetString(payload);
         var fields = ParseNistComFields(text);
         return new(text, fields);
     }

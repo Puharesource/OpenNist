@@ -15,6 +15,7 @@ The current codebase includes:
 - managed Huffman coefficient decoding for WSQ block data
 - managed unquantization and inverse wavelet reconstruction
 - a stream-based `WsqCodec.DecodeAsync(...)` implementation
+- an in-progress encoder analysis pipeline that reads raw grayscale input, normalizes pixels, performs forward WSQ decomposition, computes subband variances, and quantizes coefficients
 - fixture-backed tests against the official NIST WSQ reference codestream sets, including the non-standard filter tap-set vectors
 - strict local decoder regression checks that now match raw reconstruction goldens generated from the NBIS `dwsq` reference decoder byte-for-byte across the public decoder corpus
 
@@ -22,8 +23,9 @@ The current codebase includes:
 
 The following work is still outstanding:
 
-- raw-image to WSQ encoding
-- exact-reference encoder verification against the official NIST reference outputs
+- WSQ marker, table, and Huffman-block emission for raw-image to WSQ encoding
+- exact-reference encoder coefficient parity against the official NIST encoder corpus
+- exact-reference encoder codestream verification against the official NIST reference outputs
 - broader interoperability and certification preparation work
 
 ## Reference material
@@ -41,6 +43,7 @@ The local test strategy distinguishes between encoder and decoder verification:
 - encoder verification can compare generated `.wsq` output against the official NIST reference codestreams for the published encoder corpus
 - decoder verification cannot compare decoded output byte-for-byte with the original encoder RAW inputs, because WSQ is lossy
 - the FBI/NIST decoder procedure compares a decoder under test against NIST's reference reconstruction output, not against the original RAW source image
+- the repository also now contains an exact encoder coefficient-parity gate against the NIST reference codestream corpus, but it remains explicitly skipped until the managed forward transform matches the published reference bins exactly
 
 For that reason, the current repository tests use the official NIST codestream corpus together with local raw reconstruction goldens generated from the public-domain NBIS `dwsq` reference decoder. This gives the repository a concrete local decoder regression corpus while still remaining distinct from the formal NIST certification workflow.
 

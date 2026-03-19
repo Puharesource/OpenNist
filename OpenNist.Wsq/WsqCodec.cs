@@ -1,6 +1,7 @@
 namespace OpenNist.Wsq;
 
 using OpenNist.Wsq.Internal;
+using OpenNist.Wsq.Internal.Encoding;
 using OpenNist.Wsq.Internal.Decoding;
 
 /// <summary>
@@ -19,8 +20,19 @@ public sealed class WsqCodec : IWsqCodec
         ArgumentNullException.ThrowIfNull(rawImageStream);
         ArgumentNullException.ThrowIfNull(wsqStream);
 
+        return EncodeCoreAsync(rawImageStream, rawImage, options, cancellationToken);
+    }
+
+    private static async ValueTask EncodeCoreAsync(
+        Stream rawImageStream,
+        WsqRawImageDescription rawImage,
+        WsqEncodeOptions options,
+        CancellationToken cancellationToken)
+    {
+        _ = await WsqEncoderAnalysisPipeline.AnalyzeAsync(rawImageStream, rawImage, options, cancellationToken).ConfigureAwait(false);
+
         throw new NotSupportedException(
-            "WSQ encoding is not implemented yet. The current build contains the managed bitstream parser foundation.");
+            "WSQ bitstream emission is not implemented yet. The current build can normalize, decompose, and quantize raw images, but it cannot write WSQ markers, tables, Huffman blocks, or comments yet.");
     }
 
     /// <inheritdoc />

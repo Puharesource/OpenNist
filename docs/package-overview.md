@@ -36,6 +36,6 @@ NFIQ-related adapters, quality scoring helpers, and integration surface area.
 
 The repository is still early, but implementation has started.
 
-- `OpenNist.Wsq` now contains a managed WSQ parser, quantized coefficient decoder, inverse wavelet reconstruction path, and stream-based WSQ decode API coverage against the official NIST codestream corpus plus NBIS-generated decoder reconstructions. The managed decoder now matches the local NBIS-generated raw reconstruction corpus byte-for-byte across the official public decoder vectors.
-- WSQ encoding is still pending, and the package is not yet ready for FBI certification testing.
+- `OpenNist.Wsq` now contains a managed WSQ parser, quantized coefficient decoder, inverse wavelet reconstruction path, stream-based WSQ decode API coverage against the official NIST codestream corpus plus NBIS-generated decoder reconstructions, and an in-progress encoder analysis pipeline for raw-image normalization, forward decomposition, variance analysis, and coefficient quantization. The managed decoder now matches the local NBIS-generated raw reconstruction corpus byte-for-byte across the official public decoder vectors.
+- WSQ bitstream writing and exact encoder coefficient parity are still pending, and the package is not yet ready for FBI certification testing.
 - The remaining packages are still mostly at the project-structure stage.
