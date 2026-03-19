@@ -25,9 +25,9 @@ internal sealed class WsqHuffmanDecodingTable
 
         var codeCount = 0;
 
-        for (var index = 0; index < codeLengthCounts.Length; index++)
+        foreach (var codeLengthCount in codeLengthCounts)
         {
-            codeCount += codeLengthCounts[index];
+            codeCount += codeLengthCount;
         }
 
         if (codeCount != values.Length)
@@ -107,9 +107,7 @@ internal sealed class WsqHuffmanDecodingTable
             MaxCodes = maxCodes,
             MinCodes = minCodes,
             ValuePointers = valuePointers,
-            Values = table.Values is byte[] valuesArray
-                ? valuesArray
-                : table.Values.ToArray(),
+            Values = table.Values as byte[] ?? [.. table.Values],
         };
     }
 
@@ -117,8 +115,6 @@ internal sealed class WsqHuffmanDecodingTable
     {
         ArgumentNullException.ThrowIfNull(values);
 
-        return values is byte[] array
-            ? array
-            : values.ToArray();
+        return values as byte[] ?? [.. values];
     }
 }

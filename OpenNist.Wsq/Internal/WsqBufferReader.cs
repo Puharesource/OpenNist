@@ -2,16 +2,10 @@ namespace OpenNist.Wsq.Internal;
 
 using System.Buffers.Binary;
 
-internal ref struct WsqBufferReader
+internal ref struct WsqBufferReader(ReadOnlySpan<byte> buffer)
 {
-    private ReadOnlySpan<byte> _buffer;
-    private int _position;
-
-    public WsqBufferReader(ReadOnlySpan<byte> buffer)
-    {
-        _buffer = buffer;
-        _position = 0;
-    }
+    private ReadOnlySpan<byte> _buffer = buffer;
+    private int _position = 0;
 
     public int Position => _position;
 

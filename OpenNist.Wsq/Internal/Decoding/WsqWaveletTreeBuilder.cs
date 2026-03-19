@@ -17,56 +17,16 @@ internal static class WsqWaveletTreeBuilder
 
     private static void BuildWaveletTree(WsqWaveletNode[] waveletTree, int width, int height)
     {
-        waveletTree[2].InvertRows = true;
-        waveletTree[4].InvertRows = true;
-        waveletTree[7].InvertRows = true;
-        waveletTree[9].InvertRows = true;
-        waveletTree[11].InvertRows = true;
-        waveletTree[13].InvertRows = true;
-        waveletTree[16].InvertRows = true;
-        waveletTree[18].InvertRows = true;
-        waveletTree[3].InvertColumns = true;
-        waveletTree[5].InvertColumns = true;
-        waveletTree[8].InvertColumns = true;
-        waveletTree[9].InvertColumns = true;
-        waveletTree[12].InvertColumns = true;
-        waveletTree[13].InvertColumns = true;
-        waveletTree[17].InvertColumns = true;
-        waveletTree[18].InvertColumns = true;
+        SetWaveletInversionFlags(waveletTree);
 
         SplitWaveletRegion(waveletTree, 0, 1, width, height, 0, 0, stopAtFirstLevel: true);
 
-        int lenx;
-        int lenx2;
+        var (leftHalfWidth, rightHalfWidth) = SplitLength(waveletTree[1].Width, preferSecondHalfOnOdd: false);
+        var (upperHalfHeight, lowerHalfHeight) = SplitLength(waveletTree[1].Height, preferSecondHalfOnOdd: false);
 
-        if (waveletTree[1].Width % 2 == 0)
-        {
-            lenx = waveletTree[1].Width / 2;
-            lenx2 = lenx;
-        }
-        else
-        {
-            lenx = (waveletTree[1].Width + 1) / 2;
-            lenx2 = lenx - 1;
-        }
-
-        int leny;
-        int leny2;
-
-        if (waveletTree[1].Height % 2 == 0)
-        {
-            leny = waveletTree[1].Height / 2;
-            leny2 = leny;
-        }
-        else
-        {
-            leny = (waveletTree[1].Height + 1) / 2;
-            leny2 = leny - 1;
-        }
-
-        SplitWaveletRegion(waveletTree, 4, 6, lenx2, leny, lenx, 0, stopAtFirstLevel: false);
-        SplitWaveletRegion(waveletTree, 5, 10, lenx, leny2, 0, leny, stopAtFirstLevel: false);
-        SplitWaveletRegion(waveletTree, 14, 15, lenx, leny, 0, 0, stopAtFirstLevel: false);
+        SplitWaveletRegion(waveletTree, 4, 6, rightHalfWidth, upperHalfHeight, leftHalfWidth, 0, stopAtFirstLevel: false);
+        SplitWaveletRegion(waveletTree, 5, 10, leftHalfWidth, lowerHalfHeight, 0, upperHalfHeight, stopAtFirstLevel: false);
+        SplitWaveletRegion(waveletTree, 14, 15, leftHalfWidth, upperHalfHeight, 0, 0, stopAtFirstLevel: false);
 
         waveletTree[19].X = 0;
         waveletTree[19].Y = 0;
@@ -77,6 +37,28 @@ internal static class WsqWaveletTreeBuilder
         waveletTree[19].Height = waveletTree[15].Height % 2 == 0
             ? waveletTree[15].Height / 2
             : (waveletTree[15].Height + 1) / 2;
+    }
+
+    private static void SetWaveletInversionFlags(WsqWaveletNode[] waveletTree)
+    {
+        SetRowInversion(waveletTree, 2, 4, 7, 9, 11, 13, 16, 18);
+        SetColumnInversion(waveletTree, 3, 5, 8, 9, 12, 13, 17, 18);
+    }
+
+    private static void SetRowInversion(WsqWaveletNode[] waveletTree, params ReadOnlySpan<int> indices)
+    {
+        foreach (var index in indices)
+        {
+            waveletTree[index].InvertRows = true;
+        }
+    }
+
+    private static void SetColumnInversion(WsqWaveletNode[] waveletTree, params ReadOnlySpan<int> indices)
+    {
+        foreach (var index in indices)
+        {
+            waveletTree[index].InvertColumns = true;
+        }
     }
 
     private static void SplitWaveletRegion(
@@ -218,170 +200,52 @@ internal static class WsqWaveletTreeBuilder
         bool invertRows,
         bool invertColumns)
     {
-        var evenWidth = width % 2;
-        var evenHeight = height % 2;
+        var (upperWidth, lowerWidth) = SplitLength(width, preferSecondHalfOnOdd: invertColumns);
+        var (upperHeight, lowerHeight) = SplitLength(height, preferSecondHalfOnOdd: invertRows);
+        var (upperLeftWidth, upperRightWidth) = SplitLength(upperWidth, preferSecondHalfOnOdd: false);
+        var (upperTopHeight, upperBottomHeight) = SplitLength(upperHeight, preferSecondHalfOnOdd: false);
+        var (lowerLeftWidth, lowerRightWidth) = SplitLength(lowerWidth, preferSecondHalfOnOdd: true);
+        var (lowerTopHeight, lowerBottomHeight) = SplitLength(lowerHeight, preferSecondHalfOnOdd: true);
 
-        int upperWidth;
-        int lowerWidth;
+        SetTwoByTwoRegion(
+            quantizationTree,
+            startIndex,
+            x,
+            y,
+            upperLeftWidth,
+            upperRightWidth,
+            upperTopHeight,
+            upperBottomHeight);
 
-        if (evenWidth == 0)
-        {
-            upperWidth = width / 2;
-            lowerWidth = upperWidth;
-        }
-        else if (invertColumns)
-        {
-            lowerWidth = (width + 1) / 2;
-            upperWidth = lowerWidth - 1;
-        }
-        else
-        {
-            upperWidth = (width + 1) / 2;
-            lowerWidth = upperWidth - 1;
-        }
+        SetTwoByTwoRegion(
+            quantizationTree,
+            startIndex + 4,
+            x + upperWidth,
+            y,
+            lowerLeftWidth,
+            lowerRightWidth,
+            upperTopHeight,
+            upperBottomHeight);
 
-        int upperHeight;
-        int lowerHeight;
+        SetTwoByTwoRegion(
+            quantizationTree,
+            startIndex + 8,
+            x,
+            y + upperHeight,
+            upperLeftWidth,
+            upperRightWidth,
+            lowerTopHeight,
+            lowerBottomHeight);
 
-        if (evenHeight == 0)
-        {
-            upperHeight = height / 2;
-            lowerHeight = upperHeight;
-        }
-        else if (invertRows)
-        {
-            lowerHeight = (height + 1) / 2;
-            upperHeight = lowerHeight - 1;
-        }
-        else
-        {
-            upperHeight = (height + 1) / 2;
-            lowerHeight = upperHeight - 1;
-        }
-
-        var evenUpperWidth = upperWidth % 2;
-        var evenUpperHeight = upperHeight % 2;
-        var nodeIndex = startIndex;
-
-        quantizationTree[nodeIndex].X = x;
-        quantizationTree[nodeIndex + 2].X = x;
-        quantizationTree[nodeIndex].Y = y;
-        quantizationTree[nodeIndex + 1].Y = y;
-
-        if (evenUpperWidth == 0)
-        {
-            quantizationTree[nodeIndex].Width = upperWidth / 2;
-            quantizationTree[nodeIndex + 1].Width = quantizationTree[nodeIndex].Width;
-            quantizationTree[nodeIndex + 2].Width = quantizationTree[nodeIndex].Width;
-            quantizationTree[nodeIndex + 3].Width = quantizationTree[nodeIndex].Width;
-        }
-        else
-        {
-            quantizationTree[nodeIndex].Width = (upperWidth + 1) / 2;
-            quantizationTree[nodeIndex + 1].Width = quantizationTree[nodeIndex].Width - 1;
-            quantizationTree[nodeIndex + 2].Width = quantizationTree[nodeIndex].Width;
-            quantizationTree[nodeIndex + 3].Width = quantizationTree[nodeIndex + 1].Width;
-        }
-
-        quantizationTree[nodeIndex + 1].X = x + quantizationTree[nodeIndex].Width;
-        quantizationTree[nodeIndex + 3].X = quantizationTree[nodeIndex + 1].X;
-
-        if (evenUpperHeight == 0)
-        {
-            quantizationTree[nodeIndex].Height = upperHeight / 2;
-            quantizationTree[nodeIndex + 1].Height = quantizationTree[nodeIndex].Height;
-            quantizationTree[nodeIndex + 2].Height = quantizationTree[nodeIndex].Height;
-            quantizationTree[nodeIndex + 3].Height = quantizationTree[nodeIndex].Height;
-        }
-        else
-        {
-            quantizationTree[nodeIndex].Height = (upperHeight + 1) / 2;
-            quantizationTree[nodeIndex + 1].Height = quantizationTree[nodeIndex].Height;
-            quantizationTree[nodeIndex + 2].Height = quantizationTree[nodeIndex].Height - 1;
-            quantizationTree[nodeIndex + 3].Height = quantizationTree[nodeIndex + 2].Height;
-        }
-
-        quantizationTree[nodeIndex + 2].Y = y + quantizationTree[nodeIndex].Height;
-        quantizationTree[nodeIndex + 3].Y = quantizationTree[nodeIndex + 2].Y;
-
-        var evenLowerWidth = lowerWidth % 2;
-
-        quantizationTree[nodeIndex + 4].X = x + upperWidth;
-        quantizationTree[nodeIndex + 6].X = quantizationTree[nodeIndex + 4].X;
-        quantizationTree[nodeIndex + 4].Y = y;
-        quantizationTree[nodeIndex + 5].Y = y;
-        quantizationTree[nodeIndex + 6].Y = quantizationTree[nodeIndex + 2].Y;
-        quantizationTree[nodeIndex + 7].Y = quantizationTree[nodeIndex + 2].Y;
-        quantizationTree[nodeIndex + 4].Height = quantizationTree[nodeIndex].Height;
-        quantizationTree[nodeIndex + 5].Height = quantizationTree[nodeIndex].Height;
-        quantizationTree[nodeIndex + 6].Height = quantizationTree[nodeIndex + 2].Height;
-        quantizationTree[nodeIndex + 7].Height = quantizationTree[nodeIndex + 2].Height;
-
-        if (evenLowerWidth == 0)
-        {
-            quantizationTree[nodeIndex + 4].Width = lowerWidth / 2;
-            quantizationTree[nodeIndex + 5].Width = quantizationTree[nodeIndex + 4].Width;
-            quantizationTree[nodeIndex + 6].Width = quantizationTree[nodeIndex + 4].Width;
-            quantizationTree[nodeIndex + 7].Width = quantizationTree[nodeIndex + 4].Width;
-        }
-        else
-        {
-            quantizationTree[nodeIndex + 5].Width = (lowerWidth + 1) / 2;
-            quantizationTree[nodeIndex + 4].Width = quantizationTree[nodeIndex + 5].Width - 1;
-            quantizationTree[nodeIndex + 6].Width = quantizationTree[nodeIndex + 4].Width;
-            quantizationTree[nodeIndex + 7].Width = quantizationTree[nodeIndex + 5].Width;
-        }
-
-        quantizationTree[nodeIndex + 5].X = quantizationTree[nodeIndex + 4].X + quantizationTree[nodeIndex + 4].Width;
-        quantizationTree[nodeIndex + 7].X = quantizationTree[nodeIndex + 5].X;
-
-        var evenLowerHeight = lowerHeight % 2;
-
-        quantizationTree[nodeIndex + 8].X = x;
-        quantizationTree[nodeIndex + 9].X = quantizationTree[nodeIndex + 1].X;
-        quantizationTree[nodeIndex + 10].X = x;
-        quantizationTree[nodeIndex + 11].X = quantizationTree[nodeIndex + 1].X;
-        quantizationTree[nodeIndex + 8].Y = y + upperHeight;
-        quantizationTree[nodeIndex + 9].Y = quantizationTree[nodeIndex + 8].Y;
-        quantizationTree[nodeIndex + 8].Width = quantizationTree[nodeIndex].Width;
-        quantizationTree[nodeIndex + 9].Width = quantizationTree[nodeIndex + 1].Width;
-        quantizationTree[nodeIndex + 10].Width = quantizationTree[nodeIndex].Width;
-        quantizationTree[nodeIndex + 11].Width = quantizationTree[nodeIndex + 1].Width;
-
-        if (evenLowerHeight == 0)
-        {
-            quantizationTree[nodeIndex + 8].Height = lowerHeight / 2;
-            quantizationTree[nodeIndex + 9].Height = quantizationTree[nodeIndex + 8].Height;
-            quantizationTree[nodeIndex + 10].Height = quantizationTree[nodeIndex + 8].Height;
-            quantizationTree[nodeIndex + 11].Height = quantizationTree[nodeIndex + 8].Height;
-        }
-        else
-        {
-            quantizationTree[nodeIndex + 10].Height = (lowerHeight + 1) / 2;
-            quantizationTree[nodeIndex + 11].Height = quantizationTree[nodeIndex + 10].Height;
-            quantizationTree[nodeIndex + 8].Height = quantizationTree[nodeIndex + 10].Height - 1;
-            quantizationTree[nodeIndex + 9].Height = quantizationTree[nodeIndex + 8].Height;
-        }
-
-        quantizationTree[nodeIndex + 10].Y = quantizationTree[nodeIndex + 8].Y + quantizationTree[nodeIndex + 8].Height;
-        quantizationTree[nodeIndex + 11].Y = quantizationTree[nodeIndex + 10].Y;
-
-        quantizationTree[nodeIndex + 12].X = quantizationTree[nodeIndex + 4].X;
-        quantizationTree[nodeIndex + 13].X = quantizationTree[nodeIndex + 5].X;
-        quantizationTree[nodeIndex + 14].X = quantizationTree[nodeIndex + 4].X;
-        quantizationTree[nodeIndex + 15].X = quantizationTree[nodeIndex + 5].X;
-        quantizationTree[nodeIndex + 12].Y = quantizationTree[nodeIndex + 8].Y;
-        quantizationTree[nodeIndex + 13].Y = quantizationTree[nodeIndex + 8].Y;
-        quantizationTree[nodeIndex + 14].Y = quantizationTree[nodeIndex + 10].Y;
-        quantizationTree[nodeIndex + 15].Y = quantizationTree[nodeIndex + 10].Y;
-        quantizationTree[nodeIndex + 12].Width = quantizationTree[nodeIndex + 4].Width;
-        quantizationTree[nodeIndex + 13].Width = quantizationTree[nodeIndex + 5].Width;
-        quantizationTree[nodeIndex + 14].Width = quantizationTree[nodeIndex + 4].Width;
-        quantizationTree[nodeIndex + 15].Width = quantizationTree[nodeIndex + 5].Width;
-        quantizationTree[nodeIndex + 12].Height = quantizationTree[nodeIndex + 8].Height;
-        quantizationTree[nodeIndex + 13].Height = quantizationTree[nodeIndex + 8].Height;
-        quantizationTree[nodeIndex + 14].Height = quantizationTree[nodeIndex + 10].Height;
-        quantizationTree[nodeIndex + 15].Height = quantizationTree[nodeIndex + 10].Height;
+        SetTwoByTwoRegion(
+            quantizationTree,
+            startIndex + 12,
+            x + upperWidth,
+            y + upperHeight,
+            lowerLeftWidth,
+            lowerRightWidth,
+            lowerTopHeight,
+            lowerBottomHeight);
     }
 
     private static void SplitQuantizationRegion4(
@@ -392,49 +256,55 @@ internal static class WsqWaveletTreeBuilder
         int x,
         int y)
     {
-        var evenWidth = width % 2;
-        var evenHeight = height % 2;
+        var (leftWidth, rightWidth) = SplitLength(width, preferSecondHalfOnOdd: false);
+        var (topHeight, bottomHeight) = SplitLength(height, preferSecondHalfOnOdd: false);
+        SetTwoByTwoRegion(quantizationTree, startIndex, x, y, leftWidth, rightWidth, topHeight, bottomHeight);
+    }
 
-        quantizationTree[startIndex].X = x;
-        quantizationTree[startIndex + 2].X = x;
-        quantizationTree[startIndex].Y = y;
-        quantizationTree[startIndex + 1].Y = y;
-
-        if (evenWidth == 0)
+    private static (int FirstHalfLength, int SecondHalfLength) SplitLength(
+        int length,
+        bool preferSecondHalfOnOdd)
+    {
+        if (length % 2 == 0)
         {
-            quantizationTree[startIndex].Width = width / 2;
-            quantizationTree[startIndex + 1].Width = quantizationTree[startIndex].Width;
-            quantizationTree[startIndex + 2].Width = quantizationTree[startIndex].Width;
-            quantizationTree[startIndex + 3].Width = quantizationTree[startIndex].Width;
-        }
-        else
-        {
-            quantizationTree[startIndex].Width = (width + 1) / 2;
-            quantizationTree[startIndex + 1].Width = quantizationTree[startIndex].Width - 1;
-            quantizationTree[startIndex + 2].Width = quantizationTree[startIndex].Width;
-            quantizationTree[startIndex + 3].Width = quantizationTree[startIndex + 1].Width;
+            var halfLength = length / 2;
+            return (halfLength, halfLength);
         }
 
-        quantizationTree[startIndex + 1].X = x + quantizationTree[startIndex].Width;
-        quantizationTree[startIndex + 3].X = quantizationTree[startIndex + 1].X;
+        var largerHalfLength = (length + 1) / 2;
+        return preferSecondHalfOnOdd
+            ? (largerHalfLength - 1, largerHalfLength)
+            : (largerHalfLength, largerHalfLength - 1);
+    }
 
-        if (evenHeight == 0)
-        {
-            quantizationTree[startIndex].Height = height / 2;
-            quantizationTree[startIndex + 1].Height = quantizationTree[startIndex].Height;
-            quantizationTree[startIndex + 2].Height = quantizationTree[startIndex].Height;
-            quantizationTree[startIndex + 3].Height = quantizationTree[startIndex].Height;
-        }
-        else
-        {
-            quantizationTree[startIndex].Height = (height + 1) / 2;
-            quantizationTree[startIndex + 1].Height = quantizationTree[startIndex].Height;
-            quantizationTree[startIndex + 2].Height = quantizationTree[startIndex].Height - 1;
-            quantizationTree[startIndex + 3].Height = quantizationTree[startIndex + 2].Height;
-        }
+    private static void SetTwoByTwoRegion(
+        WsqQuantizationNode[] quantizationTree,
+        int startIndex,
+        int x,
+        int y,
+        int leftWidth,
+        int rightWidth,
+        int topHeight,
+        int bottomHeight)
+    {
+        SetQuantizationNode(quantizationTree, startIndex, x, y, leftWidth, topHeight);
+        SetQuantizationNode(quantizationTree, startIndex + 1, x + leftWidth, y, rightWidth, topHeight);
+        SetQuantizationNode(quantizationTree, startIndex + 2, x, y + topHeight, leftWidth, bottomHeight);
+        SetQuantizationNode(quantizationTree, startIndex + 3, x + leftWidth, y + topHeight, rightWidth, bottomHeight);
+    }
 
-        quantizationTree[startIndex + 2].Y = y + quantizationTree[startIndex].Height;
-        quantizationTree[startIndex + 3].Y = quantizationTree[startIndex + 2].Y;
+    private static void SetQuantizationNode(
+        WsqQuantizationNode[] quantizationTree,
+        int index,
+        int x,
+        int y,
+        int width,
+        int height)
+    {
+        quantizationTree[index].X = x;
+        quantizationTree[index].Y = y;
+        quantizationTree[index].Width = width;
+        quantizationTree[index].Height = height;
     }
 }
 

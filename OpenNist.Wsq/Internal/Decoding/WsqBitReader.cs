@@ -1,19 +1,11 @@
 namespace OpenNist.Wsq.Internal.Decoding;
 
-internal ref struct WsqBitReader
+internal ref struct WsqBitReader(ReadOnlySpan<byte> buffer)
 {
-    private readonly ReadOnlySpan<byte> _buffer;
-    private int _byteIndex;
-    private int _bitsRemaining;
-    private byte _currentByte;
-
-    public WsqBitReader(ReadOnlySpan<byte> buffer)
-    {
-        _buffer = buffer;
-        _byteIndex = 0;
-        _bitsRemaining = 0;
-        _currentByte = 0;
-    }
+    private readonly ReadOnlySpan<byte> _buffer = buffer;
+    private int _byteIndex = 0;
+    private int _bitsRemaining = 0;
+    private byte _currentByte = 0;
 
     public ushort ReadBits(int bitCount)
     {

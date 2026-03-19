@@ -17,7 +17,7 @@ internal static class WsqMarkerExtensions
 {
     public static bool IsValid(this WsqMarker marker)
     {
-        return marker >= WsqMarker.StartOfImage && marker <= WsqMarker.Comment;
+        return marker is >= WsqMarker.StartOfImage and <= WsqMarker.Comment;
     }
 
     public static bool IsTableOrCommentBeforeFrame(this WsqMarker marker)

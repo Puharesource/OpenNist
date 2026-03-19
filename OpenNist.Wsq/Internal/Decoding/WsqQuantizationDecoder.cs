@@ -127,8 +127,6 @@ internal static class WsqQuantizationDecoder
     {
         ArgumentNullException.ThrowIfNull(values);
 
-        return values is double[] array
-            ? array
-            : values.ToArray();
+        return values as double[] ?? [.. values];
     }
 }

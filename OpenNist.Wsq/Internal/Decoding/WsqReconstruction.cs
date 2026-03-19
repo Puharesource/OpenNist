@@ -77,9 +77,7 @@ internal static class WsqReconstruction
     {
         ArgumentNullException.ThrowIfNull(coefficients);
 
-        return coefficients is float[] array
-            ? array
-            : coefficients.ToArray();
+        return coefficients as float[] ?? [.. coefficients];
     }
 
     private static void JoinLets(
@@ -87,492 +85,557 @@ internal static class WsqReconstruction
         int destinationBaseOffset,
         ReadOnlySpan<float> source,
         int sourceBaseOffset,
-        int len1,
-        int len2,
-        int pitch,
-        int stride,
+        int lineCount,
+        int lineLength,
+        int linePitch,
+        int sampleStride,
         ReadOnlySpan<float> highPassFilter,
         ReadOnlySpan<float> lowPassFilter,
-        bool invert)
+        bool invertSubbands)
     {
-        var newValues = destination[destinationBaseOffset..];
-        var oldValues = source[sourceBaseOffset..];
-        var lowPassLength = lowPassFilter.Length;
-        var highPassLength = highPassFilter.Length;
-        float[]? mutableHighPassBuffer = null;
-        ReadOnlySpan<float> highPass = highPassFilter;
+        var destinationSamples = destination[destinationBaseOffset..];
+        var sourceSamples = source[sourceBaseOffset..];
+        var configuration = CreateJoinConfiguration(lineLength, sampleStride, lowPassFilter.Length, highPassFilter.Length);
+        var activeHighPassFilter = GetActiveHighPassFilter(highPassFilter, configuration.LowPassFilterLengthIsOdd);
 
-        int lp0;
-        int lp1;
-        int hp0;
-        int hp1;
-        int lopass;
-        int hipass;
-        int limg;
-        int himg;
-        int clRw;
-        int i;
-        var daEv = len2 % 2;
-        int loc;
-        int hoc;
-        int hlen;
-        int llen;
-        var nstr = -stride;
-        var pstr = stride;
-        int tap;
-        var fiEv = lowPassLength % 2;
-        int olle;
-        int ohle;
-        int olre;
-        int ohre;
-        int lle;
-        int lle2;
-        int lre;
-        int lre2;
-        int hle;
-        int hle2;
-        int hre;
-        int hre2;
-        int lpx;
-        int lspx;
-        int lpxstr;
-        int lspxstr;
-        int lstap;
-        int lotap;
-        int hpx;
-        int hspx;
-        int hpxstr;
-        int hspxstr;
-        int hstap;
-        int hotap;
-        int asym;
-        var fhre = 0;
-        int ofhre;
-        float ssfac;
-        float osfac;
-        float sfac;
-
-        if (daEv != 0)
+        for (var lineIndex = 0; lineIndex < lineCount; lineIndex++)
         {
-            llen = (len2 + 1) / 2;
-            hlen = llen - 1;
+            var writeIndex = lineIndex * linePitch;
+            InitializeLineOutput(destinationSamples, writeIndex, configuration.SampleStride);
+
+            var (lowPassBandOffset, highPassBandOffset) = GetBandOffsets(lineIndex, linePitch, invertSubbands, configuration);
+            var lowPassBandState = CreateLowPassBandState(writeIndex, lowPassBandOffset, configuration);
+            var highPassBandState = CreateHighPassBandState(writeIndex, highPassBandOffset, configuration);
+
+            ProcessInterleavedSamplePairs(
+                destinationSamples,
+                sourceSamples,
+                lowPassFilter,
+                activeHighPassFilter,
+                ref lowPassBandState,
+                ref highPassBandState,
+                configuration);
+
+            lowPassBandState.TapStartIndex = GetTrailingLowPassTapStartIndex(configuration);
+            WriteLowPassSamples(
+                destinationSamples,
+                sourceSamples,
+                lowPassFilter,
+                ref lowPassBandState,
+                configuration,
+                startingTapIndex: 1,
+                endingTapIndex: lowPassBandState.TapStartIndex);
+
+            var trailingHighPassRightEdgeFactor =
+                PrepareTrailingHighPassState(ref highPassBandState, activeHighPassFilter.Length, configuration);
+            WriteHighPassSamples(
+                destinationSamples,
+                sourceSamples,
+                activeHighPassFilter,
+                ref highPassBandState,
+                configuration,
+                startingTapIndex: 1,
+                endingTapIndex: highPassBandState.TapStartIndex,
+                initialRightEdgeFactor: trailingHighPassRightEdgeFactor);
         }
-        else
+    }
+
+    private static JoinConfiguration CreateJoinConfiguration(
+        int lineLength,
+        int sampleStride,
+        int lowPassFilterLength,
+        int highPassFilterLength)
+    {
+        var isLineLengthOdd = lineLength % 2 != 0;
+        var lowPassSampleCount = isLineLengthOdd
+            ? (lineLength + 1) / 2
+            : lineLength / 2;
+        var highPassSampleCount = isLineLengthOdd
+            ? lowPassSampleCount - 1
+            : lowPassSampleCount;
+        var lowPassFilterLengthIsOdd = lowPassFilterLength % 2 != 0;
+
+        if (lowPassFilterLengthIsOdd)
         {
-            llen = len2 / 2;
-            hlen = llen;
-        }
-
-        if (fiEv != 0)
-        {
-            asym = 0;
-            ssfac = 1.0f;
-            ofhre = 0;
-            loc = (lowPassLength - 1) / 4;
-            hoc = (highPassLength + 1) / 4 - 1;
-            lotap = (lowPassLength - 1) / 2 % 2;
-            hotap = (highPassLength + 1) / 2 % 2;
-
-            if (daEv != 0)
-            {
-                olle = 0;
-                olre = 0;
-                ohle = 1;
-                ohre = 1;
-            }
-            else
-            {
-                olle = 0;
-                olre = 1;
-                ohle = 1;
-                ohre = 0;
-            }
-        }
-        else
-        {
-            asym = 1;
-            ssfac = -1.0f;
-            ofhre = 2;
-            loc = lowPassLength / 4 - 1;
-            hoc = highPassLength / 4 - 1;
-            lotap = lowPassLength / 2 % 2;
-            hotap = highPassLength / 2 % 2;
-
-            if (daEv != 0)
-            {
-                olle = 1;
-                olre = 0;
-                ohle = 1;
-                ohre = 1;
-            }
-            else
-            {
-                olle = 1;
-                olre = 1;
-                ohle = 1;
-                ohre = 1;
-            }
-
-            if (loc == -1)
-            {
-                loc = 0;
-                olle = 0;
-            }
-
-            if (hoc == -1)
-            {
-                hoc = 0;
-                ohle = 0;
-            }
-
-            mutableHighPassBuffer = GC.AllocateUninitializedArray<float>(highPassLength);
-            highPassFilter.CopyTo(mutableHighPassBuffer);
-
-            for (i = 0; i < highPassLength; i++)
-            {
-                mutableHighPassBuffer[i] *= -1.0f;
-            }
-
-            highPass = mutableHighPassBuffer;
+            return new(
+                sampleStride,
+                -sampleStride,
+                isLineLengthOdd,
+                lowPassFilterLengthIsOdd,
+                false,
+                lowPassSampleCount,
+                highPassSampleCount,
+                (lowPassFilterLength - 1) / 4,
+                (highPassFilterLength + 1) / 4 - 1,
+                (lowPassFilterLength - 1) / 2 % 2,
+                (highPassFilterLength + 1) / 2 % 2,
+                0,
+                isLineLengthOdd ? 0 : 1,
+                1,
+                isLineLengthOdd ? 1 : 0,
+                0,
+                1.0f);
         }
 
-        for (clRw = 0; clRw < len1; clRw++)
+        var lowPassCenterOffset = lowPassFilterLength / 4 - 1;
+        var initialLowPassLeftEdgeState = 1;
+
+        if (lowPassCenterOffset == -1)
         {
-            limg = clRw * pitch;
-            himg = limg;
-            newValues[himg] = 0.0f;
-            newValues[himg + stride] = 0.0f;
+            lowPassCenterOffset = 0;
+            initialLowPassLeftEdgeState = 0;
+        }
 
-            if (invert)
+        var highPassCenterOffset = highPassFilterLength / 4 - 1;
+        var initialHighPassLeftEdgeState = 1;
+
+        if (highPassCenterOffset == -1)
+        {
+            highPassCenterOffset = 0;
+            initialHighPassLeftEdgeState = 0;
+        }
+
+        return new(
+            sampleStride,
+            -sampleStride,
+            isLineLengthOdd,
+            lowPassFilterLengthIsOdd,
+            true,
+            lowPassSampleCount,
+            highPassSampleCount,
+            lowPassCenterOffset,
+            highPassCenterOffset,
+            lowPassFilterLength / 2 % 2,
+            highPassFilterLength / 2 % 2,
+            initialLowPassLeftEdgeState,
+            isLineLengthOdd ? 0 : 1,
+            initialHighPassLeftEdgeState,
+            1,
+            2,
+            -1.0f);
+    }
+
+    private static ReadOnlySpan<float> GetActiveHighPassFilter(
+        ReadOnlySpan<float> highPassFilter,
+        bool lowPassFilterLengthIsOdd)
+    {
+        if (lowPassFilterLengthIsOdd)
+        {
+            return highPassFilter;
+        }
+
+        var negatedHighPassFilter = GC.AllocateUninitializedArray<float>(highPassFilter.Length);
+
+        for (var filterIndex = 0; filterIndex < highPassFilter.Length; filterIndex++)
+        {
+            negatedHighPassFilter[filterIndex] = -highPassFilter[filterIndex];
+        }
+
+        return negatedHighPassFilter;
+    }
+
+    private static void InitializeLineOutput(Span<float> destinationSamples, int writeIndex, int sampleStride)
+    {
+        destinationSamples[writeIndex] = 0.0f;
+        destinationSamples[writeIndex + sampleStride] = 0.0f;
+    }
+
+    private static (int LowPassBandOffset, int HighPassBandOffset) GetBandOffsets(
+        int lineIndex,
+        int linePitch,
+        bool invertSubbands,
+        JoinConfiguration configuration)
+    {
+        var writeIndex = lineIndex * linePitch;
+
+        if (invertSubbands)
+        {
+            var highPassBandOffset = writeIndex;
+            var lowPassBandOffset = highPassBandOffset + configuration.SampleStride * configuration.HighPassSampleCount;
+            return (lowPassBandOffset, highPassBandOffset);
+        }
+
+        var lowPassOffset = writeIndex;
+        var highPassOffset = lowPassOffset + configuration.SampleStride * configuration.LowPassSampleCount;
+        return (lowPassOffset, highPassOffset);
+    }
+
+    private static LowPassBandState CreateLowPassBandState(
+        int writeIndex,
+        int lowPassBandOffset,
+        JoinConfiguration configuration)
+    {
+        return new(
+            writeIndex,
+            lowPassBandOffset,
+            lowPassBandOffset + (configuration.LowPassSampleCount - 1) * configuration.SampleStride,
+            lowPassBandOffset + configuration.LowPassCenterOffset * configuration.SampleStride,
+            configuration.BackwardStride,
+            configuration.LowPassInitialTapOffset,
+            configuration.InitialLowPassLeftEdgeState,
+            configuration.InitialLowPassRightEdgeState);
+    }
+
+    private static HighPassBandState CreateHighPassBandState(
+        int writeIndex,
+        int highPassBandOffset,
+        JoinConfiguration configuration)
+    {
+        return new(
+            writeIndex,
+            highPassBandOffset,
+            highPassBandOffset + (configuration.HighPassSampleCount - 1) * configuration.SampleStride,
+            highPassBandOffset + configuration.HighPassCenterOffset * configuration.SampleStride,
+            configuration.BackwardStride,
+            configuration.HighPassInitialTapOffset,
+            configuration.InitialHighPassLeftEdgeState,
+            configuration.InitialHighPassRightEdgeState,
+            configuration.InitialScaleFactor);
+    }
+
+    private static void ProcessInterleavedSamplePairs(
+        Span<float> destinationSamples,
+        ReadOnlySpan<float> sourceSamples,
+        ReadOnlySpan<float> lowPassFilter,
+        ReadOnlySpan<float> activeHighPassFilter,
+        ref LowPassBandState lowPassBandState,
+        ref HighPassBandState highPassBandState,
+        JoinConfiguration configuration)
+    {
+        for (var samplePairIndex = 0; samplePairIndex < configuration.HighPassSampleCount; samplePairIndex++)
+        {
+            WriteLowPassSamples(
+                destinationSamples,
+                sourceSamples,
+                lowPassFilter,
+                ref lowPassBandState,
+                configuration,
+                startingTapIndex: lowPassBandState.TapStartIndex,
+                endingTapIndex: 0);
+            AdvanceLowPassScanState(ref lowPassBandState, configuration);
+
+            WriteHighPassSamples(
+                destinationSamples,
+                sourceSamples,
+                activeHighPassFilter,
+                ref highPassBandState,
+                configuration,
+                startingTapIndex: highPassBandState.TapStartIndex,
+                endingTapIndex: 0,
+                initialRightEdgeFactor: configuration.InitialHighPassRightEdgeFactor);
+            AdvanceHighPassScanState(ref highPassBandState, configuration);
+        }
+    }
+
+    private static void WriteLowPassSamples(
+        Span<float> destinationSamples,
+        ReadOnlySpan<float> sourceSamples,
+        ReadOnlySpan<float> lowPassFilter,
+        ref LowPassBandState bandState,
+        JoinConfiguration configuration,
+        int startingTapIndex,
+        int endingTapIndex)
+    {
+        for (var tapIndex = startingTapIndex; tapIndex >= endingTapIndex; tapIndex--)
+        {
+            destinationSamples[bandState.WriteIndex] =
+                ComputeLowPassSample(sourceSamples, lowPassFilter, tapIndex, bandState, configuration);
+            bandState.WriteIndex += configuration.SampleStride;
+        }
+    }
+
+    private static float ComputeLowPassSample(
+        ReadOnlySpan<float> sourceSamples,
+        ReadOnlySpan<float> lowPassFilter,
+        int tapIndex,
+        LowPassBandState bandState,
+        JoinConfiguration configuration)
+    {
+        var currentLeftEdgeState = bandState.NextLeftEdgeState;
+        var currentRightEdgeState = bandState.NextRightEdgeState;
+        var sourceIndex = bandState.ScanIndex;
+        var sourceStride = bandState.ScanStride;
+        var lowPassValue = sourceSamples[sourceIndex] * lowPassFilter[tapIndex];
+
+        for (var filterIndex = tapIndex + 2; filterIndex < lowPassFilter.Length; filterIndex += 2)
+        {
+            if (sourceIndex == bandState.StartIndex)
             {
-                hipass = clRw * pitch;
-                lopass = hipass + stride * hlen;
-            }
-            else
-            {
-                lopass = clRw * pitch;
-                hipass = lopass + stride * llen;
-            }
-
-            lp0 = lopass;
-            lp1 = lp0 + (llen - 1) * stride;
-            lspx = lp0 + loc * stride;
-            lspxstr = nstr;
-            lstap = lotap;
-            lle2 = olle;
-            lre2 = olre;
-
-            hp0 = hipass;
-            hp1 = hp0 + (hlen - 1) * stride;
-            hspx = hp0 + hoc * stride;
-            hspxstr = nstr;
-            hstap = hotap;
-            hle2 = ohle;
-            hre2 = ohre;
-            osfac = ssfac;
-
-            for (var pix = 0; pix < hlen; pix++)
-            {
-                for (tap = lstap; tap >= 0; tap--)
+                if (currentLeftEdgeState != 0)
                 {
-                    lle = lle2;
-                    lre = lre2;
-                    lpx = lspx;
-                    lpxstr = lspxstr;
-                    var lowValue = oldValues[lpx] * lowPassFilter[tap];
-
-                    for (i = tap + 2; i < lowPassLength; i += 2)
-                    {
-                        if (lpx == lp0)
-                        {
-                            if (lle != 0)
-                            {
-                                lpxstr = 0;
-                                lle = 0;
-                            }
-                            else
-                            {
-                                lpxstr = pstr;
-                            }
-                        }
-
-                        if (lpx == lp1)
-                        {
-                            if (lre != 0)
-                            {
-                                lpxstr = 0;
-                                lre = 0;
-                            }
-                            else
-                            {
-                                lpxstr = nstr;
-                            }
-                        }
-
-                        lpx += lpxstr;
-                        lowValue = MathF.FusedMultiplyAdd(oldValues[lpx], lowPassFilter[i], lowValue);
-                    }
-
-                    newValues[limg] = lowValue;
-                    limg += stride;
-                }
-
-                if (lspx == lp0)
-                {
-                    if (lle2 != 0)
-                    {
-                        lspxstr = 0;
-                        lle2 = 0;
-                    }
-                    else
-                    {
-                        lspxstr = pstr;
-                    }
-                }
-
-                lspx += lspxstr;
-                lstap = 1;
-
-                for (tap = hstap; tap >= 0; tap--)
-                {
-                    hle = hle2;
-                    hre = hre2;
-                    hpx = hspx;
-                    hpxstr = hspxstr;
-                    fhre = ofhre;
-                    sfac = osfac;
-                    var highValue = newValues[himg];
-
-                    for (i = tap; i < highPassLength; i += 2)
-                    {
-                        if (hpx == hp0)
-                        {
-                            if (hle != 0)
-                            {
-                                hpxstr = 0;
-                                hle = 0;
-                            }
-                            else
-                            {
-                                hpxstr = pstr;
-                                sfac = 1.0f;
-                            }
-                        }
-
-                        if (hpx == hp1)
-                        {
-                            if (hre != 0)
-                            {
-                                hpxstr = 0;
-                                hre = 0;
-
-                                if (asym != 0 && daEv != 0)
-                                {
-                                    hre = 1;
-                                    fhre--;
-                                    sfac = fhre;
-
-                                    if (sfac == 0.0f)
-                                    {
-                                        hre = 0;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                hpxstr = nstr;
-
-                                if (asym != 0)
-                                {
-                                    sfac = -1.0f;
-                                }
-                            }
-                        }
-
-                        highValue = MathF.FusedMultiplyAdd(oldValues[hpx] * highPass[i], sfac, highValue);
-                        hpx += hpxstr;
-                    }
-
-                    newValues[himg] = highValue;
-                    himg += stride;
-                }
-
-                if (hspx == hp0)
-                {
-                    if (hle2 != 0)
-                    {
-                        hspxstr = 0;
-                        hle2 = 0;
-                    }
-                    else
-                    {
-                        hspxstr = pstr;
-                        osfac = 1.0f;
-                    }
-                }
-
-                hspx += hspxstr;
-                hstap = 1;
-            }
-
-            if (daEv != 0)
-            {
-                if (lotap != 0)
-                {
-                    lstap = 1;
+                    sourceStride = 0;
+                    currentLeftEdgeState = 0;
                 }
                 else
                 {
-                    lstap = 0;
+                    sourceStride = configuration.SampleStride;
                 }
             }
-            else if (lotap != 0)
-            {
-                lstap = 2;
-            }
-            else
-            {
-                lstap = 1;
-            }
 
-            for (tap = 1; tap >= lstap; tap--)
+            if (sourceIndex == bandState.EndIndex)
             {
-                lle = lle2;
-                lre = lre2;
-                lpx = lspx;
-                lpxstr = lspxstr;
-                var lowValue = oldValues[lpx] * lowPassFilter[tap];
-
-                for (i = tap + 2; i < lowPassLength; i += 2)
+                if (currentRightEdgeState != 0)
                 {
-                    if (lpx == lp0)
-                    {
-                        if (lle != 0)
-                        {
-                            lpxstr = 0;
-                            lle = 0;
-                        }
-                        else
-                        {
-                            lpxstr = pstr;
-                        }
-                    }
-
-                    if (lpx == lp1)
-                    {
-                        if (lre != 0)
-                        {
-                            lpxstr = 0;
-                            lre = 0;
-                        }
-                        else
-                        {
-                            lpxstr = nstr;
-                        }
-                    }
-
-                    lpx += lpxstr;
-                    lowValue = MathF.FusedMultiplyAdd(oldValues[lpx], lowPassFilter[i], lowValue);
-                }
-
-                newValues[limg] = lowValue;
-                limg += stride;
-            }
-
-            if (daEv != 0)
-            {
-                if (hotap != 0)
-                {
-                    hstap = 1;
+                    sourceStride = 0;
+                    currentRightEdgeState = 0;
                 }
                 else
                 {
-                    hstap = 0;
-                }
-
-                if (highPassLength == 2)
-                {
-                    hspx -= hspxstr;
-                    fhre = 1;
+                    sourceStride = configuration.BackwardStride;
                 }
             }
-            else if (hotap != 0)
+
+            sourceIndex += sourceStride;
+            lowPassValue = MathF.FusedMultiplyAdd(
+                sourceSamples[sourceIndex],
+                lowPassFilter[filterIndex],
+                lowPassValue);
+        }
+
+        return lowPassValue;
+    }
+
+    private static void AdvanceLowPassScanState(ref LowPassBandState bandState, JoinConfiguration configuration)
+    {
+        if (bandState.ScanIndex == bandState.StartIndex)
+        {
+            if (bandState.NextLeftEdgeState != 0)
             {
-                hstap = 2;
+                bandState.ScanStride = 0;
+                bandState.NextLeftEdgeState = 0;
             }
             else
             {
-                hstap = 1;
-            }
-
-            for (tap = 1; tap >= hstap; tap--)
-            {
-                hle = hle2;
-                hre = hre2;
-                hpx = hspx;
-                hpxstr = hspxstr;
-                sfac = osfac;
-                var highValue = newValues[himg];
-
-                if (highPassLength != 2)
-                {
-                    fhre = ofhre;
-                }
-
-                for (i = tap; i < highPassLength; i += 2)
-                {
-                    if (hpx == hp0)
-                    {
-                        if (hle != 0)
-                        {
-                            hpxstr = 0;
-                            hle = 0;
-                        }
-                        else
-                        {
-                            hpxstr = pstr;
-                            sfac = 1.0f;
-                        }
-                    }
-
-                    if (hpx == hp1)
-                    {
-                        if (hre != 0)
-                        {
-                            hpxstr = 0;
-                            hre = 0;
-
-                            if (asym != 0 && daEv != 0)
-                            {
-                                hre = 1;
-                                fhre--;
-                                sfac = fhre;
-
-                                if (sfac == 0.0f)
-                                {
-                                    hre = 0;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            hpxstr = nstr;
-
-                            if (asym != 0)
-                            {
-                                sfac = -1.0f;
-                            }
-                        }
-                    }
-
-                    highValue = MathF.FusedMultiplyAdd(oldValues[hpx] * highPass[i], sfac, highValue);
-                    hpx += hpxstr;
-                }
-
-                newValues[himg] = highValue;
-                himg += stride;
+                bandState.ScanStride = configuration.SampleStride;
             }
         }
+
+        bandState.ScanIndex += bandState.ScanStride;
+        bandState.TapStartIndex = 1;
+    }
+
+    private static void WriteHighPassSamples(
+        Span<float> destinationSamples,
+        ReadOnlySpan<float> sourceSamples,
+        ReadOnlySpan<float> highPassFilter,
+        ref HighPassBandState bandState,
+        JoinConfiguration configuration,
+        int startingTapIndex,
+        int endingTapIndex,
+        int initialRightEdgeFactor)
+    {
+        for (var tapIndex = startingTapIndex; tapIndex >= endingTapIndex; tapIndex--)
+        {
+            destinationSamples[bandState.WriteIndex] = ComputeHighPassSample(
+                destinationSamples[bandState.WriteIndex],
+                sourceSamples,
+                highPassFilter,
+                tapIndex,
+                initialRightEdgeFactor,
+                bandState,
+                configuration);
+            bandState.WriteIndex += configuration.SampleStride;
+        }
+    }
+
+    private static float ComputeHighPassSample(
+        float currentValue,
+        ReadOnlySpan<float> sourceSamples,
+        ReadOnlySpan<float> highPassFilter,
+        int tapIndex,
+        int initialRightEdgeFactor,
+        HighPassBandState bandState,
+        JoinConfiguration configuration)
+    {
+        var currentLeftEdgeState = bandState.NextLeftEdgeState;
+        var currentRightEdgeState = bandState.NextRightEdgeState;
+        var sourceIndex = bandState.ScanIndex;
+        var sourceStride = bandState.ScanStride;
+        var rightEdgeFactor = initialRightEdgeFactor;
+        var sampleScaleFactor = bandState.CurrentOutputScaleFactor;
+
+        for (var filterIndex = tapIndex; filterIndex < highPassFilter.Length; filterIndex += 2)
+        {
+            if (sourceIndex == bandState.StartIndex)
+            {
+                if (currentLeftEdgeState != 0)
+                {
+                    sourceStride = 0;
+                    currentLeftEdgeState = 0;
+                }
+                else
+                {
+                    sourceStride = configuration.SampleStride;
+                    sampleScaleFactor = 1.0f;
+                }
+            }
+
+            if (sourceIndex == bandState.EndIndex)
+            {
+                if (currentRightEdgeState != 0)
+                {
+                    sourceStride = 0;
+                    currentRightEdgeState = 0;
+
+                    if (configuration is { UsesAsymmetricExtension: true, IsLineLengthOdd: true })
+                    {
+                        currentRightEdgeState = 1;
+                        rightEdgeFactor--;
+                        sampleScaleFactor = rightEdgeFactor;
+
+                        if (sampleScaleFactor == 0.0f)
+                        {
+                            currentRightEdgeState = 0;
+                        }
+                    }
+                }
+                else
+                {
+                    sourceStride = configuration.BackwardStride;
+
+                    if (configuration.UsesAsymmetricExtension)
+                    {
+                        sampleScaleFactor = -1.0f;
+                    }
+                }
+            }
+
+            currentValue = MathF.FusedMultiplyAdd(
+                sourceSamples[sourceIndex] * highPassFilter[filterIndex],
+                sampleScaleFactor,
+                currentValue);
+            sourceIndex += sourceStride;
+        }
+
+        return currentValue;
+    }
+
+    private static void AdvanceHighPassScanState(ref HighPassBandState bandState, JoinConfiguration configuration)
+    {
+        if (bandState.ScanIndex == bandState.StartIndex)
+        {
+            if (bandState.NextLeftEdgeState != 0)
+            {
+                bandState.ScanStride = 0;
+                bandState.NextLeftEdgeState = 0;
+            }
+            else
+            {
+                bandState.ScanStride = configuration.SampleStride;
+                bandState.CurrentOutputScaleFactor = 1.0f;
+            }
+        }
+
+        bandState.ScanIndex += bandState.ScanStride;
+        bandState.TapStartIndex = 1;
+    }
+
+    private static int GetTrailingLowPassTapStartIndex(JoinConfiguration configuration)
+    {
+        if (configuration.IsLineLengthOdd)
+        {
+            return configuration.LowPassInitialTapOffset != 0 ? 1 : 0;
+        }
+
+        return configuration.LowPassInitialTapOffset != 0 ? 2 : 1;
+    }
+
+    private static int PrepareTrailingHighPassState(
+        ref HighPassBandState bandState,
+        int highPassFilterLength,
+        JoinConfiguration configuration)
+    {
+        if (configuration.IsLineLengthOdd)
+        {
+            bandState.TapStartIndex = configuration.HighPassInitialTapOffset != 0 ? 1 : 0;
+
+            if (highPassFilterLength == 2)
+            {
+                bandState.ScanIndex -= bandState.ScanStride;
+                return 1;
+            }
+
+            return configuration.InitialHighPassRightEdgeFactor;
+        }
+
+        bandState.TapStartIndex = configuration.HighPassInitialTapOffset != 0 ? 2 : 1;
+        return configuration.InitialHighPassRightEdgeFactor;
+    }
+
+    private readonly record struct JoinConfiguration(
+        int SampleStride,
+        int BackwardStride,
+        bool IsLineLengthOdd,
+        bool LowPassFilterLengthIsOdd,
+        bool UsesAsymmetricExtension,
+        int LowPassSampleCount,
+        int HighPassSampleCount,
+        int LowPassCenterOffset,
+        int HighPassCenterOffset,
+        int LowPassInitialTapOffset,
+        int HighPassInitialTapOffset,
+        int InitialLowPassLeftEdgeState,
+        int InitialLowPassRightEdgeState,
+        int InitialHighPassLeftEdgeState,
+        int InitialHighPassRightEdgeState,
+        int InitialHighPassRightEdgeFactor,
+        float InitialScaleFactor);
+
+    private struct LowPassBandState(
+        int writeIndex,
+        int startIndex,
+        int endIndex,
+        int scanIndex,
+        int scanStride,
+        int tapStartIndex,
+        int nextLeftEdgeState,
+        int nextRightEdgeState)
+    {
+        public int WriteIndex { get; set; } = writeIndex;
+
+        public int StartIndex { get; set; } = startIndex;
+
+        public int EndIndex { get; set; } = endIndex;
+
+        public int ScanIndex { get; set; } = scanIndex;
+
+        public int ScanStride { get; set; } = scanStride;
+
+        public int TapStartIndex { get; set; } = tapStartIndex;
+
+        public int NextLeftEdgeState { get; set; } = nextLeftEdgeState;
+
+        public int NextRightEdgeState { get; set; } = nextRightEdgeState;
+    }
+
+    private struct HighPassBandState(
+        int writeIndex,
+        int startIndex,
+        int endIndex,
+        int scanIndex,
+        int scanStride,
+        int tapStartIndex,
+        int nextLeftEdgeState,
+        int nextRightEdgeState,
+        float currentOutputScaleFactor)
+    {
+        public int WriteIndex { get; set; } = writeIndex;
+
+        public int StartIndex { get; set; } = startIndex;
+
+        public int EndIndex { get; set; } = endIndex;
+
+        public int ScanIndex { get; set; } = scanIndex;
+
+        public int ScanStride { get; set; } = scanStride;
+
+        public int TapStartIndex { get; set; } = tapStartIndex;
+
+        public int NextLeftEdgeState { get; set; } = nextLeftEdgeState;
+
+        public int NextRightEdgeState { get; set; } = nextRightEdgeState;
+
+        public float CurrentOutputScaleFactor { get; set; } = currentOutputScaleFactor;
     }
 
     private static byte[] ConvertToBytePixels(ReadOnlySpan<float> image, int width, int height, float shift, float scale)

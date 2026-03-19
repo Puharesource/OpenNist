@@ -44,7 +44,7 @@ internal static class WsqNistReferenceFixtureCatalog
         using var stream = File.OpenRead(metadataPath);
         using var document = JsonDocument.Parse(stream);
 
-        return document.RootElement
+        return [.. document.RootElement
             .EnumerateArray()
             .Select(static metadata => new WsqNistEncodeFixture(
                 metadata.GetProperty("fileName").GetString() ?? throw new InvalidOperationException("Missing fileName."),
@@ -64,22 +64,20 @@ internal static class WsqNistReferenceFixtureCatalog
                     Path.ChangeExtension(
                         metadata.GetProperty("fileName").GetString() ?? throw new InvalidOperationException("Missing fileName."),
                         ".wsq"))))
-            .OrderBy(static fixture => fixture.FileName, StringComparer.Ordinal)
-            .ToArray();
+            .OrderBy(static fixture => fixture.FileName, StringComparer.Ordinal)];
     }
 
     private static WsqDecodingReferenceCase[] LoadDecodeFixtures()
     {
-        return EncodeFixtures
+        return [.. EncodeFixtures
             .SelectMany(static fixture => CreateDecodeFixtures(fixture))
             .OrderBy(static fixture => fixture.ReferenceSet, StringComparer.Ordinal)
-            .ThenBy(static fixture => fixture.FileName, StringComparer.Ordinal)
-            .ToArray();
+            .ThenBy(static fixture => fixture.FileName, StringComparer.Ordinal)];
     }
 
     private static WsqDecodingReferenceCase[] LoadNonStandardDecodeFixtures()
     {
-        return Directory
+        return [.. Directory
             .EnumerateFiles(NonStandardFilterTapSetsDirectory, "*.wsq")
             .OrderBy(static path => Path.GetFileName(path), StringComparer.Ordinal)
             .Select(static referencePath =>
@@ -100,8 +98,7 @@ internal static class WsqNistReferenceFixtureCatalog
                     reconstructionRawPath,
                     reconstructionMetadataPath,
                     metadata.ToRawImageDescription());
-            })
-            .ToArray();
+            })];
     }
 
     private static WsqDecodingReferenceCase CreateDecodeFixture(
