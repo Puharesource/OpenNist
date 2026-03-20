@@ -39,6 +39,7 @@ internal sealed class WsqCodecEncodingIntegrationTests
         await Assert.That(container.FrameHeader.Height).IsEqualTo((ushort)testCase.RawImage.Height);
         await Assert.That(container.PixelsPerInch).IsEqualTo(testCase.RawImage.PixelsPerInch);
         await Assert.That(decodedQuantizedCoefficients.SequenceEqual(expectedAnalysis.QuantizedCoefficients)).IsTrue();
+        await Assert.That(container.QuantizationTable).IsEquivalentTo(expectedAnalysis.QuantizationTable);
         await Assert.That(container.Blocks.Count).IsEqualTo(3);
         await Assert.That(container.HuffmanTables.Count).IsEqualTo(2);
         await Assert.That(container.Blocks[0].HuffmanTableId).IsEqualTo((byte)0);

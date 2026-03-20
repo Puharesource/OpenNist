@@ -79,13 +79,12 @@ internal static class WsqVarianceCalculator
             {
                 var pixel = waveletData[pixelIndex + column];
                 pixelSum += pixel;
-                // Keep the energy accumulation aligned with the reference encoder's hot path.
-                squaredSum = MathF.FusedMultiplyAdd(pixel, pixel, squaredSum);
+                squaredSum += pixel * pixel;
             }
         }
 
         var sampleCount = regionWidth * regionHeight;
         var normalizedSum = (pixelSum * pixelSum) / sampleCount;
-        return (float)((squaredSum - normalizedSum) / (sampleCount - 1.0));
+        return (squaredSum - normalizedSum) / (sampleCount - 1.0f);
     }
 }

@@ -46,10 +46,32 @@ internal sealed class WsqReferenceQuantizationContractTests
     }
 
     [Test]
-    [Skip("Enable when the forward WSQ transform and quantizer match the official NIST encoder coefficient bins exactly.")]
-    [DisplayName("Should match the official NIST quantized coefficient bins for every encoder reference case")]
-    [MethodDataSource(typeof(WsqNistReferenceDataSources), nameof(WsqNistReferenceDataSources.EncodeCoefficientReferenceCases))]
-    public async Task ShouldMatchTheOfficialNistQuantizedCoefficientBins(WsqEncodingReferenceCase testCase)
+    [DisplayName("Should match the official NIST quantized coefficient bins for the active 2.25 bpp encoder reference cases")]
+    [MethodDataSource(typeof(WsqNistReferenceDataSources), nameof(WsqNistReferenceDataSources.Encode225ActiveExactCoefficientReferenceCases))]
+    public async Task ShouldMatchTheOfficialNistQuantizedCoefficientBinsForTheActive225BppReferenceCases(WsqEncodingReferenceCase testCase)
+    {
+        await AssertExactCoefficientParityAsync(testCase);
+    }
+
+    [Test]
+    [Skip("Enable when the 2.25 bpp forward WSQ transform and quantizer match the official NIST encoder coefficient bins exactly.")]
+    [DisplayName("Should match the official NIST quantized coefficient bins for every 2.25 bpp encoder reference case")]
+    [MethodDataSource(typeof(WsqNistReferenceDataSources), nameof(WsqNistReferenceDataSources.Encode225CoefficientReferenceCases))]
+    public async Task ShouldMatchTheOfficialNistQuantizedCoefficientBinsAt225Bpp(WsqEncodingReferenceCase testCase)
+    {
+        await AssertExactCoefficientParityAsync(testCase);
+    }
+
+    [Test]
+    [Skip("Enable when the 0.75 bpp forward WSQ transform and quantizer match the official NIST encoder coefficient bins exactly.")]
+    [DisplayName("Should match the official NIST quantized coefficient bins for every 0.75 bpp encoder reference case")]
+    [MethodDataSource(typeof(WsqNistReferenceDataSources), nameof(WsqNistReferenceDataSources.Encode075CoefficientReferenceCases))]
+    public async Task ShouldMatchTheOfficialNistQuantizedCoefficientBinsAt075Bpp(WsqEncodingReferenceCase testCase)
+    {
+        await AssertExactCoefficientParityAsync(testCase);
+    }
+
+    private static async Task AssertExactCoefficientParityAsync(WsqEncodingReferenceCase testCase)
     {
         var rawBytes = await File.ReadAllBytesAsync(testCase.RawPath);
         var analysis = WsqEncoderAnalysisPipeline.Analyze(rawBytes, testCase.RawImage, new(testCase.BitRate));

@@ -27,16 +27,13 @@ internal static class WsqQuantizer
         var zeroBins = new float[WsqConstants.MaxSubbands];
         ComputeQuantizationBins(variances, bitRate, quantizationBins, zeroBins);
 
+        var quantizationTable = WsqQuantizationTableFactory.Create(quantizationBins, zeroBins);
         var quantizedCoefficients = WsqCoefficientQuantizer.Quantize(
             waveletData,
             quantizationTree,
             width,
             quantizationBins,
             zeroBins);
-        var quantizationTable = new WsqQuantizationTable(
-            BinCenter: 44.0,
-            QuantizationBins: quantizationBins.Select(static value => (double)value).ToArray(),
-            ZeroBins: zeroBins.Select(static value => (double)value).ToArray());
         var blockSizes = WsqQuantizationDecoder.ComputeBlockSizes(quantizationTable, waveletTree, quantizationTree);
 
         return new(quantizationTable, quantizedCoefficients, blockSizes);
@@ -66,10 +63,10 @@ internal static class WsqQuantizer
                 continue;
             }
 
-            sigma[subband] = (float)Math.Sqrt(variances[subband]);
+            sigma[subband] = MathF.Sqrt(variances[subband]);
             quantizationBins[subband] = subband < WsqConstants.StartSizeRegion2
                 ? 1.0f
-                : (float)(10.0 / (s_subbandWeights[subband] * (float)Math.Log(variances[subband])));
+                : 10.0f / (s_subbandWeights[subband] * MathF.Log(variances[subband]));
             initialSubbands[initialSubbandCount] = subband;
             workingSubbands[initialSubbandCount] = subband;
             initialSubbandCount++;
@@ -95,14 +92,13 @@ internal static class WsqQuantizer
             for (var index = 0; index < activeSubbandCount; index++)
             {
                 var subband = activeSubbands[index];
-                product = (float)(product * Math.Pow(
+                product *= MathF.Pow(
                     sigma[subband] / quantizationBins[subband],
-                    reciprocalSubbandAreas[subband]));
+                    reciprocalSubbandAreas[subband]);
             }
 
-            var quantizationScale = (float)(
-                (Math.Pow(2.0, (bitRate / reciprocalAreaSum) - 1.0) / 2.5)
-                / Math.Pow(product, 1.0 / reciprocalAreaSum));
+            var quantizationScale = (MathF.Pow(2.0f, (bitRate / reciprocalAreaSum) - 1.0f) / 2.5f)
+                / MathF.Pow(product, 1.0f / reciprocalAreaSum);
             var nonPositiveBitRateCount = 0;
 
             Array.Clear(positiveBitRateFlags);
@@ -129,7 +125,7 @@ internal static class WsqQuantizer
                     quantizationBins[subband] = positiveBitRateFlags[subband]
                         ? quantizationBins[subband] / quantizationScale
                         : 0.0f;
-                    zeroBins[subband] = (float)(1.2 * quantizationBins[subband]);
+                    zeroBins[subband] = 1.2f * quantizationBins[subband];
                 }
 
                 return;

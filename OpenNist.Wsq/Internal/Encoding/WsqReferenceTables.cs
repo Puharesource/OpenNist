@@ -28,9 +28,14 @@ internal static class WsqReferenceTables
         0.03782845550699546f,
     ];
 
-    public static WsqTransformTable StandardTransformTable { get; } = new(
-        HighPassFilterLength: (byte)s_highPassFilterCoefficients.Length,
-        LowPassFilterLength: (byte)s_lowPassFilterCoefficients.Length,
-        LowPassFilterCoefficients: s_lowPassFilterCoefficients,
-        HighPassFilterCoefficients: s_highPassFilterCoefficients);
+    public static WsqTransformTable StandardTransformTable { get; } = CreateStandardTransformTable();
+
+    public static WsqTransformTable CreateStandardTransformTable()
+    {
+        return new(
+            HighPassFilterLength: (byte)s_highPassFilterCoefficients.Length,
+            LowPassFilterLength: (byte)s_lowPassFilterCoefficients.Length,
+            LowPassFilterCoefficients: s_lowPassFilterCoefficients.ToArray(),
+            HighPassFilterCoefficients: s_highPassFilterCoefficients.ToArray());
+    }
 }

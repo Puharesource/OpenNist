@@ -4,9 +4,9 @@ namespace OpenNist.Wsq.Internal.Encoding;
     "Major Code Smell",
     "S1244:Floating point numbers should not be tested for equality",
     Justification = "Uniform grayscale images need an exact zero-scale guard to avoid division by zero during normalization.")]
-internal static class WsqFloatImageNormalizer
+internal static class WsqDoubleImageNormalizer
 {
-    public static WsqNormalizedImage Normalize(ReadOnlySpan<byte> rawPixels)
+    public static WsqDoubleNormalizedImage Normalize(ReadOnlySpan<byte> rawPixels)
     {
         var sum = 0L;
         var minimumPixelValue = byte.MaxValue;
@@ -19,18 +19,13 @@ internal static class WsqFloatImageNormalizer
             sum += pixel;
         }
 
-        var shift = (float)sum / rawPixels.Length;
+        var shift = (double)sum / rawPixels.Length;
         var lowerDistance = shift - minimumPixelValue;
         var upperDistance = maximumPixelValue - shift;
-        var scale = Math.Max(lowerDistance, upperDistance) / 128.0f;
-        return Normalize(rawPixels, shift, scale);
-    }
+        var scale = Math.Max(lowerDistance, upperDistance) / 128.0;
+        var normalizedPixels = new double[rawPixels.Length];
 
-    public static WsqNormalizedImage Normalize(ReadOnlySpan<byte> rawPixels, float shift, float scale)
-    {
-        var normalizedPixels = new float[rawPixels.Length];
-
-        if (scale == 0.0f)
+        if (scale == 0.0)
         {
             return new(normalizedPixels, shift, scale);
         }
@@ -44,7 +39,7 @@ internal static class WsqFloatImageNormalizer
     }
 }
 
-internal readonly record struct WsqNormalizedImage(
-    float[] Pixels,
-    float Shift,
-    float Scale);
+internal readonly record struct WsqDoubleNormalizedImage(
+    double[] Pixels,
+    double Shift,
+    double Scale);

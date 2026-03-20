@@ -35,7 +35,7 @@ internal static class WsqNistReferenceDataSources
         }
     }
 
-    public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> EncodeCoefficientReferenceCases()
+    public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> Encode075CoefficientReferenceCases()
     {
         foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures)
         {
@@ -47,7 +47,13 @@ internal static class WsqNistReferenceDataSources
                     fixture.RawPath,
                     fixture.ReferenceBitRate075Path),
                 DisplayName: $"should produce the exact NIST quantized coefficient bins for {fixture.FileName} at 0.75 bpp");
+        }
+    }
 
+    public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> Encode225CoefficientReferenceCases()
+    {
+        foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures)
+        {
             yield return new(
                 new(
                     fixture.FileName,
@@ -56,6 +62,41 @@ internal static class WsqNistReferenceDataSources
                     fixture.RawPath,
                     fixture.ReferenceBitRate225Path),
                 DisplayName: $"should produce the exact NIST quantized coefficient bins for {fixture.FileName} at 2.25 bpp");
+        }
+    }
+
+    public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> Encode225ActiveExactCoefficientReferenceCases()
+    {
+        var activeExactFileNames = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "a039.raw",
+            "a165.raw",
+            "b082.raw",
+            "b158.raw",
+            "b186.raw",
+            "cmp00007.raw",
+            "cmp00009.raw",
+            "cmp00010.raw",
+            "cmp00011.raw",
+            "cmp00012.raw",
+            "cmp00013.raw",
+            "cmp00014.raw",
+            "cmp00015.raw",
+            "cmp00016.raw",
+            "cmp00017.raw",
+            "sample_01.raw",
+        };
+
+        foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures.Where(fixture => activeExactFileNames.Contains(fixture.FileName)))
+        {
+            yield return new(
+                new(
+                    fixture.FileName,
+                    2.25,
+                    fixture.RawImage,
+                    fixture.RawPath,
+                    fixture.ReferenceBitRate225Path),
+                DisplayName: $"should produce the exact NIST quantized coefficient bins for active 2.25 bpp case {fixture.FileName}");
         }
     }
 
@@ -80,6 +121,28 @@ internal static class WsqNistReferenceDataSources
                     fixture.RawPath,
                     fixture.ReferenceBitRate225Path),
                 DisplayName: $"should satisfy the published NIST encoder quantization thresholds for {fixture.FileName} at 2.25 bpp");
+        }
+    }
+
+    public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> EncodeHighPrecisionBlockerReferenceCases()
+    {
+        var blockerFileNames = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "a070.raw",
+            "cmp00003.raw",
+            "cmp00005.raw",
+        };
+
+        foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures.Where(fixture => blockerFileNames.Contains(fixture.FileName)))
+        {
+            yield return new(
+                new(
+                    fixture.FileName,
+                    2.25,
+                    fixture.RawImage,
+                    fixture.RawPath,
+                    fixture.ReferenceBitRate225Path),
+                DisplayName: $"should match the exact NIST quantized coefficient bins for blocker case {fixture.FileName} at 2.25 bpp via the high-precision encoder analysis path");
         }
     }
 

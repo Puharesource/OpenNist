@@ -5,6 +5,8 @@ using OpenNist.Wsq.Internal.Decoding;
 
 internal static class WsqEncoderAnalysisPipeline
 {
+    private const double HighPrecisionAnalysisBitRateThreshold = 2.0;
+
     public static async ValueTask<WsqEncoderAnalysisResult> AnalyzeAsync(
         Stream rawImageStream,
         WsqRawImageDescription rawImage,
@@ -40,10 +42,21 @@ internal static class WsqEncoderAnalysisPipeline
                 "WSQ software implementation number must fit in an unsigned 16-bit value.");
         }
 
-        var normalizedImage = WsqFloatImageNormalizer.Normalize(rawPixels);
-        var transformTable = WsqReferenceTables.StandardTransformTable;
+        var transformTable = WsqReferenceTables.CreateStandardTransformTable();
         WsqWaveletTreeBuilder.Build(rawImage.Width, rawImage.Height, out var waveletTree, out var quantizationTree);
 
+        if (options.BitRate >= HighPrecisionAnalysisBitRateThreshold)
+        {
+            return AnalyzeHighPrecision(
+                rawPixels,
+                rawImage,
+                options,
+                transformTable,
+                waveletTree,
+                quantizationTree);
+        }
+
+        var normalizedImage = WsqFloatImageNormalizer.Normalize(rawPixels);
         var decomposedPixels = WsqDecomposition.Decompose(
             normalizedImage.Pixels,
             rawImage.Width,
@@ -59,21 +72,92 @@ internal static class WsqEncoderAnalysisPipeline
             rawImage.Height,
             (float)options.BitRate);
 
-        var frameHeader = new WsqFrameHeader(
-            Black: 0,
-            White: 255,
-            Height: checked((ushort)rawImage.Height),
-            Width: checked((ushort)rawImage.Width),
-            Shift: normalizedImage.Shift,
-            Scale: normalizedImage.Scale,
-            WsqEncoder: checked((byte)options.EncoderNumber),
-            SoftwareImplementationNumber: checked((ushort)(options.SoftwareImplementationNumber ?? 0)));
-
         return new(
-            frameHeader,
+            CreateFrameHeader(rawImage, options, normalizedImage.Shift, normalizedImage.Scale),
             transformTable,
             quantizationResult.QuantizationTable,
             quantizationResult.QuantizedCoefficients,
             quantizationResult.BlockSizes);
+    }
+
+    private static WsqEncoderAnalysisResult AnalyzeHighPrecision(
+        ReadOnlySpan<byte> rawPixels,
+        WsqRawImageDescription rawImage,
+        WsqEncodeOptions options,
+        WsqTransformTable transformTable,
+        WsqWaveletNode[] waveletTree,
+        WsqQuantizationNode[] quantizationTree)
+    {
+        var normalizedImage = WsqDoubleImageNormalizer.Normalize(rawPixels);
+        var decomposedPixels = WsqDoubleDecomposition.Decompose(
+            normalizedImage.Pixels,
+            rawImage.Width,
+            rawImage.Height,
+            waveletTree,
+            transformTable);
+
+        var quantizationResult = WsqHighPrecisionQuantizer.Quantize(
+            decomposedPixels,
+            waveletTree,
+            quantizationTree,
+            rawImage.Width,
+            rawImage.Height,
+            options.BitRate);
+
+        return new(
+            CreateFrameHeader(
+                rawImage,
+                options,
+                normalizedImage.Shift,
+                normalizedImage.Scale),
+            transformTable,
+            quantizationResult.QuantizationTable,
+            quantizationResult.QuantizedCoefficients,
+            quantizationResult.BlockSizes);
+    }
+
+    internal static WsqHighPrecisionAnalysisArtifacts AnalyzeHighPrecisionArtifacts(
+        ReadOnlySpan<byte> rawPixels,
+        WsqRawImageDescription rawImage,
+        WsqTransformTable transformTable,
+        WsqWaveletNode[] waveletTree)
+    {
+        var doubleNormalizedImage = WsqDoubleImageNormalizer.Normalize(rawPixels);
+        var floatNormalizedImage = WsqFloatImageNormalizer.Normalize(rawPixels);
+        var doubleDecomposedPixels = WsqDoubleDecomposition.Decompose(
+            doubleNormalizedImage.Pixels,
+            rawImage.Width,
+            rawImage.Height,
+            waveletTree,
+            transformTable);
+        var floatDecomposedPixels = WsqDecomposition.Decompose(
+            floatNormalizedImage.Pixels,
+            rawImage.Width,
+            rawImage.Height,
+            waveletTree,
+            transformTable);
+
+        return new(
+            doubleNormalizedImage,
+            floatNormalizedImage,
+            doubleDecomposedPixels,
+            floatDecomposedPixels);
+    }
+
+    private static WsqFrameHeader CreateFrameHeader(
+        WsqRawImageDescription rawImage,
+        WsqEncodeOptions options,
+        double shift,
+        double scale)
+    {
+        return new(
+            Black: 0,
+            White: 255,
+            Height: checked((ushort)rawImage.Height),
+            Width: checked((ushort)rawImage.Width),
+            Shift: shift,
+            Scale: scale,
+            WsqEncoder: checked((byte)options.EncoderNumber),
+            SoftwareImplementationNumber: checked((ushort)(options.SoftwareImplementationNumber ?? 0)));
     }
 }
