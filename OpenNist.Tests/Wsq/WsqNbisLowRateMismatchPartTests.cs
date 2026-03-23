@@ -8,6 +8,14 @@ using OpenNist.Tests.Wsq.TestFixtures;
 [Category("Diagnostic: WSQ - NBIS Low-Rate Mismatch Parts")]
 internal sealed class WsqNbisLowRateMismatchPartTests
 {
+    private static readonly Dictionary<string, WsqLowRateMismatchProfile> s_expectedProfiles =
+        new Dictionary<string, WsqLowRateMismatchProfile>(StringComparer.Ordinal)
+        {
+            ["cmp00005.raw"] = new(37142, 17, 42, 14, -1, -2),
+            ["cmp00011.raw"] = new(18090, 13, 19, 24, -4, -3),
+            ["sample_19.raw"] = new(46463, 7, 88, 63, 7, 6),
+        };
+
     [Test]
     [DisplayName("Should isolate the remaining focused 0.75 bpp NBIS mismatch coordinates")]
     [MethodDataSource(typeof(WsqNistReferenceDataSources), nameof(WsqNistReferenceDataSources.EncodeNbis075FocusedMismatchReferenceCases))]
@@ -56,13 +64,12 @@ internal sealed class WsqNbisLowRateMismatchPartTests
 
     private static WsqLowRateMismatchProfile GetExpectedProfile(string fileName)
     {
-        return fileName switch
+        if (s_expectedProfiles.TryGetValue(fileName, out var profile))
         {
-            "cmp00005.raw" => new(37142, 17, 42, 14, -1, -2),
-            "cmp00011.raw" => new(18090, 13, 19, 24, -4, -3),
-            "sample_19.raw" => new(46463, 7, 88, 63, 7, 6),
-            _ => throw new ArgumentOutOfRangeException(nameof(fileName), fileName, "Unexpected focused low-rate NBIS mismatch file."),
-        };
+            return profile;
+        }
+
+        throw new ArgumentOutOfRangeException(nameof(fileName), fileName, "Unexpected focused low-rate NBIS mismatch file.");
     }
 
     private readonly record struct WsqLowRateMismatchProfile(

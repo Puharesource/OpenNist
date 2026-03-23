@@ -6,6 +6,9 @@ using OpenNist.Wsq.Internal.Decoding;
 internal static class WsqEncoderAnalysisPipeline
 {
     private const double HighPrecisionAnalysisBitRateThreshold = 2.0;
+    private const byte BlackPixelValue = 0;
+    private const byte WhitePixelValue = byte.MaxValue;
+    private const ushort DefaultSoftwareImplementationNumber = 0;
 
     public static async ValueTask<WsqEncoderAnalysisResult> AnalyzeAsync(
         Stream rawImageStream,
@@ -162,13 +165,13 @@ internal static class WsqEncoderAnalysisPipeline
         double scale)
     {
         return new(
-            Black: 0,
-            White: 255,
+            Black: BlackPixelValue,
+            White: WhitePixelValue,
             Height: checked((ushort)rawImage.Height),
             Width: checked((ushort)rawImage.Width),
             Shift: shift,
             Scale: scale,
             WsqEncoder: checked((byte)options.EncoderNumber),
-            SoftwareImplementationNumber: checked((ushort)(options.SoftwareImplementationNumber ?? 0)));
+            SoftwareImplementationNumber: checked((ushort)(options.SoftwareImplementationNumber ?? DefaultSoftwareImplementationNumber)));
     }
 }

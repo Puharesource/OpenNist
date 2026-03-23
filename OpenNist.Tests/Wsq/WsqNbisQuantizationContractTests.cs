@@ -4,6 +4,7 @@ using System.Globalization;
 using OpenNist.Tests.Wsq.TestDataReaders;
 using OpenNist.Tests.Wsq.TestDataSources;
 using OpenNist.Tests.Wsq.TestFixtures;
+using OpenNist.Tests.Wsq.TestSupport;
 using OpenNist.Wsq.Internal;
 using OpenNist.Wsq.Internal.Decoding;
 using OpenNist.Wsq.Internal.Encoding;
@@ -25,7 +26,7 @@ internal sealed class WsqNbisQuantizationContractTests
         var exactCases = new List<string>();
         var mismatchCases = new List<string>();
 
-        foreach (var testCase in EnumerateAllEncodeReferenceCases())
+        foreach (var testCase in WsqTestCaseDefinitions.EnumerateAllEncodeReferenceCases())
         {
             var parity = await AnalyzeNbisParityAsync(testCase);
             var formattedCase = FormatCaseName(testCase);
@@ -80,26 +81,6 @@ internal sealed class WsqNbisQuantizationContractTests
         if (!parity.IsExactMatch)
         {
             throw new InvalidOperationException($"{FormatCaseName(testCase)} diverges from the local NBIS encoder analysis output. {parity.MismatchSummary}");
-        }
-    }
-
-    private static IEnumerable<WsqEncodingReferenceCase> EnumerateAllEncodeReferenceCases()
-    {
-        foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures)
-        {
-            yield return new(
-                fixture.FileName,
-                0.75,
-                fixture.RawImage,
-                fixture.RawPath,
-                fixture.ReferenceBitRate075Path);
-
-            yield return new(
-                fixture.FileName,
-                2.25,
-                fixture.RawImage,
-                fixture.RawPath,
-                fixture.ReferenceBitRate225Path);
         }
     }
 
@@ -231,7 +212,7 @@ internal sealed class WsqNbisQuantizationContractTests
 
     private static string FormatCaseName(WsqEncodingReferenceCase testCase)
     {
-        return $"{testCase.FileName} @ {testCase.BitRate.ToString("0.##", CultureInfo.InvariantCulture)}";
+        return WsqTestCaseDefinitions.FormatCaseName(testCase);
     }
 
     private readonly record struct WsqNbisParityResult(

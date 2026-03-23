@@ -9,8 +9,6 @@ using OpenNist.Wsq.Internal.Decoding;
     Justification = "The WSQ encoder must mirror the reference implementation's exact zero checks for quantization bins.")]
 internal static class WsqHighPrecisionQuantizer
 {
-    private static readonly float[] s_subbandWeights = CreateSubbandWeights();
-
     public static WsqQuantizationResult Quantize(
         double[] waveletData,
         WsqWaveletNode[] waveletTree,
@@ -135,7 +133,7 @@ internal static class WsqHighPrecisionQuantizer
         var workingSubbands = new int[WsqConstants.NumberOfSubbands];
         var nonPositiveBitRateFlags = new int[WsqConstants.NumberOfSubbands];
 
-        SetReciprocalSubbandAreas(reciprocalSubbandAreas);
+        WsqQuantizationParameters.SetReciprocalSubbandAreas(reciprocalSubbandAreas);
 
         var initialSubbandCount = 0;
         for (var subband = 0; subband < WsqConstants.NumberOfSubbands; subband++)
@@ -151,7 +149,7 @@ internal static class WsqHighPrecisionQuantizer
 
             quantizationBins[subband] = subband < WsqConstants.StartSizeRegion2
                 ? 1.0f
-                : 10.0f / (s_subbandWeights[subband] * LogLikeNbis(variance));
+                : 10.0f / (WsqQuantizationParameters.SubbandWeights[subband] * LogLikeNbis(variance));
             sigma[subband] = SqrtLikeNbis(variance);
             initialSubbands[initialSubbandCount] = subband;
             workingSubbands[initialSubbandCount++] = subband;
@@ -280,7 +278,7 @@ internal static class WsqHighPrecisionQuantizer
         var workingSubbands = new int[WsqConstants.NumberOfSubbands];
         var positiveBitRateFlags = new bool[WsqConstants.NumberOfSubbands];
 
-        SetReciprocalSubbandAreas(reciprocalSubbandAreas);
+        WsqQuantizationParameters.SetReciprocalSubbandAreas(reciprocalSubbandAreas);
 
         var initialSubbandCount = 0;
         for (var subband = 0; subband < WsqConstants.NumberOfSubbands; subband++)
@@ -299,12 +297,12 @@ internal static class WsqHighPrecisionQuantizer
 
             initialQuantizationBins[subband] = subband < WsqConstants.StartSizeRegion2
                 ? 1.0
-                : 10.0 / (s_subbandWeights[subband] * Math.Log(variance));
+                : 10.0 / (WsqQuantizationParameters.SubbandWeights[subband] * Math.Log(variance));
             if (options.UseLiteralSinglePrecisionInitialQuantizationBins)
             {
                 initialQuantizationBins[subband] = subband < WsqConstants.StartSizeRegion2
                     ? 1.0f
-                    : 10.0f / (s_subbandWeights[subband] * MathF.Log((float)variance));
+                    : 10.0f / (WsqQuantizationParameters.SubbandWeights[subband] * MathF.Log((float)variance));
             }
             else if (options.UseSinglePrecisionInitialQuantizationBins)
             {
@@ -436,65 +434,6 @@ internal static class WsqHighPrecisionQuantizer
             activeSubbands = workingSubbands;
             activeSubbandCount = nextActiveSubbandCount;
         }
-    }
-
-    private static void SetReciprocalSubbandAreas(Span<double> reciprocalSubbandAreas)
-    {
-        const double firstRegionReciprocalArea = 1.0 / 1024.0;
-        const double secondRegionReciprocalArea = 1.0 / 256.0;
-        const double thirdRegionReciprocalArea = 1.0 / 16.0;
-
-        for (var subband = 0; subband < WsqConstants.StartSizeRegion2; subband++)
-        {
-            reciprocalSubbandAreas[subband] = firstRegionReciprocalArea;
-        }
-
-        for (var subband = WsqConstants.StartSizeRegion2; subband < WsqConstants.StartSizeRegion3; subband++)
-        {
-            reciprocalSubbandAreas[subband] = secondRegionReciprocalArea;
-        }
-
-        for (var subband = WsqConstants.StartSizeRegion3; subband < WsqConstants.NumberOfSubbands; subband++)
-        {
-            reciprocalSubbandAreas[subband] = thirdRegionReciprocalArea;
-        }
-    }
-
-    private static void SetReciprocalSubbandAreas(Span<float> reciprocalSubbandAreas)
-    {
-        const float firstRegionReciprocalArea = 1.0f / 1024.0f;
-        const float secondRegionReciprocalArea = 1.0f / 256.0f;
-        const float thirdRegionReciprocalArea = 1.0f / 16.0f;
-
-        for (var subband = 0; subband < WsqConstants.StartSizeRegion2; subband++)
-        {
-            reciprocalSubbandAreas[subband] = firstRegionReciprocalArea;
-        }
-
-        for (var subband = WsqConstants.StartSizeRegion2; subband < WsqConstants.StartSizeRegion3; subband++)
-        {
-            reciprocalSubbandAreas[subband] = secondRegionReciprocalArea;
-        }
-
-        for (var subband = WsqConstants.StartSizeRegion3; subband < WsqConstants.NumberOfSubbands; subband++)
-        {
-            reciprocalSubbandAreas[subband] = thirdRegionReciprocalArea;
-        }
-    }
-
-    private static float[] CreateSubbandWeights()
-    {
-        var weights = new float[WsqConstants.MaxSubbands];
-        Array.Fill(weights, 1.0f, 0, WsqConstants.StartSubband3);
-        weights[52] = 1.32f;
-        weights[53] = 1.08f;
-        weights[54] = 1.42f;
-        weights[55] = 1.08f;
-        weights[56] = 1.32f;
-        weights[57] = 1.42f;
-        weights[58] = 1.08f;
-        weights[59] = 1.08f;
-        return weights;
     }
 
     private static float LogLikeNbis(float value) => (float)Math.Log(value);

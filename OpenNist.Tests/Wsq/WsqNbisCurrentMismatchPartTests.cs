@@ -4,10 +4,35 @@ using OpenNist.Tests.Wsq.TestDataReaders;
 using OpenNist.Tests.Wsq.TestDataSources;
 using OpenNist.Tests.Wsq.TestDiagnostics;
 using OpenNist.Tests.Wsq.TestFixtures;
+using OpenNist.Tests.Wsq.TestSupport;
 
 [Category("Diagnostic: WSQ - NBIS Current Mismatch Parts")]
 internal sealed class WsqNbisCurrentMismatchPartTests
 {
+    private static readonly Dictionary<string, WsqNbisCurrentMismatchProfile> s_expectedProfiles =
+        new Dictionary<string, WsqNbisCurrentMismatchProfile>(StringComparer.Ordinal)
+        {
+            [WsqTestCaseDefinitions.CreateCaseKey("a002.raw", WsqTestCaseDefinitions.HighBitRate)] = new(201557, 38, 16, 41, 1, 2),
+            [WsqTestCaseDefinitions.CreateCaseKey("a018.raw", WsqTestCaseDefinitions.HighBitRate)] = new(465, 0, 9, 42, 270, 271),
+            [WsqTestCaseDefinitions.CreateCaseKey("a089.raw", WsqTestCaseDefinitions.HighBitRate)] = new(66271, 13, 43, 8, 6, 5),
+            [WsqTestCaseDefinitions.CreateCaseKey("a107.raw", WsqTestCaseDefinitions.HighBitRate)] = new(257586, 38, 28, 4, 3, 4),
+            [WsqTestCaseDefinitions.CreateCaseKey("b157.raw", WsqTestCaseDefinitions.HighBitRate)] = new(97598, 18, 53, 59, 1, 0),
+            [WsqTestCaseDefinitions.CreateCaseKey("b158.raw", WsqTestCaseDefinitions.HighBitRate)] = new(1270, 3, 8, 9, -1, 0),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00001.raw", WsqTestCaseDefinitions.HighBitRate)] = new(12235, 11, 26, 25, -220, -221),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00004.raw", WsqTestCaseDefinitions.HighBitRate)] = new(2057, 3, 9, 10, -54, -55),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00005.raw", WsqTestCaseDefinitions.LowBitRate)] = new(37142, 17, 42, 14, -1, -2),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00005.raw", WsqTestCaseDefinitions.HighBitRate)] = new(164, 0, 6, 8, -4463, -4464),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00006.raw", WsqTestCaseDefinitions.HighBitRate)] = new(6649, 5, 31, 45, 39, 40),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00007.raw", WsqTestCaseDefinitions.HighBitRate)] = new(15836, 14, 21, 2, 36, 37),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00008.raw", WsqTestCaseDefinitions.HighBitRate)] = new(355488, 57, 90, 88, -2, -3),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00011.raw", WsqTestCaseDefinitions.LowBitRate)] = new(18090, 13, 19, 24, -4, -3),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00011.raw", WsqTestCaseDefinitions.HighBitRate)] = new(445, 0, 22, 5, 161, 160),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00017.raw", WsqTestCaseDefinitions.HighBitRate)] = new(3791, 5, 30, 29, 78, 77),
+            [WsqTestCaseDefinitions.CreateCaseKey("sample_11.raw", WsqTestCaseDefinitions.HighBitRate)] = new(91038, 12, 65, 38, -39, -40),
+            [WsqTestCaseDefinitions.CreateCaseKey("sample_19.raw", WsqTestCaseDefinitions.LowBitRate)] = new(46463, 7, 88, 63, 7, 6),
+            [WsqTestCaseDefinitions.CreateCaseKey("sample_19.raw", WsqTestCaseDefinitions.HighBitRate)] = new(1770, 0, 35, 20, -1714, -1713),
+        };
+
     [Test]
     [DisplayName("Should pinpoint the exact first NBIS mismatch coordinate for every current non-exact encoder case")]
     [MethodDataSource(typeof(WsqNistReferenceDataSources), nameof(WsqNistReferenceDataSources.EncodeNbisCurrentMismatchReferenceCases))]
@@ -52,30 +77,13 @@ internal sealed class WsqNbisCurrentMismatchPartTests
 
     private static WsqNbisCurrentMismatchProfile GetExpectedProfile(string fileName, double bitRate)
     {
-        var caseKey = $"{fileName}|{bitRate:0.##}";
-        return caseKey switch
+        var caseKey = WsqTestCaseDefinitions.CreateCaseKey(fileName, bitRate);
+        if (s_expectedProfiles.TryGetValue(caseKey, out var profile))
         {
-            "a002.raw|2.25" => new(201557, 38, 16, 41, 1, 2),
-            "a018.raw|2.25" => new(465, 0, 9, 42, 270, 271),
-            "a089.raw|2.25" => new(66271, 13, 43, 8, 6, 5),
-            "a107.raw|2.25" => new(257586, 38, 28, 4, 3, 4),
-            "b157.raw|2.25" => new(97598, 18, 53, 59, 1, 0),
-            "b158.raw|2.25" => new(1270, 3, 8, 9, -1, 0),
-            "cmp00001.raw|2.25" => new(12235, 11, 26, 25, -220, -221),
-            "cmp00004.raw|2.25" => new(2057, 3, 9, 10, -54, -55),
-            "cmp00005.raw|0.75" => new(37142, 17, 42, 14, -1, -2),
-            "cmp00005.raw|2.25" => new(164, 0, 6, 8, -4463, -4464),
-            "cmp00006.raw|2.25" => new(6649, 5, 31, 45, 39, 40),
-            "cmp00007.raw|2.25" => new(15836, 14, 21, 2, 36, 37),
-            "cmp00008.raw|2.25" => new(355488, 57, 90, 88, -2, -3),
-            "cmp00011.raw|0.75" => new(18090, 13, 19, 24, -4, -3),
-            "cmp00011.raw|2.25" => new(445, 0, 22, 5, 161, 160),
-            "cmp00017.raw|2.25" => new(3791, 5, 30, 29, 78, 77),
-            "sample_11.raw|2.25" => new(91038, 12, 65, 38, -39, -40),
-            "sample_19.raw|0.75" => new(46463, 7, 88, 63, 7, 6),
-            "sample_19.raw|2.25" => new(1770, 0, 35, 20, -1714, -1713),
-            _ => throw new ArgumentOutOfRangeException(nameof(fileName), caseKey, "Unexpected current NBIS mismatch case."),
-        };
+            return profile;
+        }
+
+        throw new ArgumentOutOfRangeException(nameof(fileName), caseKey, "Unexpected current NBIS mismatch case.");
     }
 
     private readonly record struct WsqNbisCurrentMismatchProfile(

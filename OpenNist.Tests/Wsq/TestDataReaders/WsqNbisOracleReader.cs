@@ -3,6 +3,7 @@ namespace OpenNist.Tests.Wsq.TestDataReaders;
 using System.Diagnostics;
 using System.Globalization;
 using OpenNist.Tests.Wsq.TestFixtures;
+using OpenNist.Tests.Wsq.TestSupport;
 using OpenNist.Wsq.Internal;
 
 internal static class WsqNbisOracleReader
@@ -25,7 +26,7 @@ internal static class WsqNbisOracleReader
 
     private static string EncoderToolPath { get; } = "/tmp/nbis_v5_0_0/Rel_5.0.0/imgtools/bin/cwsq";
 
-    private static string ExpectedOracleVersion { get; } = "NBIS Release 5.0.0";
+    private static string ExpectedOracleVersion { get; } = WsqTestCaseDefinitions.Nbis500Version;
 
     private static bool VersionValidated { get; set; }
 
