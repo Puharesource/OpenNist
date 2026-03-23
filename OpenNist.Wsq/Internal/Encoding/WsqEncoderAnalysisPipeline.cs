@@ -63,7 +63,6 @@ internal static class WsqEncoderAnalysisPipeline
             rawImage.Height,
             waveletTree,
             transformTable);
-
         var quantizationResult = WsqQuantizer.Quantize(
             decomposedPixels,
             waveletTree,
@@ -89,20 +88,32 @@ internal static class WsqEncoderAnalysisPipeline
         WsqQuantizationNode[] quantizationTree)
     {
         var normalizedImage = WsqDoubleImageNormalizer.Normalize(rawPixels);
-        var decomposedPixels = WsqDoubleDecomposition.Decompose(
-            normalizedImage.Pixels,
+        var floatNormalizedImage = WsqFloatImageNormalizer.Normalize(rawPixels);
+        var floatDecomposedPixels = WsqDecomposition.Decompose(
+            floatNormalizedImage.Pixels,
             rawImage.Width,
             rawImage.Height,
             waveletTree,
             transformTable);
-
-        var quantizationResult = WsqHighPrecisionQuantizer.Quantize(
-            decomposedPixels,
-            waveletTree,
+        var serializedArtifacts = WsqQuantizer.CreateQuantizationArtifacts(
+            floatDecomposedPixels,
             quantizationTree,
             rawImage.Width,
-            rawImage.Height,
-            options.BitRate);
+            (float)options.BitRate);
+
+        var serializedQuantizationTable = WsqQuantizationTableFactory.Create(
+            serializedArtifacts.QuantizationBins,
+            serializedArtifacts.ZeroBins);
+        var quantizedCoefficients = WsqCoefficientQuantizer.Quantize(
+            floatDecomposedPixels,
+            quantizationTree,
+            rawImage.Width,
+            serializedArtifacts.QuantizationBins,
+            serializedArtifacts.ZeroBins);
+        var serializedBlockSizes = WsqQuantizationDecoder.ComputeBlockSizes(
+            serializedQuantizationTable,
+            waveletTree,
+            quantizationTree);
 
         return new(
             CreateFrameHeader(
@@ -111,9 +122,9 @@ internal static class WsqEncoderAnalysisPipeline
                 normalizedImage.Shift,
                 normalizedImage.Scale),
             transformTable,
-            quantizationResult.QuantizationTable,
-            quantizationResult.QuantizedCoefficients,
-            quantizationResult.BlockSizes);
+            serializedQuantizationTable,
+            quantizedCoefficients,
+            serializedBlockSizes);
     }
 
     internal static WsqHighPrecisionAnalysisArtifacts AnalyzeHighPrecisionArtifacts(

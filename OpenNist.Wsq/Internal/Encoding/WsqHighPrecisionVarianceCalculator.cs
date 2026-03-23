@@ -4,13 +4,60 @@ using OpenNist.Wsq.Internal.Decoding;
 
 internal static class WsqHighPrecisionVarianceCalculator
 {
+    public static double[] ComputeWithSinglePrecisionAccumulation(
+        ReadOnlySpan<double> waveletData,
+        ReadOnlySpan<WsqQuantizationNode> quantizationTree,
+        int width)
+    {
+        var variances = new double[WsqConstants.MaxSubbands];
+        var varianceSum = 0.0f;
+
+        for (var subband = 0; subband < WsqConstants.StartSizeRegion2; subband++)
+        {
+            variances[subband] = ComputeSubbandVariance(
+                waveletData,
+                quantizationTree[subband],
+                width,
+                useCroppedRegion: true,
+                useSinglePrecisionAccumulation: true);
+            varianceSum += (float)variances[subband];
+        }
+
+        if (varianceSum < 20000.0f)
+        {
+            for (var subband = 0; subband < WsqConstants.NumberOfSubbands; subband++)
+            {
+                variances[subband] = ComputeSubbandVariance(
+                    waveletData,
+                    quantizationTree[subband],
+                    width,
+                    useCroppedRegion: false,
+                    useSinglePrecisionAccumulation: true);
+            }
+
+            return variances;
+        }
+
+        for (var subband = WsqConstants.StartSizeRegion2; subband < WsqConstants.NumberOfSubbands; subband++)
+        {
+            variances[subband] = ComputeSubbandVariance(
+                waveletData,
+                quantizationTree[subband],
+                width,
+                useCroppedRegion: true,
+                useSinglePrecisionAccumulation: true);
+        }
+
+        return variances;
+    }
+
     public static double[] Compute(
         ReadOnlySpan<float> waveletData,
         ReadOnlySpan<WsqQuantizationNode> quantizationTree,
         int width)
     {
         var variances = new double[WsqConstants.MaxSubbands];
-        var varianceSum = 0.0;
+        var varianceSum = 0.0f;
 
         for (var subband = 0; subband < WsqConstants.StartSizeRegion2; subband++)
         {
@@ -19,10 +66,10 @@ internal static class WsqHighPrecisionVarianceCalculator
                 quantizationTree[subband],
                 width,
                 useCroppedRegion: true);
-            varianceSum += variances[subband];
+            varianceSum += (float)variances[subband];
         }
 
-        if (varianceSum < 20000.0)
+        if (varianceSum < 20000.0f)
         {
             for (var subband = 0; subband < WsqConstants.NumberOfSubbands; subband++)
             {
@@ -96,7 +143,8 @@ internal static class WsqHighPrecisionVarianceCalculator
         ReadOnlySpan<double> waveletData,
         WsqQuantizationNode node,
         int width,
-        bool useCroppedRegion)
+        bool useCroppedRegion,
+        bool useSinglePrecisionAccumulation = false)
     {
         var startX = node.X;
         var startY = node.Y;
@@ -112,6 +160,29 @@ internal static class WsqHighPrecisionVarianceCalculator
         }
 
         var rowStart = startY * width + startX;
+
+        if (useSinglePrecisionAccumulation)
+        {
+            var singlePrecisionSquaredSum = 0.0f;
+            var singlePrecisionPixelSum = 0.0f;
+
+            for (var row = 0; row < regionHeight; row++)
+            {
+                var pixelIndex = rowStart + row * width;
+
+                for (var column = 0; column < regionWidth; column++)
+                {
+                    var pixel = (float)waveletData[pixelIndex + column];
+                    singlePrecisionPixelSum += pixel;
+                    singlePrecisionSquaredSum += pixel * pixel;
+                }
+            }
+
+            var singlePrecisionSampleCount = regionWidth * regionHeight;
+            var singlePrecisionNormalizedSum = (singlePrecisionPixelSum * singlePrecisionPixelSum) / singlePrecisionSampleCount;
+            return (singlePrecisionSquaredSum - singlePrecisionNormalizedSum) / (singlePrecisionSampleCount - 1.0f);
+        }
+
         var squaredSum = 0.0;
         var pixelSum = 0.0;
 
@@ -152,8 +223,8 @@ internal static class WsqHighPrecisionVarianceCalculator
         }
 
         var rowStart = startY * width + startX;
-        var squaredSum = 0.0;
-        var pixelSum = 0.0;
+        var squaredSum = 0.0f;
+        var pixelSum = 0.0f;
 
         for (var row = 0; row < regionHeight; row++)
         {
@@ -161,7 +232,7 @@ internal static class WsqHighPrecisionVarianceCalculator
 
             for (var column = 0; column < regionWidth; column++)
             {
-                var pixel = (double)waveletData[pixelIndex + column];
+                var pixel = waveletData[pixelIndex + column];
                 pixelSum += pixel;
                 squaredSum += pixel * pixel;
             }
@@ -169,6 +240,6 @@ internal static class WsqHighPrecisionVarianceCalculator
 
         var sampleCount = regionWidth * regionHeight;
         var normalizedSum = (pixelSum * pixelSum) / sampleCount;
-        return (squaredSum - normalizedSum) / (sampleCount - 1.0);
+        return (squaredSum - normalizedSum) / (sampleCount - 1.0f);
     }
 }

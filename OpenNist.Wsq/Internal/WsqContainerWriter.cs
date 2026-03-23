@@ -15,23 +15,24 @@ internal static class WsqContainerWriter
 
         var buffer = new ArrayBufferWriter<byte>();
         WriteMarker(buffer, WsqMarker.StartOfImage);
-        WriteTransformTable(buffer, container.TransformTable);
-        WriteQuantizationTable(buffer, container.QuantizationTable);
 
         foreach (var comment in container.Comments)
         {
             WriteComment(buffer, comment);
         }
 
+        WriteTransformTable(buffer, container.TransformTable);
+        WriteQuantizationTable(buffer, container.QuantizationTable);
         WriteFrameHeader(buffer, container.FrameHeader);
 
-        foreach (var huffmanTable in container.HuffmanTables)
-        {
-            WriteHuffmanTable(buffer, huffmanTable);
-        }
-
+        var writtenTableIds = new HashSet<byte>();
         foreach (var block in container.Blocks)
         {
+            if (writtenTableIds.Add(block.HuffmanTableId))
+            {
+                WriteHuffmanTable(buffer, block.HuffmanTable);
+            }
+
             WriteBlock(buffer, block);
         }
 
@@ -42,15 +43,15 @@ internal static class WsqContainerWriter
     private static void WriteTransformTable(IBufferWriter<byte> writer, WsqTransformTable transformTable)
     {
         var payload = new ArrayBufferWriter<byte>();
-        payload.WriteByte(transformTable.HighPassFilterLength);
         payload.WriteByte(transformTable.LowPassFilterLength);
+        payload.WriteByte(transformTable.HighPassFilterLength);
 
-        var storedLowPassTail = CollapseHighPassFilterToStoredLowPassTail(
-            GetValueSpan(transformTable.HighPassFilterCoefficients),
-            transformTable.HighPassFilterLength);
-        var storedHighPassTail = CollapseLowPassFilterToStoredHighPassTail(
+        var storedLowPassTail = CollapseLowPassFilterToStoredHighPassTail(
             GetValueSpan(transformTable.LowPassFilterCoefficients),
             transformTable.LowPassFilterLength);
+        var storedHighPassTail = CollapseHighPassFilterToStoredLowPassTail(
+            GetValueSpan(transformTable.HighPassFilterCoefficients),
+            transformTable.HighPassFilterLength);
 
         foreach (var coefficient in storedLowPassTail)
         {
@@ -68,12 +69,13 @@ internal static class WsqContainerWriter
     private static void WriteQuantizationTable(IBufferWriter<byte> writer, WsqQuantizationTable quantizationTable)
     {
         var payload = new ArrayBufferWriter<byte>();
-        WriteScaledUInt16(payload, quantizationTable.BinCenter);
+        payload.WriteByte(quantizationTable.SerializedBinCenter.Scale);
+        payload.WriteUInt16BigEndian(quantizationTable.SerializedBinCenter.RawValue);
 
         for (var subbandIndex = 0; subbandIndex < quantizationTable.QuantizationBins.Count; subbandIndex++)
         {
-            WriteScaledUInt16(payload, quantizationTable.QuantizationBins[subbandIndex]);
-            WriteScaledUInt16(payload, quantizationTable.ZeroBins[subbandIndex]);
+            WriteScaledUInt16(payload, quantizationTable.SerializedQuantizationBins[subbandIndex]);
+            WriteScaledUInt16(payload, quantizationTable.SerializedZeroBins[subbandIndex]);
         }
 
         WriteSegment(writer, WsqMarker.DefineQuantizationTable, payload.WrittenSpan);
@@ -145,11 +147,15 @@ internal static class WsqContainerWriter
         writer.WriteUInt32BigEndian(scaledValue.RawValue);
     }
 
+    private static void WriteScaledUInt16(IBufferWriter<byte> writer, WsqScaledUInt16 value)
+    {
+        writer.WriteByte(value.Scale);
+        writer.WriteUInt16BigEndian(value.RawValue);
+    }
+
     private static void WriteScaledUInt16(IBufferWriter<byte> writer, double value)
     {
-        var scaledValue = WsqScaledValueCodec.ScaleToUInt16(value);
-        writer.WriteByte(scaledValue.Scale);
-        writer.WriteUInt16BigEndian(scaledValue.RawValue);
+        WriteScaledUInt16(writer, WsqScaledValueCodec.ScaleToUInt16(value));
     }
 
     private static float[] CollapseHighPassFilterToStoredLowPassTail(
@@ -158,14 +164,13 @@ internal static class WsqContainerWriter
     {
         var storedTail = new float[(filterLength + 1) / 2];
         var pivot = storedTail.Length - 1;
-        var isOddLength = (filterLength & 1) == 1;
 
         for (var index = 0; index < storedTail.Length; index++)
         {
-            var rightIndex = isOddLength
+            var rightIndex = (filterLength & 1) == 1
                 ? index + pivot
                 : index + pivot + 1;
-            storedTail[index] = IntSign(index) * highPassFilter[rightIndex];
+            storedTail[index] = highPassFilter[rightIndex];
         }
 
         return storedTail;
@@ -177,25 +182,16 @@ internal static class WsqContainerWriter
     {
         var storedTail = new float[(filterLength + 1) / 2];
         var pivot = storedTail.Length - 1;
-        var isOddLength = (filterLength & 1) == 1;
 
         for (var index = 0; index < storedTail.Length; index++)
         {
-            var rightIndex = isOddLength
+            var rightIndex = (filterLength & 1) == 1
                 ? index + pivot
                 : index + pivot + 1;
-            var sign = isOddLength
-                ? IntSign(index)
-                : IntSign(index + 1);
-            storedTail[index] = sign * lowPassFilter[rightIndex];
+            storedTail[index] = lowPassFilter[rightIndex];
         }
 
         return storedTail;
-    }
-
-    private static int IntSign(int power)
-    {
-        return (power & 1) == 0 ? 1 : -1;
     }
 
     private static ReadOnlySpan<byte> GetValueSpan(IReadOnlyList<byte> values)

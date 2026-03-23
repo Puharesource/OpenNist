@@ -1,5 +1,6 @@
 namespace OpenNist.Tests.Wsq;
 
+using System.Globalization;
 using OpenNist.Tests.Wsq.TestDataSources;
 using OpenNist.Tests.Wsq.TestFixtures;
 using OpenNist.Wsq;
@@ -45,5 +46,8 @@ internal sealed class WsqCodecEncodingIntegrationTests
         await Assert.That(container.Blocks[0].HuffmanTableId).IsEqualTo((byte)0);
         await Assert.That(container.Blocks[1].HuffmanTableId).IsEqualTo((byte)1);
         await Assert.That(container.Blocks[2].HuffmanTableId).IsEqualTo((byte)1);
+        await Assert.That(container.Comments.Count).IsEqualTo(1);
+        await Assert.That(container.Comments[0].Fields["COMPRESSION"]).IsEqualTo("WSQ");
+        await Assert.That(container.Comments[0].Fields["WSQ_BITRATE"]).IsEqualTo(testCase.BitRate.ToString("0.000000", CultureInfo.InvariantCulture));
     }
 }

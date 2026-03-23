@@ -122,7 +122,7 @@ internal static class WsqDecomposition
             : coefficients.ToArray();
     }
 
-    private static void GetLets(
+    private static unsafe void GetLets(
         Span<float> destination,
         int destinationBaseOffset,
         ReadOnlySpan<float> source,
@@ -135,243 +135,263 @@ internal static class WsqDecomposition
         ReadOnlySpan<float> lowPassFilter,
         bool invertSubbands)
     {
-        var destinationSamples = destination[destinationBaseOffset..];
-        var sourceSamples = source[sourceBaseOffset..];
-        var dataLengthIsOdd = lineLength % 2 != 0;
-        var filterLengthIsOdd = lowPassFilter.Length % 2 != 0;
-        var activeHighPassFilter = GetActiveHighPassFilter(highPassFilter, filterLengthIsOdd);
-        var positiveStride = sampleStride;
-        var negativeStride = -positiveStride;
+        var hi = highPassFilter.ToArray();
+        var lo = lowPassFilter.ToArray();
 
-        var lowPassCenterOffset = filterLengthIsOdd
-            ? (lowPassFilter.Length - 1) / 2
-            : lowPassFilter.Length / 2 - 2;
-        var highPassCenterOffset = filterLengthIsOdd
-            ? (activeHighPassFilter.Length - 1) / 2 - 1
-            : activeHighPassFilter.Length / 2 - 2;
-        var initialLowPassLeftEdgeState = filterLengthIsOdd ? 0 : 1;
-        var initialHighPassLeftEdgeState = filterLengthIsOdd ? 0 : 1;
-        var initialLowPassRightEdgeState = filterLengthIsOdd ? 0 : 1;
-        var initialHighPassRightEdgeState = filterLengthIsOdd ? 0 : 1;
-
-        if (lowPassCenterOffset == -1)
+        fixed (float* destinationPointer = destination)
+        fixed (float* sourcePointer = source)
+        fixed (float* hiPointer = hi)
+        fixed (float* loPointer = lo)
         {
-            lowPassCenterOffset = 0;
-            initialLowPassLeftEdgeState = 0;
-        }
+            var daEv = lineLength % 2;
+            var fiEv = lo.Length % 2;
+            int loc;
+            int hoc;
+            int olle;
+            int ohle;
+            int olre;
+            int ohre;
 
-        if (highPassCenterOffset == -1)
-        {
-            highPassCenterOffset = 0;
-            initialHighPassLeftEdgeState = 0;
-        }
-
-        var lowPassSampleCount = dataLengthIsOdd
-            ? (lineLength + 1) / 2
-            : lineLength / 2;
-        var highPassSampleCount = dataLengthIsOdd
-            ? lowPassSampleCount - 1
-            : lowPassSampleCount;
-
-        for (var lineIndex = 0; lineIndex < lineCount; lineIndex++)
-        {
-            int lowPassWriteIndex;
-            int highPassWriteIndex;
-            if (invertSubbands)
+            if (fiEv != 0)
             {
-                highPassWriteIndex = lineIndex * linePitch;
-                lowPassWriteIndex = highPassWriteIndex + highPassSampleCount * sampleStride;
+                loc = (lo.Length - 1) / 2;
+                hoc = (hi.Length - 1) / 2 - 1;
+                olle = 0;
+                ohle = 0;
+                olre = 0;
+                ohre = 0;
             }
             else
             {
-                lowPassWriteIndex = lineIndex * linePitch;
-                highPassWriteIndex = lowPassWriteIndex + lowPassSampleCount * sampleStride;
+                loc = lo.Length / 2 - 2;
+                hoc = hi.Length / 2 - 2;
+                olle = 1;
+                ohle = 1;
+                olre = 1;
+                ohre = 1;
+
+                if (loc == -1)
+                {
+                    loc = 0;
+                    olle = 0;
+                }
+
+                if (hoc == -1)
+                {
+                    hoc = 0;
+                    ohle = 0;
+                }
+
+                for (var index = 0; index < hi.Length; index++)
+                {
+                    hiPointer[index] *= -1.0f;
+                }
             }
 
-            var sourceStartIndex = lineIndex * linePitch;
-            var sourceEndIndex = sourceStartIndex + ((lineLength - 1) * sampleStride);
-            var lowPassStartIndex = sourceStartIndex + (lowPassCenterOffset * sampleStride);
-            var lowPassStartStride = negativeStride;
-            var lowPassLeftEdgeState = initialLowPassLeftEdgeState;
-            var lowPassRightEdgeState = initialLowPassRightEdgeState;
-            var highPassStartIndex = sourceStartIndex + (highPassCenterOffset * sampleStride);
-            var highPassStartStride = negativeStride;
-            var highPassLeftEdgeState = initialHighPassLeftEdgeState;
-            var highPassRightEdgeState = initialHighPassRightEdgeState;
-
-            for (var sampleIndex = 0; sampleIndex < highPassSampleCount; sampleIndex++)
+            var pstr = sampleStride;
+            var nstr = -pstr;
+            int llen;
+            int hlen;
+            if (daEv != 0)
             {
-                var lowPassSourceStride = lowPassStartStride;
-                var lowPassSourceIndex = lowPassStartIndex;
-                var currentLowPassLeftEdgeState = lowPassLeftEdgeState;
-                var currentLowPassRightEdgeState = lowPassRightEdgeState;
-                destinationSamples[lowPassWriteIndex] = sourceSamples[lowPassSourceIndex] * lowPassFilter[0];
-                for (var filterIndex = 1; filterIndex < lowPassFilter.Length; filterIndex++)
-                {
-                    if (lowPassSourceIndex == sourceStartIndex)
-                    {
-                        if (currentLowPassLeftEdgeState != 0)
-                        {
-                            lowPassSourceStride = 0;
-                            currentLowPassLeftEdgeState = 0;
-                        }
-                        else
-                        {
-                            lowPassSourceStride = positiveStride;
-                        }
-                    }
-
-                    if (lowPassSourceIndex == sourceEndIndex)
-                    {
-                        if (currentLowPassRightEdgeState != 0)
-                        {
-                            lowPassSourceStride = 0;
-                            currentLowPassRightEdgeState = 0;
-                        }
-                        else
-                        {
-                            lowPassSourceStride = negativeStride;
-                        }
-                    }
-
-                    lowPassSourceIndex += lowPassSourceStride;
-                    destinationSamples[lowPassWriteIndex] += sourceSamples[lowPassSourceIndex] * lowPassFilter[filterIndex];
-                }
-
-                lowPassWriteIndex += sampleStride;
-
-                var highPassSourceStride = highPassStartStride;
-                var highPassSourceIndex = highPassStartIndex;
-                var currentHighPassLeftEdgeState = highPassLeftEdgeState;
-                var currentHighPassRightEdgeState = highPassRightEdgeState;
-                destinationSamples[highPassWriteIndex] = sourceSamples[highPassSourceIndex] * activeHighPassFilter[0];
-                for (var filterIndex = 1; filterIndex < activeHighPassFilter.Length; filterIndex++)
-                {
-                    if (highPassSourceIndex == sourceStartIndex)
-                    {
-                        if (currentHighPassLeftEdgeState != 0)
-                        {
-                            highPassSourceStride = 0;
-                            currentHighPassLeftEdgeState = 0;
-                        }
-                        else
-                        {
-                            highPassSourceStride = positiveStride;
-                        }
-                    }
-
-                    if (highPassSourceIndex == sourceEndIndex)
-                    {
-                        if (currentHighPassRightEdgeState != 0)
-                        {
-                            highPassSourceStride = 0;
-                            currentHighPassRightEdgeState = 0;
-                        }
-                        else
-                        {
-                            highPassSourceStride = negativeStride;
-                        }
-                    }
-
-                    highPassSourceIndex += highPassSourceStride;
-                    destinationSamples[highPassWriteIndex] += sourceSamples[highPassSourceIndex] * activeHighPassFilter[filterIndex];
-                }
-
-                highPassWriteIndex += sampleStride;
-
-                for (var advanceIndex = 0; advanceIndex < 2; advanceIndex++)
-                {
-                    if (lowPassStartIndex == sourceStartIndex)
-                    {
-                        if (lowPassLeftEdgeState != 0)
-                        {
-                            lowPassStartStride = 0;
-                            lowPassLeftEdgeState = 0;
-                        }
-                        else
-                        {
-                            lowPassStartStride = positiveStride;
-                        }
-                    }
-
-                    lowPassStartIndex += lowPassStartStride;
-
-                    if (highPassStartIndex == sourceStartIndex)
-                    {
-                        if (highPassLeftEdgeState != 0)
-                        {
-                            highPassStartStride = 0;
-                            highPassLeftEdgeState = 0;
-                        }
-                        else
-                        {
-                            highPassStartStride = positiveStride;
-                        }
-                    }
-
-                    highPassStartIndex += highPassStartStride;
-                }
+                llen = (lineLength + 1) / 2;
+                hlen = llen - 1;
             }
-
-            if (dataLengthIsOdd)
+            else
             {
-                var lowPassSourceStride = lowPassStartStride;
-                var lowPassSourceIndex = lowPassStartIndex;
-                var currentLowPassLeftEdgeState = lowPassLeftEdgeState;
-                var currentLowPassRightEdgeState = lowPassRightEdgeState;
-                destinationSamples[lowPassWriteIndex] = sourceSamples[lowPassSourceIndex] * lowPassFilter[0];
-                for (var filterIndex = 1; filterIndex < lowPassFilter.Length; filterIndex++)
+                llen = lineLength / 2;
+                hlen = llen;
+            }
+
+            for (var rwCl = 0; rwCl < lineCount; rwCl++)
+            {
+                float* lopass;
+                float* hipass;
+                if (invertSubbands)
                 {
-                    if (lowPassSourceIndex == sourceStartIndex)
+                    hipass = destinationPointer + destinationBaseOffset + (rwCl * linePitch);
+                    lopass = hipass + (hlen * sampleStride);
+                }
+                else
+                {
+                    lopass = destinationPointer + destinationBaseOffset + (rwCl * linePitch);
+                    hipass = lopass + (llen * sampleStride);
+                }
+
+                var p0 = sourcePointer + sourceBaseOffset + (rwCl * linePitch);
+                var p1 = p0 + ((lineLength - 1) * sampleStride);
+
+                var lspx = p0 + (loc * sampleStride);
+                var lspxstr = nstr;
+                var lle2 = olle;
+                var lre2 = olre;
+                var hspx = p0 + (hoc * sampleStride);
+                var hspxstr = nstr;
+                var hle2 = ohle;
+                var hre2 = ohre;
+
+                for (var pix = 0; pix < hlen; pix++)
+                {
+                    var lpxstr = lspxstr;
+                    var lpx = lspx;
+                    var lle = lle2;
+                    var lre = lre2;
+                    *lopass = *lpx * loPointer[0];
+                    for (var index = 1; index < lo.Length; index++)
                     {
-                        if (currentLowPassLeftEdgeState != 0)
+                        if (lpx == p0)
                         {
-                            lowPassSourceStride = 0;
-                            currentLowPassLeftEdgeState = 0;
+                            if (lle != 0)
+                            {
+                                lpxstr = 0;
+                                lle = 0;
+                            }
+                            else
+                            {
+                                lpxstr = pstr;
+                            }
                         }
-                        else
+
+                        if (lpx == p1)
                         {
-                            lowPassSourceStride = positiveStride;
+                            if (lre != 0)
+                            {
+                                lpxstr = 0;
+                                lre = 0;
+                            }
+                            else
+                            {
+                                lpxstr = nstr;
+                            }
                         }
+
+                        lpx += lpxstr;
+                        *lopass = MathF.FusedMultiplyAdd(*lpx, loPointer[index], *lopass);
                     }
 
-                    if (lowPassSourceIndex == sourceEndIndex)
+                    lopass += sampleStride;
+
+                    var hpxstr = hspxstr;
+                    var hpx = hspx;
+                    var hle = hle2;
+                    var hre = hre2;
+                    *hipass = *hpx * hiPointer[0];
+                    for (var index = 1; index < hi.Length; index++)
                     {
-                        if (currentLowPassRightEdgeState != 0)
+                        if (hpx == p0)
                         {
-                            lowPassSourceStride = 0;
-                            currentLowPassRightEdgeState = 0;
+                            if (hle != 0)
+                            {
+                                hpxstr = 0;
+                                hle = 0;
+                            }
+                            else
+                            {
+                                hpxstr = pstr;
+                            }
                         }
-                        else
+
+                        if (hpx == p1)
                         {
-                            lowPassSourceStride = negativeStride;
+                            if (hre != 0)
+                            {
+                                hpxstr = 0;
+                                hre = 0;
+                            }
+                            else
+                            {
+                                hpxstr = nstr;
+                            }
                         }
+
+                        hpx += hpxstr;
+                        *hipass = MathF.FusedMultiplyAdd(*hpx, hiPointer[index], *hipass);
                     }
 
-                    lowPassSourceIndex += lowPassSourceStride;
-                    destinationSamples[lowPassWriteIndex] += sourceSamples[lowPassSourceIndex] * lowPassFilter[filterIndex];
+                    hipass += sampleStride;
+
+                    for (var index = 0; index < 2; index++)
+                    {
+                        if (lspx == p0)
+                        {
+                            if (lle2 != 0)
+                            {
+                                lspxstr = 0;
+                                lle2 = 0;
+                            }
+                            else
+                            {
+                                lspxstr = pstr;
+                            }
+                        }
+
+                        lspx += lspxstr;
+                        if (hspx == p0)
+                        {
+                            if (hle2 != 0)
+                            {
+                                hspxstr = 0;
+                                hle2 = 0;
+                            }
+                            else
+                            {
+                                hspxstr = pstr;
+                            }
+                        }
+
+                        hspx += hspxstr;
+                    }
+                }
+
+                if (daEv != 0)
+                {
+                    var lpxstr = lspxstr;
+                    var lpx = lspx;
+                    var lle = lle2;
+                    var lre = lre2;
+                    *lopass = *lpx * loPointer[0];
+                    for (var index = 1; index < lo.Length; index++)
+                    {
+                        if (lpx == p0)
+                        {
+                            if (lle != 0)
+                            {
+                                lpxstr = 0;
+                                lle = 0;
+                            }
+                            else
+                            {
+                                lpxstr = pstr;
+                            }
+                        }
+
+                        if (lpx == p1)
+                        {
+                            if (lre != 0)
+                            {
+                                lpxstr = 0;
+                                lre = 0;
+                            }
+                            else
+                            {
+                                lpxstr = nstr;
+                            }
+                        }
+
+                        lpx += lpxstr;
+                        *lopass = MathF.FusedMultiplyAdd(*lpx, loPointer[index], *lopass);
+                    }
+                }
+            }
+
+            if (fiEv == 0)
+            {
+                for (var index = 0; index < hi.Length; index++)
+                {
+                    hiPointer[index] *= -1.0f;
                 }
             }
         }
-    }
-
-    private static ReadOnlySpan<float> GetActiveHighPassFilter(
-        ReadOnlySpan<float> highPassFilter,
-        bool lowPassFilterLengthIsOdd)
-    {
-        if (lowPassFilterLengthIsOdd)
-        {
-            return highPassFilter;
-        }
-
-        var negatedHighPassFilter = GC.AllocateUninitializedArray<float>(highPassFilter.Length);
-
-        for (var filterIndex = 0; filterIndex < highPassFilter.Length; filterIndex++)
-        {
-            negatedHighPassFilter[filterIndex] = -highPassFilter[filterIndex];
-        }
-
-        return negatedHighPassFilter;
     }
 
     private static float[] FlattenRowPassOutput(

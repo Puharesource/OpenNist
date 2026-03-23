@@ -68,6 +68,58 @@ internal static class WsqCoefficientQuantizer
         ReadOnlySpan<double> waveletData,
         ReadOnlySpan<WsqQuantizationNode> quantizationTree,
         int width,
+        ReadOnlySpan<float> quantizationBins,
+        ReadOnlySpan<float> zeroBins)
+    {
+        var quantizedCoefficients = new short[waveletData.Length];
+        var coefficientIndex = 0;
+
+        for (var subband = 0; subband < WsqConstants.NumberOfSubbands; subband++)
+        {
+            if (quantizationBins[subband] == 0.0f)
+            {
+                continue;
+            }
+
+            var node = quantizationTree[subband];
+            var halfZeroBin = zeroBins[subband] / 2.0f;
+            var rowStart = node.Y * width + node.X;
+
+            for (var row = 0; row < node.Height; row++)
+            {
+                var pixelIndex = rowStart + row * width;
+
+                for (var column = 0; column < node.Width; column++)
+                {
+                    var coefficient = (float)waveletData[pixelIndex + column];
+                    short quantizedCoefficient;
+
+                    if (-halfZeroBin <= coefficient && coefficient <= halfZeroBin)
+                    {
+                        quantizedCoefficient = 0;
+                    }
+                    else if (coefficient > 0.0f)
+                    {
+                        quantizedCoefficient = checked((short)(((coefficient - halfZeroBin) / quantizationBins[subband]) + 1.0f));
+                    }
+                    else
+                    {
+                        quantizedCoefficient = checked((short)(((coefficient + halfZeroBin) / quantizationBins[subband]) - 1.0f));
+                    }
+
+                    quantizedCoefficients[coefficientIndex++] = quantizedCoefficient;
+                }
+            }
+        }
+
+        Array.Resize(ref quantizedCoefficients, coefficientIndex);
+        return quantizedCoefficients;
+    }
+
+    public static short[] Quantize(
+        ReadOnlySpan<double> waveletData,
+        ReadOnlySpan<WsqQuantizationNode> quantizationTree,
+        int width,
         ReadOnlySpan<double> quantizationBins,
         ReadOnlySpan<double> zeroBins)
     {

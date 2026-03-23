@@ -27,8 +27,11 @@ internal sealed record WsqTransformTable(
 
 internal sealed record WsqQuantizationTable(
     double BinCenter,
+    WsqScaledUInt16 SerializedBinCenter,
     IReadOnlyList<double> QuantizationBins,
-    IReadOnlyList<double> ZeroBins);
+    IReadOnlyList<double> ZeroBins,
+    IReadOnlyList<WsqScaledUInt16> SerializedQuantizationBins,
+    IReadOnlyList<WsqScaledUInt16> SerializedZeroBins);
 
 internal sealed record WsqHuffmanTable(
     byte TableId,

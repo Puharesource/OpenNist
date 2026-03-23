@@ -31,7 +31,7 @@ public sealed class WsqCodec : IWsqCodec
         CancellationToken cancellationToken)
     {
         var analysis = await WsqEncoderAnalysisPipeline.AnalyzeAsync(rawImageStream, rawImage, options, cancellationToken).ConfigureAwait(false);
-        var container = WsqEncoderContainerBuilder.Build(analysis, rawImage);
+        var container = WsqEncoderContainerBuilder.Build(analysis, rawImage, options);
         await WsqContainerWriter.WriteAsync(wsqStream, container, cancellationToken).ConfigureAwait(false);
     }
 

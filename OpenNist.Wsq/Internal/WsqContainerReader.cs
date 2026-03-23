@@ -193,21 +193,32 @@ internal static class WsqContainerReader
         var binCenterScale = segmentReader.ReadByte();
         var binCenterRaw = segmentReader.ReadUInt16BigEndian();
         var binCenter = WsqScaledValueCodec.ScaleUInt16ToDouble(binCenterRaw, binCenterScale);
+        var serializedBinCenter = new WsqScaledUInt16(binCenterRaw, binCenterScale);
         var quantizationBins = new double[64];
         var zeroBins = new double[64];
+        var serializedQuantizationBins = new WsqScaledUInt16[64];
+        var serializedZeroBins = new WsqScaledUInt16[64];
 
         for (var index = 0; index < 64; index++)
         {
             var quantizationScale = segmentReader.ReadByte();
             var quantizationValue = segmentReader.ReadUInt16BigEndian();
+            serializedQuantizationBins[index] = new(quantizationValue, quantizationScale);
             quantizationBins[index] = WsqScaledValueCodec.ScaleUInt16ToDouble(quantizationValue, quantizationScale);
 
             var zeroScale = segmentReader.ReadByte();
             var zeroValue = segmentReader.ReadUInt16BigEndian();
+            serializedZeroBins[index] = new(zeroValue, zeroScale);
             zeroBins[index] = WsqScaledValueCodec.ScaleUInt16ToDouble(zeroValue, zeroScale);
         }
 
-        return new(binCenter, quantizationBins, zeroBins);
+        return new(
+            binCenter,
+            serializedBinCenter,
+            quantizationBins,
+            zeroBins,
+            serializedQuantizationBins,
+            serializedZeroBins);
     }
 
     private static List<WsqHuffmanTable> ReadHuffmanTables(ref WsqBufferReader reader)

@@ -4,7 +4,7 @@ using OpenNist.Wsq.Internal;
 
 internal static class WsqQuantizationTableFactory
 {
-    private const double BinCenter = 44.0;
+    private static readonly WsqScaledUInt16 s_serializedBinCenter = new(44, 2);
 
     public static WsqQuantizationTable Create(
         ReadOnlySpan<float> quantizationBins,
@@ -12,17 +12,32 @@ internal static class WsqQuantizationTableFactory
     {
         var serializedQuantizationBins = new double[quantizationBins.Length];
         var serializedZeroBins = new double[zeroBins.Length];
+        var serializedQuantizationBinValues = new WsqScaledUInt16[quantizationBins.Length];
+        var serializedZeroBinValues = new WsqScaledUInt16[zeroBins.Length];
 
         for (var subband = 0; subband < quantizationBins.Length; subband++)
         {
-            serializedQuantizationBins[subband] = WsqScaledValueCodec.RoundTripUInt16(quantizationBins[subband]);
-            serializedZeroBins[subband] = WsqScaledValueCodec.RoundTripUInt16(zeroBins[subband]);
+            var serializedQuantizationBin = WsqScaledValueCodec.ScaleToUInt16(quantizationBins[subband]);
+            var serializedZeroBin = WsqScaledValueCodec.ScaleToUInt16(zeroBins[subband]);
+            serializedQuantizationBinValues[subband] = serializedQuantizationBin;
+            serializedZeroBinValues[subband] = serializedZeroBin;
+            serializedQuantizationBins[subband] = WsqScaledValueCodec.ScaleUInt16ToDouble(
+                serializedQuantizationBin.RawValue,
+                serializedQuantizationBin.Scale);
+            serializedZeroBins[subband] = WsqScaledValueCodec.ScaleUInt16ToDouble(
+                serializedZeroBin.RawValue,
+                serializedZeroBin.Scale);
         }
 
         return new(
-            BinCenter: WsqScaledValueCodec.RoundTripUInt16(BinCenter),
+            BinCenter: WsqScaledValueCodec.ScaleUInt16ToDouble(
+                s_serializedBinCenter.RawValue,
+                s_serializedBinCenter.Scale),
+            SerializedBinCenter: s_serializedBinCenter,
             QuantizationBins: serializedQuantizationBins,
-            ZeroBins: serializedZeroBins);
+            ZeroBins: serializedZeroBins,
+            SerializedQuantizationBins: serializedQuantizationBinValues,
+            SerializedZeroBins: serializedZeroBinValues);
     }
 
     public static WsqQuantizationTable Create(
@@ -31,16 +46,31 @@ internal static class WsqQuantizationTableFactory
     {
         var serializedQuantizationBins = new double[quantizationBins.Length];
         var serializedZeroBins = new double[zeroBins.Length];
+        var serializedQuantizationBinValues = new WsqScaledUInt16[quantizationBins.Length];
+        var serializedZeroBinValues = new WsqScaledUInt16[zeroBins.Length];
 
         for (var subband = 0; subband < quantizationBins.Length; subband++)
         {
-            serializedQuantizationBins[subband] = WsqScaledValueCodec.RoundTripUInt16(quantizationBins[subband]);
-            serializedZeroBins[subband] = WsqScaledValueCodec.RoundTripUInt16(zeroBins[subband]);
+            var serializedQuantizationBin = WsqScaledValueCodec.ScaleToUInt16((float)quantizationBins[subband]);
+            var serializedZeroBin = WsqScaledValueCodec.ScaleToUInt16((float)zeroBins[subband]);
+            serializedQuantizationBinValues[subband] = serializedQuantizationBin;
+            serializedZeroBinValues[subband] = serializedZeroBin;
+            serializedQuantizationBins[subband] = WsqScaledValueCodec.ScaleUInt16ToDouble(
+                serializedQuantizationBin.RawValue,
+                serializedQuantizationBin.Scale);
+            serializedZeroBins[subband] = WsqScaledValueCodec.ScaleUInt16ToDouble(
+                serializedZeroBin.RawValue,
+                serializedZeroBin.Scale);
         }
 
         return new(
-            BinCenter: WsqScaledValueCodec.RoundTripUInt16(BinCenter),
+            BinCenter: WsqScaledValueCodec.ScaleUInt16ToDouble(
+                s_serializedBinCenter.RawValue,
+                s_serializedBinCenter.Scale),
+            SerializedBinCenter: s_serializedBinCenter,
             QuantizationBins: serializedQuantizationBins,
-            ZeroBins: serializedZeroBins);
+            ZeroBins: serializedZeroBins,
+            SerializedQuantizationBins: serializedQuantizationBinValues,
+            SerializedZeroBins: serializedZeroBinValues);
     }
 }

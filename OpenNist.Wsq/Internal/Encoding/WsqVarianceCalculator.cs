@@ -67,24 +67,23 @@ internal static class WsqVarianceCalculator
             regionHeight = (7 * node.Height) / 16;
         }
 
-        var rowStart = startY * width + startX;
-        var squaredSum = 0.0f;
-        var pixelSum = 0.0f;
+        var fp = (startY * width) + startX;
+        var ssq = 0.0f;
+        var sumPix = 0.0f;
 
-        for (var row = 0; row < regionHeight; row++)
+        for (var row = 0; row < regionHeight; row++, fp += width - regionWidth)
         {
-            var pixelIndex = rowStart + row * width;
-
             for (var column = 0; column < regionWidth; column++)
             {
-                var pixel = waveletData[pixelIndex + column];
-                pixelSum += pixel;
-                squaredSum += pixel * pixel;
+                var pixel = waveletData[fp];
+                sumPix += pixel;
+                ssq = MathF.FusedMultiplyAdd(pixel, pixel, ssq);
+                fp++;
             }
         }
 
         var sampleCount = regionWidth * regionHeight;
-        var normalizedSum = (pixelSum * pixelSum) / sampleCount;
-        return (squaredSum - normalizedSum) / (sampleCount - 1.0f);
+        var sum2 = (sumPix * sumPix) / sampleCount;
+        return (float)((ssq - sum2) / (sampleCount - 1.0));
     }
 }

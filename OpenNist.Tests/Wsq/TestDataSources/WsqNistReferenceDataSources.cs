@@ -69,18 +69,14 @@ internal static class WsqNistReferenceDataSources
     {
         var activeExactFileNames = new HashSet<string>(StringComparer.Ordinal)
         {
-            "a039.raw",
             "a165.raw",
             "b082.raw",
             "b158.raw",
             "b186.raw",
-            "cmp00007.raw",
             "cmp00009.raw",
             "cmp00010.raw",
             "cmp00011.raw",
-            "cmp00012.raw",
             "cmp00013.raw",
-            "cmp00014.raw",
             "cmp00015.raw",
             "cmp00016.raw",
             "cmp00017.raw",
@@ -143,6 +139,388 @@ internal static class WsqNistReferenceDataSources
                     fixture.RawPath,
                     fixture.ReferenceBitRate225Path),
                 DisplayName: $"should match the exact NIST quantized coefficient bins for blocker case {fixture.FileName} at 2.25 bpp via the high-precision encoder analysis path");
+        }
+    }
+
+    public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> EncodeHighPrecisionGuardReferenceCases()
+    {
+        var guardFileNames = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "cmp00017.raw",
+        };
+
+        foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures.Where(fixture => guardFileNames.Contains(fixture.FileName)))
+        {
+            yield return new(
+                new(
+                    fixture.FileName,
+                    2.25,
+                    fixture.RawImage,
+                    fixture.RawPath,
+                    fixture.ReferenceBitRate225Path),
+                DisplayName: $"should keep the exact NIST 2.25 bpp guard case {fixture.FileName} green while diagnosing the remaining blocker cases");
+        }
+    }
+
+    public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> EncodeHighPrecisionProductPrecisionGuardReferenceCases()
+    {
+        var guardFileNames = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "a076.raw",
+            "cmp00017.raw",
+            "sample_19.raw",
+        };
+
+        foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures.Where(fixture => guardFileNames.Contains(fixture.FileName)))
+        {
+            yield return new(
+                new(
+                    fixture.FileName,
+                    2.25,
+                    fixture.RawImage,
+                    fixture.RawPath,
+                    fixture.ReferenceBitRate225Path),
+                DisplayName: $"should keep exact 2.25 bpp guard case {fixture.FileName} out of the float-product high-rate path");
+        }
+    }
+
+    public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> EncodeHighPrecisionNbisAlignedBlockerReferenceCases()
+    {
+        var blockerFileNames = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "a070.raw",
+            "cmp00005.raw",
+        };
+
+        foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures.Where(fixture => blockerFileNames.Contains(fixture.FileName)))
+        {
+            yield return new(
+                new(
+                    fixture.FileName,
+                    2.25,
+                    fixture.RawImage,
+                    fixture.RawPath,
+                    fixture.ReferenceBitRate225Path),
+                DisplayName: $"should isolate the NBIS-aligned qbin blocker class for {fixture.FileName} at 2.25 bpp");
+        }
+    }
+
+    public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> EncodeHighPrecisionRegionTwoFollowOnReferenceCases()
+    {
+        var followOnFileNames = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "cmp00005.raw",
+        };
+
+        foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures.Where(fixture => followOnFileNames.Contains(fixture.FileName)))
+        {
+            yield return new(
+                new(
+                    fixture.FileName,
+                    2.25,
+                    fixture.RawImage,
+                    fixture.RawPath,
+                    fixture.ReferenceBitRate225Path),
+                DisplayName: $"should isolate the region-2 follow-on qbin drift for {fixture.FileName} at 2.25 bpp");
+        }
+    }
+
+    public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> EncodeNbisActiveExactReferenceCases()
+    {
+        var activeExactCases = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "a001.raw|0.75",
+            "a001.raw|2.25",
+            "a002.raw|0.75",
+            "a018.raw|0.75",
+            "a039.raw|0.75",
+            "a039.raw|2.25",
+            "a070.raw|0.75",
+            "a070.raw|2.25",
+            "a076.raw|0.75",
+            "a076.raw|2.25",
+            "a089.raw|0.75",
+            "a107.raw|0.75",
+            "a129.raw|0.75",
+            "a129.raw|2.25",
+            "a165.raw|0.75",
+            "a165.raw|2.25",
+            "b082.raw|0.75",
+            "b082.raw|2.25",
+            "b124.raw|0.75",
+            "b124.raw|2.25",
+            "b157.raw|0.75",
+            "b158.raw|0.75",
+            "b186.raw|0.75",
+            "b186.raw|2.25",
+            "cmp00001.raw|0.75",
+            "cmp00002.raw|0.75",
+            "cmp00002.raw|2.25",
+            "cmp00003.raw|0.75",
+            "cmp00004.raw|0.75",
+            "cmp00006.raw|0.75",
+            "cmp00007.raw|0.75",
+            "cmp00008.raw|0.75",
+            "cmp00009.raw|0.75",
+            "cmp00009.raw|2.25",
+            "cmp00010.raw|0.75",
+            "cmp00010.raw|2.25",
+            "cmp00012.raw|0.75",
+            "cmp00012.raw|2.25",
+            "cmp00013.raw|0.75",
+            "cmp00013.raw|2.25",
+            "cmp00014.raw|0.75",
+            "cmp00014.raw|2.25",
+            "cmp00015.raw|0.75",
+            "cmp00015.raw|2.25",
+            "cmp00016.raw|0.75",
+            "cmp00016.raw|2.25",
+            "cmp00017.raw|0.75",
+            "cmp00018.raw|0.75",
+            "cmp00018.raw|2.25",
+            "cmp00019.raw|0.75",
+            "cmp00019.raw|2.25",
+            "sample_01.raw|0.75",
+            "sample_01.raw|2.25",
+            "sample_03.raw|0.75",
+            "sample_03.raw|2.25",
+            "sample_04.raw|0.75",
+            "sample_04.raw|2.25",
+            "sample_10.raw|0.75",
+            "sample_10.raw|2.25",
+            "sample_11.raw|0.75",
+            "cmp00003.raw|2.25",
+        };
+
+        foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures)
+        {
+            foreach (var referenceCase in new[]
+            {
+                new { BitRate = 0.75, ReferencePath = fixture.ReferenceBitRate075Path },
+                new { BitRate = 2.25, ReferencePath = fixture.ReferenceBitRate225Path },
+            })
+            {
+                var caseKey = $"{fixture.FileName}|{referenceCase.BitRate:0.##}";
+                if (!activeExactCases.Contains(caseKey))
+                {
+                    continue;
+                }
+
+                yield return new(
+                    new(
+                        fixture.FileName,
+                        referenceCase.BitRate,
+                        fixture.RawImage,
+                        fixture.RawPath,
+                        referenceCase.ReferencePath),
+                    DisplayName: $"should match the exact local NBIS encoder analysis output for active case {fixture.FileName} at {referenceCase.BitRate:0.##} bpp");
+            }
+        }
+    }
+
+    public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> EncodeNbis225FocusedBlockerReferenceCases()
+    {
+        var focusedBlockerFileNames = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "a018.raw",
+            "a070.raw",
+            "a076.raw",
+            "a089.raw",
+            "a107.raw",
+            "cmp00003.raw",
+            "cmp00005.raw",
+            "cmp00007.raw",
+        };
+
+        foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures.Where(fixture => focusedBlockerFileNames.Contains(fixture.FileName)))
+        {
+            yield return new(
+                new(
+                    fixture.FileName,
+                    2.25,
+                    fixture.RawImage,
+                    fixture.RawPath,
+                    fixture.ReferenceBitRate225Path),
+                DisplayName: $"should isolate the focused 2.25 bpp NBIS blocker case {fixture.FileName}");
+        }
+    }
+
+    public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> EncodeNbisCurrentMismatchReferenceCases()
+    {
+        var currentMismatchCases = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "a002.raw|2.25",
+            "a018.raw|2.25",
+            "a089.raw|2.25",
+            "a107.raw|2.25",
+            "b157.raw|2.25",
+            "b158.raw|2.25",
+            "cmp00001.raw|2.25",
+            "cmp00004.raw|2.25",
+            "cmp00005.raw|0.75",
+            "cmp00005.raw|2.25",
+            "cmp00006.raw|2.25",
+            "cmp00007.raw|2.25",
+            "cmp00008.raw|2.25",
+            "cmp00011.raw|0.75",
+            "cmp00011.raw|2.25",
+            "cmp00017.raw|2.25",
+            "sample_11.raw|2.25",
+            "sample_19.raw|0.75",
+            "sample_19.raw|2.25",
+        };
+
+        foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures)
+        {
+            foreach (var referenceCase in new[]
+            {
+                new { BitRate = 0.75, ReferencePath = fixture.ReferenceBitRate075Path },
+                new { BitRate = 2.25, ReferencePath = fixture.ReferenceBitRate225Path },
+            })
+            {
+                var caseKey = $"{fixture.FileName}|{referenceCase.BitRate:0.##}";
+                if (!currentMismatchCases.Contains(caseKey))
+                {
+                    continue;
+                }
+
+                yield return new(
+                    new(
+                        fixture.FileName,
+                        referenceCase.BitRate,
+                        fixture.RawImage,
+                        fixture.RawPath,
+                        referenceCase.ReferencePath),
+                    DisplayName: $"should isolate the current NBIS mismatch case {fixture.FileName} at {referenceCase.BitRate:0.##} bpp");
+            }
+        }
+    }
+
+    public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> EncodeNbisActiveExactCodestreamReferenceCases()
+    {
+        foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures)
+        {
+            foreach (var referenceCase in new[]
+            {
+                new { BitRate = 0.75, ReferencePath = fixture.ReferenceBitRate075Path },
+                new { BitRate = 2.25, ReferencePath = fixture.ReferenceBitRate225Path },
+            })
+            {
+                yield return new(
+                    new(
+                        fixture.FileName,
+                        referenceCase.BitRate,
+                        fixture.RawImage,
+                        fixture.RawPath,
+                        referenceCase.ReferencePath),
+                    DisplayName: $"should match the exact local NBIS 5.0.0 codestream for active case {fixture.FileName} at {referenceCase.BitRate:0.##} bpp");
+            }
+        }
+    }
+
+    public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> EncodeNbis075FocusedMismatchReferenceCases()
+    {
+        var focusedMismatchCases = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "cmp00005.raw|0.75",
+            "cmp00011.raw|0.75",
+            "sample_19.raw|0.75",
+        };
+
+        foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures)
+        {
+            var caseKey = $"{fixture.FileName}|0.75";
+            if (!focusedMismatchCases.Contains(caseKey))
+            {
+                continue;
+            }
+
+            yield return new(
+                new(
+                    fixture.FileName,
+                    0.75,
+                    fixture.RawImage,
+                    fixture.RawPath,
+                    fixture.ReferenceBitRate075Path),
+                DisplayName: $"should isolate the focused 0.75 bpp NBIS mismatch case {fixture.FileName}");
+        }
+    }
+
+    public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> EncodeNbis075DqtOnlyMismatchReferenceCases()
+    {
+        var focusedMismatchCases = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "a001.raw|0.75",
+            "a018.raw|0.75",
+            "a107.raw|0.75",
+        };
+
+        foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures)
+        {
+            var caseKey = $"{fixture.FileName}|0.75";
+            if (!focusedMismatchCases.Contains(caseKey))
+            {
+                continue;
+            }
+
+            yield return new(
+                new(
+                    fixture.FileName,
+                    0.75,
+                    fixture.RawImage,
+                    fixture.RawPath,
+                    fixture.ReferenceBitRate075Path),
+                DisplayName: $"should isolate the focused 0.75 bpp NBIS DQT-only mismatch case {fixture.FileName}");
+        }
+    }
+
+    public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> EncodeNbis225RepresentativeDqtOnlyMismatchReferenceCases()
+    {
+        var focusedMismatchCases = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "a001.raw|2.25",
+            "a076.raw|2.25",
+            "cmp00008.raw|2.25",
+        };
+
+        foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures)
+        {
+            var caseKey = $"{fixture.FileName}|2.25";
+            if (!focusedMismatchCases.Contains(caseKey))
+            {
+                continue;
+            }
+
+            yield return new(
+                new(
+                    fixture.FileName,
+                    2.25,
+                    fixture.RawImage,
+                    fixture.RawPath,
+                    fixture.ReferenceBitRate225Path),
+                DisplayName: $"should isolate the representative 2.25 bpp NBIS DQT-only mismatch case {fixture.FileName}");
+        }
+    }
+
+    public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> EncodeHighPrecisionSerializedBinSensitiveExactReferenceCases()
+    {
+        var exactSensitiveFileNames = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "cmp00014.raw",
+            "sample_01.raw",
+            "sample_19.raw",
+        };
+
+        foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures.Where(fixture => exactSensitiveFileNames.Contains(fixture.FileName)))
+        {
+            yield return new(
+                new(
+                    fixture.FileName,
+                    2.25,
+                    fixture.RawImage,
+                    fixture.RawPath,
+                    fixture.ReferenceBitRate225Path),
+                DisplayName: $"should keep exact 2.25 bpp case {fixture.FileName} out of the serialized subband-0 blocker fix bucket");
         }
     }
 
