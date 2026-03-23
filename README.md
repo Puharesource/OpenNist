@@ -17,14 +17,22 @@ OpenNist is licensed under the Apache License 2.0. See [`LICENSE`](LICENSE).
 ## Repository layout
 
 ```text
+/src
+  /dotnet
+    /apps
+    /interop
+    /libraries
+      /OpenNist.Core
+      /OpenNist.Nist
+      /OpenNist.Wsq
+      /OpenNist.Jp2000
+      /OpenNist.Nfiq
+  /web
+/tests
+  /OpenNist.Tests
+/tools
+/docs
 OpenNist.slnx
-OpenNist.Core/
-OpenNist.Nist/
-OpenNist.Wsq/
-OpenNist.Jp2000/
-OpenNist.Nfiq/
-OpenNist.Tests/
-docs/
 ```
 
 ## Development

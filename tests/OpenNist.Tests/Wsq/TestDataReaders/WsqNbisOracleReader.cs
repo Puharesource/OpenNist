@@ -8,15 +8,11 @@ using OpenNist.Wsq.Internal;
 
 internal static class WsqNbisOracleReader
 {
-    private static string RepositoryRoot { get; } = Path.GetFullPath(Path.Combine(
-        AppContext.BaseDirectory,
-        "..",
-        "..",
-        "..",
-        "..",
-        ".."));
+    private const string SolutionFileName = "OpenNist.slnx";
 
-    private static string DiagnosticToolDirectory { get; } = Path.Combine(RepositoryRoot, "tmp", "wsq-diag");
+    private static string RepositoryRoot { get; } = FindRepositoryRoot();
+
+    private static string DiagnosticToolDirectory { get; } = Path.Combine(RepositoryRoot, "tools", "wsq-diag");
 
     private static string AnalysisToolPath { get; } = Path.Combine(DiagnosticToolDirectory, "nbis_dump");
 
@@ -340,7 +336,23 @@ internal static class WsqNbisOracleReader
 
         throw new InvalidOperationException(
             $"Local NBIS diagnostic helpers were not found under '{DiagnosticToolDirectory}'. "
-            + "Build or restore the NBIS 5.0.0-backed tmp/wsq-diag tools before running the NBIS stage-oracle tests.");
+            + "Build or restore the NBIS 5.0.0-backed tools/wsq-diag helpers before running the NBIS stage-oracle tests.");
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        var currentDirectory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (currentDirectory is not null)
+        {
+            if (File.Exists(Path.Combine(currentDirectory.FullName, SolutionFileName)))
+            {
+                return currentDirectory.FullName;
+            }
+
+            currentDirectory = currentDirectory.Parent;
+        }
+
+        throw new InvalidOperationException($"Unable to locate repository root containing {SolutionFileName}.");
     }
 
     private static bool ValidateVersion()

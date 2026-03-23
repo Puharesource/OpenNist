@@ -32,12 +32,12 @@ The NBIS-oracle tests currently compare these stages:
 4. Quantization bins
 5. Quantized coefficients
 
-The tests use the local NBIS 5.0.0 C helpers in `tmp/wsq-diag/`:
+The tests use the local NBIS 5.0.0 C helpers in `tools/wsq-diag/`:
 
 - `nbis_wavelet_dump`
 - `nbis_dump`
 
-Those helpers come from the NBIS 5.0.0 reference implementation and are treated as a local diagnostic oracle only. The repo now includes a rebuild helper at `tmp/wsq-diag/build-nbis-5-oracles.sh` so the native oracle binaries can be refreshed against the same local NBIS 5.0.0 install.
+Those helpers come from the NBIS 5.0.0 reference implementation and are treated as a local diagnostic oracle only. The repo now includes a rebuild helper at `tools/wsq-diag/build-nbis-5-oracles.sh` so the native oracle binaries can be refreshed against the same local NBIS 5.0.0 install.
 
 The tracked diagnostic layer now also includes a managed quantization-trace view of the high-rate `qbin` synthesis loop. That trace is used to compare:
 
@@ -151,7 +151,7 @@ If this approach proves useful, the next expansion path is:
 
 ## Practical note
 
-The current stage-oracle tests depend on the local NBIS 5.0.0 helper binaries under `tmp/wsq-diag/`.
+The current stage-oracle tests depend on the local NBIS 5.0.0 helper binaries under `tools/wsq-diag/`.
 
 That is deliberate:
 
