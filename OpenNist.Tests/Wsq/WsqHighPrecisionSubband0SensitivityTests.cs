@@ -20,13 +20,4 @@ internal sealed class WsqHighPrecisionSubband0SensitivityTests
         await Assert.That(snapshot.SubbandZeroSerializedOverrideMismatchIndex < snapshot.CurrentMismatchIndex).IsTrue();
     }
 
-    [Test]
-    [Skip("This NIST-side contrast set was calibrated to the earlier serialized-bin diagnostic baseline. Re-enable after rebasing it to the current NBIS 5.0.0 codestream target.")]
-    [DisplayName("Should show the serialized subband 0 override is unsafe for the curated exact 2.25 bpp contrast set")]
-    [MethodDataSource(typeof(WsqNistReferenceDataSources), nameof(WsqNistReferenceDataSources.EncodeHighPrecisionSerializedBinSensitiveExactReferenceCases))]
-    public async Task ShouldShowTheSerializedSubband0OverrideIsUnsafeForTheCuratedExact225BppContrastSet(
-        WsqEncodingReferenceCase testCase)
-    {
-        await Task.CompletedTask;
-    }
 }

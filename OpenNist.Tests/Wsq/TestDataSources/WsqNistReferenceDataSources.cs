@@ -227,71 +227,6 @@ internal static class WsqNistReferenceDataSources
 
     public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> EncodeNbisActiveExactReferenceCases()
     {
-        var activeExactCases = new HashSet<string>(StringComparer.Ordinal)
-        {
-            "a001.raw|0.75",
-            "a001.raw|2.25",
-            "a002.raw|0.75",
-            "a018.raw|0.75",
-            "a039.raw|0.75",
-            "a039.raw|2.25",
-            "a070.raw|0.75",
-            "a070.raw|2.25",
-            "a076.raw|0.75",
-            "a076.raw|2.25",
-            "a089.raw|0.75",
-            "a107.raw|0.75",
-            "a129.raw|0.75",
-            "a129.raw|2.25",
-            "a165.raw|0.75",
-            "a165.raw|2.25",
-            "b082.raw|0.75",
-            "b082.raw|2.25",
-            "b124.raw|0.75",
-            "b124.raw|2.25",
-            "b157.raw|0.75",
-            "b158.raw|0.75",
-            "b186.raw|0.75",
-            "b186.raw|2.25",
-            "cmp00001.raw|0.75",
-            "cmp00002.raw|0.75",
-            "cmp00002.raw|2.25",
-            "cmp00003.raw|0.75",
-            "cmp00004.raw|0.75",
-            "cmp00006.raw|0.75",
-            "cmp00007.raw|0.75",
-            "cmp00008.raw|0.75",
-            "cmp00009.raw|0.75",
-            "cmp00009.raw|2.25",
-            "cmp00010.raw|0.75",
-            "cmp00010.raw|2.25",
-            "cmp00012.raw|0.75",
-            "cmp00012.raw|2.25",
-            "cmp00013.raw|0.75",
-            "cmp00013.raw|2.25",
-            "cmp00014.raw|0.75",
-            "cmp00014.raw|2.25",
-            "cmp00015.raw|0.75",
-            "cmp00015.raw|2.25",
-            "cmp00016.raw|0.75",
-            "cmp00016.raw|2.25",
-            "cmp00017.raw|0.75",
-            "cmp00018.raw|0.75",
-            "cmp00018.raw|2.25",
-            "cmp00019.raw|0.75",
-            "cmp00019.raw|2.25",
-            "sample_01.raw|0.75",
-            "sample_01.raw|2.25",
-            "sample_03.raw|0.75",
-            "sample_03.raw|2.25",
-            "sample_04.raw|0.75",
-            "sample_04.raw|2.25",
-            "sample_10.raw|0.75",
-            "sample_10.raw|2.25",
-            "sample_11.raw|0.75",
-            "cmp00003.raw|2.25",
-        };
-
         foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures)
         {
             foreach (var referenceCase in new[]
@@ -300,12 +235,6 @@ internal static class WsqNistReferenceDataSources
                 new { BitRate = 2.25, ReferencePath = fixture.ReferenceBitRate225Path },
             })
             {
-                var caseKey = $"{fixture.FileName}|{referenceCase.BitRate:0.##}";
-                if (!activeExactCases.Contains(caseKey))
-                {
-                    continue;
-                }
-
                 yield return new(
                     new(
                         fixture.FileName,

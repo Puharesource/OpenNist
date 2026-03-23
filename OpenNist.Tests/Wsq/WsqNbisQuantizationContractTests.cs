@@ -11,7 +11,7 @@ using OpenNist.Wsq.Internal.Encoding;
 [Category("Contract: WSQ - NBIS Reference Quantization")]
 internal sealed class WsqNbisQuantizationContractTests
 {
-    private const int RequiredExactParityFloor = 61;
+    private const int RequiredExactParityFloor = 80;
 
     [Test]
     [DisplayName("Should preserve the current exact NBIS encoder coefficient-parity floor across the public encoder corpus")]
@@ -66,7 +66,6 @@ internal sealed class WsqNbisQuantizationContractTests
     }
 
     [Test]
-    [Skip("Enable when the managed WSQ encoder matches the local NBIS encoder analysis output exactly across the full public encoder corpus.")]
     [DisplayName("Should match the local NBIS encoder quantized coefficient bins for every encoder reference case")]
     [MethodDataSource(typeof(WsqNistReferenceDataSources), nameof(WsqNistReferenceDataSources.AllEncodeReferenceCases))]
     public async Task ShouldMatchTheLocalNbisEncoderQuantizedCoefficientBinsForEveryEncoderReferenceCase(WsqEncodingReferenceCase testCase)
