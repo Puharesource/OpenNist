@@ -2,10 +2,10 @@
   <Folder Name="/src/" />
   <Folder Name="/src/design-system/" />
   <Folder Name="/src/dotnet/" />
-  <Folder Name="/src/dotnet/apps/">
-    <Project Path="src/dotnet/apps/OpenNist.Viewer.Maui/OpenNist.Viewer.Maui.csproj" />
+  <Folder Name="/src/dotnet/apps/" />
+  <Folder Name="/src/dotnet/interop/">
+    <Project Path="src/dotnet/interop/OpenNist.Wasm/OpenNist.Wasm.csproj" />
   </Folder>
-  <Folder Name="/src/dotnet/interop/" />
   <Folder Name="/src/dotnet/libraries/">
     <Project Path="src/dotnet/libraries/OpenNist.Core/OpenNist.Core.csproj" />
     <Project Path="src/dotnet/libraries/OpenNist.Jp2000/OpenNist.Jp2000.csproj" />

@@ -32,4 +32,14 @@ public interface IWsqCodec
         Stream wsqStream,
         Stream rawImageStream,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Inspects a WSQ image stream and returns container metadata without decoding the raster.
+    /// </summary>
+    /// <param name="wsqStream">The source WSQ stream.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The WSQ container metadata.</returns>
+    ValueTask<WsqFileInfo> InspectAsync(
+        Stream wsqStream,
+        CancellationToken cancellationToken = default);
 }

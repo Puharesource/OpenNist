@@ -1,0 +1,127 @@
+@import "@fontsource/inter/latin.css";
+@import "@fontsource/space-grotesk/latin.css";
+@import "@fontsource/jetbrains-mono/latin.css";
+@import "../../../design-system/web/open-nist-theme.css";
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@theme inline {
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+  --font-heading: var(--font-display);
+  --font-mono: var(--font-mono);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --shadow-ambient: var(--effect-modal-shadow);
+}
+
+:root {
+  --background: var(--color-surface);
+  --foreground: var(--color-on-surface);
+  --card: var(--color-surface-container-lowest);
+  --card-foreground: var(--color-on-surface);
+  --popover: rgba(255, 255, 255, 0.82);
+  --popover-foreground: var(--color-on-surface);
+  --primary: var(--color-primary);
+  --primary-foreground: var(--on-primary);
+  --secondary: var(--color-secondary-container);
+  --secondary-foreground: var(--color-secondary);
+  --muted: var(--color-surface-container-low);
+  --muted-foreground: var(--color-on-surface-variant);
+  --accent: var(--color-surface-container-high);
+  --accent-foreground: var(--color-primary);
+  --destructive: #b9473f;
+  --border: color-mix(in srgb, var(--color-outline-variant) 15%, transparent);
+  --input: color-mix(in srgb, var(--color-outline-variant) 15%, transparent);
+  --ring: var(--color-primary-fixed);
+  --radius: var(--radius-lg);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    @apply font-sans;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    min-height: 100vh;
+    margin: 0;
+    background:
+      radial-gradient(circle at top left, rgba(141, 185, 255, 0.12), transparent 24%),
+      radial-gradient(circle at 85% 18%, rgba(0, 106, 106, 0.12), transparent 24%),
+      linear-gradient(180deg, var(--color-surface-bright) 0%, var(--color-surface) 100%);
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+}
+
+@utility editorial-display {
+  font-family: var(--font-display);
+  font-size: var(--type-display-lg-size);
+  font-weight: var(--type-display-lg-weight);
+  line-height: var(--type-display-lg-line-height);
+  letter-spacing: var(--type-display-lg-letter-spacing);
+}
+
+@utility glass-panel {
+  background: linear-gradient(180deg, var(--effect-glass-tint) 0%, rgba(255, 255, 255, 0.58) 100%);
+  backdrop-filter: blur(var(--effect-glass-blur));
+}
+
+@utility pixel-grid-overlay {
+  background-image: radial-gradient(var(--effect-pixel-grid-dot) 1px, transparent 1px);
+  background-size: 8px 8px;
+}
+
+@utility ghost-outline {
+  outline: 1px solid var(--effect-ghost-border);
+}
+
+@utility surface-panel {
+  background: var(--color-surface-container-low);
+}
+
+@utility surface-module {
+  background: var(--color-surface-container-lowest);
+}

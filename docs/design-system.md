@@ -9,18 +9,10 @@ Platform-oriented outputs currently provided:
 
 - Web CSS token layer:
   - [/Users/pmtar/Development/Projects/OpenNist/src/design-system/web/open-nist-theme.css](/Users/pmtar/Development/Projects/OpenNist/src/design-system/web/open-nist-theme.css)
-- MAUI resource dictionary starter:
-  - [/Users/pmtar/Development/Projects/OpenNist/src/design-system/maui/OpenNistDesignResources.xaml](/Users/pmtar/Development/Projects/OpenNist/src/design-system/maui/OpenNistDesignResources.xaml)
 
 ## Recommended usage
 
-For the future MAUI app:
-
-- add the XAML resource dictionary to `App.xaml`
-- import the named styles for labels and buttons
-- keep app-specific component styles in the MAUI project, but derive colors, spacing, and typography from the shared token set
-
-For the future Bun/Vite/React app:
+For the Bun/Vite/React app:
 
 - load `open-nist-theme.css` before component styles
 - treat the CSS custom properties as the stable token contract
@@ -36,8 +28,7 @@ The platform files should be treated as generated-style projections, even if the
 
 ## Next logical step
 
-When the MAUI app and web app exist, add a small token-generation step so:
+Add a small token-generation step so:
 
-- `tokens.json` feeds the MAUI resource dictionary
 - `tokens.json` feeds the web CSS variables
 - duplicated token maintenance disappears

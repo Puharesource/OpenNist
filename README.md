@@ -78,9 +78,7 @@ dotnet test --solution OpenNist.slnx
 
 Additional notes live in [`docs/`](docs/), starting with the package overview in [`docs/package-overview.md`](docs/package-overview.md).
 
-Shared UI design guidance for future MAUI and web apps is documented in [`docs/design-system.md`](docs/design-system.md), with the source design assets under [`src/design-system/`](src/design-system/).
-
-A minimal MAUI WSQ viewer now lives under [`src/dotnet/apps/OpenNist.Viewer.Maui/`](src/dotnet/apps/OpenNist.Viewer.Maui/). It is intentionally kept out of the main solution until the local machine has the .NET MAUI workload installed.
+Shared UI design guidance for the web app is documented in [`docs/design-system.md`](docs/design-system.md), with the source design assets under [`src/design-system/`](src/design-system/).
 
 WSQ-specific implementation notes live in [`docs/wsq.md`](docs/wsq.md).
 
