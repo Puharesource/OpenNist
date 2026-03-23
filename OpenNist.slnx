@@ -2,7 +2,9 @@
   <Folder Name="/src/" />
   <Folder Name="/src/design-system/" />
   <Folder Name="/src/dotnet/" />
-  <Folder Name="/src/dotnet/apps/" />
+  <Folder Name="/src/dotnet/apps/">
+    <Project Path="src/dotnet/apps/OpenNist.Viewer.Maui/OpenNist.Viewer.Maui.csproj" />
+  </Folder>
   <Folder Name="/src/dotnet/interop/" />
   <Folder Name="/src/dotnet/libraries/">
     <Project Path="src/dotnet/libraries/OpenNist.Core/OpenNist.Core.csproj" />

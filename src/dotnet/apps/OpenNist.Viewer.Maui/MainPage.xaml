@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="OpenNist.Viewer.Maui.MainPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="OpenNist Viewer"
+    BackgroundColor="{StaticResource ColorSurface}">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem x:Name="OpenToolbarItem" Text="Open" Order="Primary" Priority="0" Clicked="OnOpenFileClicked" />
+        <ToolbarItem x:Name="SaveWsqToolbarItem" Text="WSQ 0.75" Order="Primary" Priority="1" Clicked="OnSaveAsWsq075Clicked" />
+        <ToolbarItem x:Name="SaveWsqHighToolbarItem" Text="WSQ 2.25" Order="Primary" Priority="2" Clicked="OnSaveAsWsq225Clicked" />
+        <ToolbarItem x:Name="ExportPngToolbarItem" Text="PNG" Order="Secondary" Priority="3" Clicked="OnSaveAsPngClicked" />
+        <ToolbarItem x:Name="ExportJpegToolbarItem" Text="JPEG" Order="Secondary" Priority="4" Clicked="OnSaveAsJpegClicked" />
+        <ToolbarItem x:Name="ExportTiffToolbarItem" Text="TIFF" Order="Secondary" Priority="5" Clicked="OnSaveAsTiffClicked" />
+        <ToolbarItem x:Name="ExportBmpToolbarItem" Text="BMP" Order="Secondary" Priority="6" Clicked="OnSaveAsBmpClicked" />
+    </ContentPage.ToolbarItems>
+
+    <ContentPage.MenuBarItems>
+        <MenuBarItem Text="File">
+            <MenuFlyoutItem x:Name="OpenMenuItem" Text="Open…" Clicked="OnOpenFileClicked" />
+            <MenuFlyoutSeparator />
+            <MenuFlyoutSubItem x:Name="SaveAsWsqMenuItem" Text="Save As WSQ">
+                <MenuFlyoutItem Text="0.75 bpp" Clicked="OnSaveAsWsq075Clicked" />
+                <MenuFlyoutItem Text="2.25 bpp" Clicked="OnSaveAsWsq225Clicked" />
+            </MenuFlyoutSubItem>
+            <MenuFlyoutSubItem x:Name="ExportImageMenuItem" Text="Export Image">
+                <MenuFlyoutItem Text="PNG" Clicked="OnSaveAsPngClicked" />
+                <MenuFlyoutItem Text="JPEG" Clicked="OnSaveAsJpegClicked" />
+                <MenuFlyoutItem Text="TIFF" Clicked="OnSaveAsTiffClicked" />
+                <MenuFlyoutItem Text="BMP" Clicked="OnSaveAsBmpClicked" />
+            </MenuFlyoutSubItem>
+        </MenuBarItem>
+    </ContentPage.MenuBarItems>
+
+    <Grid Padding="24" RowDefinitions="*,Auto" RowSpacing="12">
+        <Grid
+            x:Name="PreviewSurface"
+            Grid.Row="0"
+            Padding="24"
+            BackgroundColor="{StaticResource ColorSurfaceContainerLow}">
+            <FlyoutBase.ContextFlyout>
+                <MenuFlyout>
+                    <MenuFlyoutItem Text="Open…" Clicked="OnOpenFileClicked" />
+                    <MenuFlyoutSeparator />
+                    <MenuFlyoutSubItem Text="Save As WSQ">
+                        <MenuFlyoutItem Text="0.75 bpp" Clicked="OnSaveAsWsq075Clicked" />
+                        <MenuFlyoutItem Text="2.25 bpp" Clicked="OnSaveAsWsq225Clicked" />
+                    </MenuFlyoutSubItem>
+                    <MenuFlyoutSubItem Text="Export Image">
+                        <MenuFlyoutItem Text="PNG" Clicked="OnSaveAsPngClicked" />
+                        <MenuFlyoutItem Text="JPEG" Clicked="OnSaveAsJpegClicked" />
+                        <MenuFlyoutItem Text="TIFF" Clicked="OnSaveAsTiffClicked" />
+                        <MenuFlyoutItem Text="BMP" Clicked="OnSaveAsBmpClicked" />
+                    </MenuFlyoutSubItem>
+                </MenuFlyout>
+            </FlyoutBase.ContextFlyout>
+            <Grid.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnOpenFileClicked" />
+            </Grid.GestureRecognizers>
+
+            <Image
+                x:Name="PreviewImage"
+                Aspect="AspectFit"
+                HorizontalOptions="Fill"
+                VerticalOptions="Fill" />
+
+            <Label
+                x:Name="EmptyStateLabel"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                Style="{StaticResource TechnicalBodyLabel}"
+                Text="Click or drop an image here." />
+        </Grid>
+
+        <Label
+            x:Name="StatusLabel"
+            Grid.Row="1"
+            Style="{StaticResource TechnicalBodyLabel}" />
+    </Grid>
+</ContentPage>

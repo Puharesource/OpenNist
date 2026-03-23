@@ -1,6 +1,7 @@
 <Project>
   <ItemGroup>
     <PackageVersion Include="JetBrains.Annotations" Version="2025.2.0" />
+    <PackageVersion Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
     <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.15.0.120848" />
     <PackageVersion Include="TUnit" Version="1.19.22" />
   </ItemGroup>

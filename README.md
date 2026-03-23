@@ -80,6 +80,8 @@ Additional notes live in [`docs/`](docs/), starting with the package overview in
 
 Shared UI design guidance for future MAUI and web apps is documented in [`docs/design-system.md`](docs/design-system.md), with the source design assets under [`src/design-system/`](src/design-system/).
 
+A minimal MAUI WSQ viewer now lives under [`src/dotnet/apps/OpenNist.Viewer.Maui/`](src/dotnet/apps/OpenNist.Viewer.Maui/). It is intentionally kept out of the main solution until the local machine has the .NET MAUI workload installed.
+
 WSQ-specific implementation notes live in [`docs/wsq.md`](docs/wsq.md).
 
 The NBIS-oracle debugging approach for the remaining WSQ encoder blocker cases is documented in [`docs/wsq-nbis-stage-oracle.md`](docs/wsq-nbis-stage-oracle.md).
