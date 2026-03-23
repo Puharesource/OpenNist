@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <Color x:Key="ColorPrimary">#001E40</Color>
+    <Color x:Key="ColorPrimaryContainer">#0D3A69</Color>
+    <Color x:Key="ColorPrimaryFixed">#8DB9FF</Color>
+    <Color x:Key="ColorSecondary">#006A6A</Color>
+    <Color x:Key="ColorSecondaryContainer">#C7F1EF</Color>
+    <Color x:Key="ColorTertiaryFixed">#FFDCC3</Color>
+    <Color x:Key="ColorSurface">#F8F9FF</Color>
+    <Color x:Key="ColorSurfaceBright">#FFFFFF</Color>
+    <Color x:Key="ColorSurfaceContainerLowest">#FFFFFF</Color>
+    <Color x:Key="ColorSurfaceContainerLow">#EEF3FF</Color>
+    <Color x:Key="ColorSurfaceContainerHigh">#E2EBFB</Color>
+    <Color x:Key="ColorSurfaceContainerHighest">#D5E3FC</Color>
+    <Color x:Key="ColorOnSurface">#0D1C2E</Color>
+    <Color x:Key="ColorOnSurfaceVariant">#415469</Color>
+    <Color x:Key="ColorOutlineVariant">#7D93AB</Color>
+
+    <x:Double x:Key="RadiusMd">6</x:Double>
+    <x:Double x:Key="RadiusLg">8</x:Double>
+
+    <x:Double x:Key="Space4">14.4</x:Double>
+    <x:Double x:Key="Space8">32</x:Double>
+    <x:Double x:Key="Space12">48</x:Double>
+    <x:Double x:Key="Space16">64</x:Double>
+    <x:Double x:Key="Space24">88</x:Double>
+
+    <x:String x:Key="FontDisplay">Space Grotesk</x:String>
+    <x:String x:Key="FontBody">Inter</x:String>
+    <x:String x:Key="FontMono">JetBrains Mono</x:String>
+
+    <Style x:Key="EditorialDisplayLabel" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FontDisplay}" />
+        <Setter Property="FontSize" Value="56" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{StaticResource ColorOnSurface}" />
+        <Setter Property="LineBreakMode" Value="WordWrap" />
+    </Style>
+
+    <Style x:Key="TechnicalBodyLabel" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FontBody}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="TextColor" Value="{StaticResource ColorOnSurface}" />
+    </Style>
+
+    <Style x:Key="MonoValueLabel" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="TextColor" Value="{StaticResource ColorOnSurface}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource ColorSurfaceContainerHigh}" />
+        <Setter Property="Padding" Value="10,6" />
+    </Style>
+
+    <Style x:Key="PrimaryActionButton" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{StaticResource ColorPrimary}" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="TextColor" Value="{StaticResource ColorSurfaceBright}" />
+        <Setter Property="FontFamily" Value="{StaticResource FontBody}" />
+    </Style>
+
+    <Style x:Key="SecondaryActionButton" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="BorderColor" Value="{StaticResource ColorOutlineVariant}" />
+        <Setter Property="BorderWidth" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="TextColor" Value="{StaticResource ColorPrimary}" />
+        <Setter Property="FontFamily" Value="{StaticResource FontBody}" />
+    </Style>
+</ResourceDictionary>

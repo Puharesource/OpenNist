@@ -18,6 +18,7 @@ OpenNist is licensed under the Apache License 2.0. See [`LICENSE`](LICENSE).
 
 ```text
 /src
+  /design-system
   /dotnet
     /apps
     /interop
@@ -76,6 +77,8 @@ dotnet test --solution OpenNist.slnx
 ## Documentation
 
 Additional notes live in [`docs/`](docs/), starting with the package overview in [`docs/package-overview.md`](docs/package-overview.md).
+
+Shared UI design guidance for future MAUI and web apps is documented in [`docs/design-system.md`](docs/design-system.md), with the source design assets under [`src/design-system/`](src/design-system/).
 
 WSQ-specific implementation notes live in [`docs/wsq.md`](docs/wsq.md).
 

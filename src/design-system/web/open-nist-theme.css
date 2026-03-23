@@ -1,0 +1,113 @@
+:root {
+  --on-primary: #f8f9ff;
+  --color-primary: #001e40;
+  --color-primary-container: #0d3a69;
+  --color-primary-fixed: #8db9ff;
+  --color-secondary: #006a6a;
+  --color-secondary-container: #c7f1ef;
+  --color-tertiary-fixed: #ffdcc3;
+  --color-surface: #f8f9ff;
+  --color-surface-bright: #ffffff;
+  --color-surface-tint: #0d3a69;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #eef3ff;
+  --color-surface-container-high: #e2ebfb;
+  --color-surface-container-highest: #d5e3fc;
+  --color-on-surface: #0d1c2e;
+  --color-on-surface-variant: #415469;
+  --color-outline-variant: #7d93ab;
+
+  --font-display: "Space Grotesk", "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --type-display-lg-size: 3.5rem;
+  --type-display-lg-line-height: 1.05;
+  --type-display-lg-letter-spacing: -0.02em;
+  --type-display-lg-weight: 700;
+  --type-body-md-size: 0.875rem;
+  --type-body-md-line-height: 1.55;
+  --type-label-md-size: 0.875rem;
+  --type-label-md-line-height: 1.2;
+  --type-label-md-weight: 500;
+
+  --space-4: 0.9rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 5.5rem;
+
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+
+  --effect-glass-blur: 16px;
+  --effect-glass-tint: rgba(13, 58, 105, 0.08);
+  --effect-ghost-border: rgba(125, 147, 171, 0.15);
+  --effect-focus-ring: 0 0 0 2px rgba(141, 185, 255, 0.55);
+  --effect-modal-shadow: 0 24px 48px -12px rgba(13, 28, 46, 0.08);
+  --effect-pixel-grid-dot: rgba(125, 147, 171, 0.1);
+  --effect-button-primary: linear-gradient(180deg, #0d3a69 0%, #001e40 100%);
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(141, 185, 255, 0.12), transparent 28%),
+    linear-gradient(180deg, var(--color-surface-bright) 0%, var(--color-surface) 100%);
+  color: var(--color-on-surface);
+  font-family: var(--font-body);
+}
+
+.surface-section {
+  background: var(--color-surface-container-low);
+}
+
+.surface-module {
+  background: var(--color-surface-container-lowest);
+}
+
+.glass-panel {
+  background: linear-gradient(180deg, var(--effect-glass-tint) 0%, rgba(255, 255, 255, 0.55) 100%);
+  backdrop-filter: blur(var(--effect-glass-blur));
+}
+
+.editorial-display {
+  font-family: var(--font-display);
+  font-size: var(--type-display-lg-size);
+  font-weight: var(--type-display-lg-weight);
+  letter-spacing: var(--type-display-lg-letter-spacing);
+  line-height: var(--type-display-lg-line-height);
+}
+
+.mono-data {
+  background: var(--color-surface-container-high);
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--color-on-surface);
+  font-family: var(--font-mono);
+}
+
+.primary-button {
+  background: var(--effect-button-primary);
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+  color: var(--on-primary);
+}
+
+.secondary-button {
+  background: transparent;
+  border: 1px solid var(--effect-ghost-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-primary);
+}
+
+.technical-chip {
+  background: var(--color-secondary-container);
+  border-radius: var(--radius-md);
+  color: var(--color-secondary);
+}
+
+.pixel-grid-overlay {
+  background-image: radial-gradient(var(--effect-pixel-grid-dot) 1px, transparent 1px);
+  background-size: 8px 8px;
+}
