@@ -3,9 +3,9 @@ namespace OpenNist.Nfiq;
 using JetBrains.Annotations;
 
 /// <summary>
-/// Represents raw CSV output and parsed results from the official NFIQ 2 CLI.
+/// Represents raw CSV output and parsed results from NFIQ 2 analysis.
 /// </summary>
-/// <param name="Csv">The raw CSV emitted by the official CLI.</param>
+/// <param name="Csv">The raw CSV emitted by the analysis pipeline.</param>
 /// <param name="Columns">The parsed CSV header columns.</param>
 /// <param name="Results">The parsed CSV rows.</param>
 [PublicAPI]

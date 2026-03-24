@@ -158,11 +158,12 @@ internal static class Nfiq2CsvReportParser
                 if (insideQuotes && index + 1 < line.Length && line[index + 1] == '"')
                 {
                     builder.Append('"');
-                    index++;
+                    index += 2;
                     continue;
                 }
 
                 insideQuotes = !insideQuotes;
+                index++;
                 continue;
             }
 
@@ -170,6 +171,7 @@ internal static class Nfiq2CsvReportParser
             {
                 fields.Add(builder.ToString());
                 builder.Clear();
+                index++;
                 continue;
             }
 

@@ -9,7 +9,7 @@ using JetBrains.Annotations;
 public interface INfiq2Algorithm
 {
     /// <summary>
-    /// Analyzes a fingerprint image file supported by the official NFIQ 2 CLI.
+    /// Analyzes a fingerprint image file supported by the managed NFIQ 2 pipeline.
     /// </summary>
     /// <param name="fingerprintPath">The fingerprint image path.</param>
     /// <param name="options">The analysis options.</param>
