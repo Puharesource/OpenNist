@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="../../libraries/OpenNist.Core/OpenNist.Core.csproj" />
     <ProjectReference Include="../../libraries/OpenNist.Nfiq/OpenNist.Nfiq.csproj" />
+    <ProjectReference Include="../../libraries/OpenNist.Nist/OpenNist.Nist.csproj" />
     <ProjectReference Include="../../libraries/OpenNist.Wsq/OpenNist.Wsq.csproj" />
   </ItemGroup>
 

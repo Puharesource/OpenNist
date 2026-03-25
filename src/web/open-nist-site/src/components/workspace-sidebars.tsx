@@ -165,7 +165,13 @@ export function WorkspaceSidebarBackdrop() {
   );
 }
 
-export function WorkspaceSidebarToggleGroup({ showRightToggle = true }: { showRightToggle?: boolean }) {
+export function WorkspaceSidebarToggleGroup({
+  children,
+  showRightToggle = true,
+}: {
+  children?: ReactNode;
+  showRightToggle?: boolean;
+}) {
   const {
     leftInlineVisible,
     leftOverlayVisible,
@@ -191,6 +197,8 @@ export function WorkspaceSidebarToggleGroup({ showRightToggle = true }: { showRi
       >
         {isLeftOpen ? <PanelLeftClose className="size-4" /> : <PanelLeft className="size-4" />}
       </Button>
+
+      {children}
 
       {showRightToggle ? (
         <Button

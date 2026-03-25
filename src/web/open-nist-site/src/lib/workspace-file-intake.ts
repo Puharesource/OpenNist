@@ -14,12 +14,15 @@ import { getFileFingerprint } from "@/lib/codecs-document";
 import { setWorkspaceActiveFile } from "@/lib/workspace-session";
 
 export const ACCEPTED_FILES =
-  ".nist,.eft,.wsq,.jp2,.j2k,.j2c,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp,.gif";
+  ".nist,.an2,.eft,.wsq,.jp2,.j2k,.j2c,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp,.gif";
+
+export function isNistTransactionFileName(fileName: string): boolean {
+  const normalizedName = fileName.toLowerCase();
+  return normalizedName.endsWith(".nist") || normalizedName.endsWith(".an2") || normalizedName.endsWith(".eft");
+}
 
 function routeForFile(file: File, currentView: WorkspaceView): "/app/nist" | "/app/codecs" | "/app/nfiq" {
-  const normalizedName = file.name.toLowerCase();
-
-  if (normalizedName.endsWith(".nist") || normalizedName.endsWith(".eft")) {
+  if (isNistTransactionFileName(file.name)) {
     return "/app/nist";
   }
 

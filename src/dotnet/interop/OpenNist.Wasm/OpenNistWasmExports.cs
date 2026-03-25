@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 using OpenNist.Nfiq;
+using OpenNist.Nist;
 using OpenNist.Wsq;
 
 [SupportedOSPlatform("browser")]
@@ -80,5 +81,26 @@ internal static partial class OpenNistWasmExports
 
         var browserAssessment = OpenNistNfiqAssessmentResult.FromAssessment(assessment);
         return JsonSerializer.Serialize(browserAssessment, OpenNistWasmJsonContext.Default.OpenNistNfiqAssessmentResult);
+    }
+
+    [JSExport]
+    public static string InspectNist(byte[] nistBytes)
+    {
+        ArgumentNullException.ThrowIfNull(nistBytes);
+
+        var file = NistDecoder.Decode(nistBytes);
+        var browserFile = OpenNistNistFileResult.FromFile(file);
+        return JsonSerializer.Serialize(browserFile, OpenNistWasmJsonContext.Default.OpenNistNistFileResult);
+    }
+
+    [JSExport]
+    public static byte[] EncodeNist(string fileJson)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(fileJson);
+
+        var file = JsonSerializer.Deserialize(fileJson, OpenNistWasmJsonContext.Default.OpenNistNistFileInput) ??
+            throw new InvalidOperationException("Encoded NIST payload could not be deserialized.");
+
+        return NistEncoder.Encode(file.ToFile());
     }
 }

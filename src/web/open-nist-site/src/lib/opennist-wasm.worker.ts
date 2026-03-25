@@ -1,6 +1,12 @@
 /// <reference lib="webworker" />
 
-import type { DecodedWsqDocument, NfiqAssessmentResult, WsqFileInfo } from "@/lib/opennist-models";
+import type {
+  DecodedWsqDocument,
+  NfiqAssessmentResult,
+  NistFileInfo,
+  NistFileInput,
+  WsqFileInfo,
+} from "@/lib/opennist-models";
 
 type OpenNistWorkerExports = {
   GetVersion(): string;
@@ -19,6 +25,8 @@ type OpenNistWorkerExports = {
     height: number,
     pixelsPerInch: number,
   ): string;
+  InspectNist(nistBytes: Uint8Array): string;
+  EncodeNist(fileJson: string): Uint8Array;
 };
 
 type WorkerRequest =
@@ -40,10 +48,16 @@ type WorkerRequest =
       width: number;
       height: number;
       pixelsPerInch: number;
-    };
+    }
+  | { id: number; type: "inspectNist"; nistBytes: Uint8Array }
+  | { id: number; type: "encodeNist"; file: NistFileInput };
 
 type WorkerResponse =
-  | { id: number; type: "success"; payload: string | Uint8Array | DecodedWsqDocument | NfiqAssessmentResult }
+  | {
+      id: number;
+      type: "success";
+      payload: string | Uint8Array | DecodedWsqDocument | NfiqAssessmentResult | NistFileInfo;
+    }
   | { id: number; type: "error"; error: string };
 
 let exportsPromise: Promise<OpenNistWorkerExports> | undefined;
@@ -180,7 +194,7 @@ async function loadExports(): Promise<OpenNistWorkerExports> {
 
 function postSuccess(
   id: number,
-  payload: string | Uint8Array | DecodedWsqDocument | NfiqAssessmentResult,
+  payload: string | Uint8Array | DecodedWsqDocument | NfiqAssessmentResult | NistFileInfo,
   transfer: Transferable[] = [],
 ): void {
   const response: WorkerResponse = { id, type: "success", payload };
@@ -241,6 +255,18 @@ self.addEventListener("message", async (event: MessageEvent<WorkerRequest>) => {
         ) as NfiqAssessmentResult;
 
         postSuccess(request.id, payload);
+        return;
+      }
+
+      case "inspectNist": {
+        const payload = JSON.parse(exports.InspectNist(request.nistBytes)) as NistFileInfo;
+        postSuccess(request.id, payload);
+        return;
+      }
+
+      case "encodeNist": {
+        const encoded = exports.EncodeNist(JSON.stringify(request.file));
+        postSuccess(request.id, encoded, [encoded.buffer]);
         return;
       }
     }

@@ -1,4 +1,4 @@
-import type { NfiqAssessmentResult, WsqFileInfo } from "@/lib/opennist-models";
+import type { NfiqAssessmentResult, NistFileInfo, WsqFileInfo } from "@/lib/opennist-models";
 
 export type SourceKind = "WSQ" | "Image";
 
@@ -24,6 +24,13 @@ export type NfiqWorkspaceDocument = {
   pixelsPerInch: number;
   previewUrl: string;
   assessment: NfiqAssessmentResult;
+};
+
+export type NistWorkspaceDocument = {
+  fileName: string;
+  sourceByteCount: number;
+  sourceBytes: Uint8Array;
+  fileInfo: NistFileInfo;
 };
 
 export function getFileFingerprint(file: File | null): string | null {

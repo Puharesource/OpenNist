@@ -10,12 +10,14 @@ type InspectorItem = {
 export function InspectorPanel({
   title,
   summary,
+  headerActions,
   rightDocked,
   rightOverlayVisible,
   children,
 }: {
   title: string;
-  summary?: string;
+  summary?: ReactNode;
+  headerActions?: ReactNode;
   rightDocked: boolean;
   rightOverlayVisible: boolean;
   children: ReactNode;
@@ -32,12 +34,17 @@ export function InspectorPanel({
     >
       <div className="flex h-full flex-col">
         <div className="border-b border-[color:var(--effect-ghost-border)] px-7 py-7">
-          <h2 className="truncate font-display text-3xl font-semibold leading-tight tracking-[-0.05em] text-[var(--color-primary)]">
-            {title}
-          </h2>
-          {summary ? (
-            <p className="mt-3 text-sm leading-7 text-[var(--color-on-surface-variant)]">{summary}</p>
-          ) : null}
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate font-display text-3xl font-semibold leading-tight tracking-[-0.05em] text-[var(--color-primary)]">
+                {title}
+              </h2>
+              {summary ? (
+                <p className="mt-3 text-sm leading-7 text-[var(--color-on-surface-variant)]">{summary}</p>
+              ) : null}
+            </div>
+            {headerActions ? <div className="flex shrink-0 items-center gap-2">{headerActions}</div> : null}
+          </div>
         </div>
 
         <div className="flex-1 space-y-7 px-7 py-7">{children}</div>
@@ -141,7 +148,7 @@ export function InspectorSection({
   );
 }
 
-function InspectorInfoButton({
+export function InspectorInfoButton({
   label,
   description,
 }: {
@@ -304,7 +311,7 @@ function InspectorInfoButton({
         id={panelId}
         role="tooltip"
         aria-hidden={!open}
-        className={`fixed left-0 top-0 z-20 rounded-[var(--radius-lg)] border border-[color:var(--effect-ghost-border)] bg-white p-3 text-sm leading-6 text-[var(--color-on-surface)] shadow-[var(--effect-modal-shadow)] transition-opacity ${
+        className={`fixed left-0 top-0 z-20 whitespace-pre-line rounded-[var(--radius-lg)] border border-[color:var(--effect-ghost-border)] bg-white p-3 text-sm leading-6 text-[var(--color-on-surface)] shadow-[var(--effect-modal-shadow)] transition-opacity ${
           open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
         onMouseEnter={cancelClose}

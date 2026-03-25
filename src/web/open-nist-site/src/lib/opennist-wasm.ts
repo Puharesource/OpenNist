@@ -1,6 +1,20 @@
-import type { DecodedWsqDocument, NfiqAssessmentResult } from "@/lib/opennist-models";
+import type {
+  DecodedWsqDocument,
+  NfiqAssessmentResult,
+  NistFileInfo,
+  NistFileInput,
+} from "@/lib/opennist-models";
 
-export type { DecodedWsqDocument, NfiqAssessmentResult, WsqCommentInfo, WsqFileInfo } from "@/lib/opennist-models";
+export type {
+  DecodedWsqDocument,
+  NfiqAssessmentResult,
+  NistFieldInfo,
+  NistFileInfo,
+  NistFileInput,
+  NistRecordInfo,
+  WsqCommentInfo,
+  WsqFileInfo,
+} from "@/lib/opennist-models";
 
 type GetVersionRequest = { id: number; type: "getVersion" };
 type EncodeWsqRequest = {
@@ -21,17 +35,33 @@ type AssessNfiqRequest = {
   height: number;
   pixelsPerInch: number;
 };
+type InspectNistRequest = {
+  id: number;
+  type: "inspectNist";
+  nistBytes: Uint8Array;
+};
+type EncodeNistRequest = {
+  id: number;
+  type: "encodeNist";
+  file: NistFileInput;
+};
 type WorkerRequestInput =
   | Omit<GetVersionRequest, "id">
   | Omit<EncodeWsqRequest, "id">
   | Omit<DecodeWsqRequest, "id">
-  | Omit<AssessNfiqRequest, "id">;
+  | Omit<AssessNfiqRequest, "id">
+  | Omit<InspectNistRequest, "id">
+  | Omit<EncodeNistRequest, "id">;
 
 type WorkerResponse =
-  | { id: number; type: "success"; payload: string | Uint8Array | DecodedWsqDocument | NfiqAssessmentResult }
+  | {
+      id: number;
+      type: "success";
+      payload: string | Uint8Array | DecodedWsqDocument | NfiqAssessmentResult | NistFileInfo;
+    }
   | { id: number; type: "error"; error: string };
 
-const WORKER_BUILD_ID = "2026-03-25-7";
+const WORKER_BUILD_ID = "2026-03-25-9";
 let workerPromise: Promise<Worker> | undefined;
 let nextRequestId = 1;
 const WORKER_REQUEST_TIMEOUT_MS = 45000;
@@ -45,7 +75,7 @@ const pendingRequests = new Map<
 
 function createWorker(): Worker {
   const worker = new Worker(
-    new URL("./opennist-wasm.worker.ts?v=2026-03-25-7", import.meta.url),
+    new URL("./opennist-wasm.worker.ts?v=2026-03-25-9", import.meta.url),
     { type: "module" },
   );
 
@@ -157,5 +187,19 @@ export async function assessNfiqRawImage(
     width,
     height,
     pixelsPerInch,
+  });
+}
+
+export async function inspectNistBytes(nistBytes: Uint8Array): Promise<NistFileInfo> {
+  return callWorker<NistFileInfo>({
+    type: "inspectNist",
+    nistBytes,
+  });
+}
+
+export async function encodeNistFile(file: NistFileInput): Promise<Uint8Array> {
+  return callWorker<Uint8Array>({
+    type: "encodeNist",
+    file,
   });
 }

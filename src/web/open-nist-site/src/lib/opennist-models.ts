@@ -44,3 +44,41 @@ export type NfiqAssessmentResult = {
   nativeQualityMeasures: Record<string, number | null>;
   mappedQualityMeasures: Record<string, number | null>;
 };
+
+export type NistFieldInfo = {
+  tag: string;
+  value: string;
+  subfieldCount: number;
+  itemCount: number;
+};
+
+export type NistRecordInfo = {
+  type: number;
+  fieldCount: number;
+  logicalRecordLength: number | null;
+  byteOffset: number;
+  encodedByteCount: number;
+  isOpaqueBinaryRecord: boolean;
+  fields: NistFieldInfo[];
+};
+
+export type NistFileInfo = {
+  recordCount: number;
+  version: string | null;
+  contentSummary: string | null;
+  records: NistRecordInfo[];
+};
+
+export type NistFieldInput = {
+  tag: string;
+  value: string;
+};
+
+export type NistRecordInput = {
+  type: number;
+  fields: NistFieldInput[];
+};
+
+export type NistFileInput = {
+  records: NistRecordInput[];
+};

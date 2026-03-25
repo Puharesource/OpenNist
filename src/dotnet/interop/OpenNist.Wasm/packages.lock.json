@@ -39,6 +39,13 @@
           "OpenNist.Core": "[1.0.0, )"
         }
       },
+      "opennist.nist": {
+        "type": "Project",
+        "dependencies": {
+          "JetBrains.Annotations": "[2025.2.0, )",
+          "OpenNist.Core": "[1.0.0, )"
+        }
+      },
       "opennist.wsq": {
         "type": "Project",
         "dependencies": {

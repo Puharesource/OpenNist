@@ -1,5 +1,9 @@
 import { useSyncExternalStore } from "react";
-import type { CodecsWorkspaceDocument, NfiqWorkspaceDocument } from "@/lib/codecs-document";
+import type {
+  CodecsWorkspaceDocument,
+  NfiqWorkspaceDocument,
+  NistWorkspaceDocument,
+} from "@/lib/codecs-document";
 
 type WorkspaceSessionState = {
   activeFile: File | null;
@@ -8,6 +12,8 @@ type WorkspaceSessionState = {
   codecsDocumentFingerprint: string | null;
   nfiqDocument: NfiqWorkspaceDocument | null;
   nfiqDocumentFingerprint: string | null;
+  nistDocument: NistWorkspaceDocument | null;
+  nistDocumentFingerprint: string | null;
 };
 
 let state: WorkspaceSessionState = {
@@ -17,6 +23,8 @@ let state: WorkspaceSessionState = {
   codecsDocumentFingerprint: null,
   nfiqDocument: null,
   nfiqDocumentFingerprint: null,
+  nistDocument: null,
+  nistDocumentFingerprint: null,
 };
 
 const listeners = new Set<() => void>();
@@ -69,6 +77,16 @@ export function setWorkspaceNfiqDocument(document: NfiqWorkspaceDocument | null,
     ...state,
     nfiqDocument: document,
     nfiqDocumentFingerprint: fingerprint,
+  };
+
+  emit();
+}
+
+export function setWorkspaceNistDocument(document: NistWorkspaceDocument | null, fingerprint: string | null) {
+  state = {
+    ...state,
+    nistDocument: document,
+    nistDocumentFingerprint: fingerprint,
   };
 
   emit();

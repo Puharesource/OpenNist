@@ -14,7 +14,7 @@ import { WorkspaceSidebarToggleGroup, useWorkspaceSidebars } from "@/components/
 import { type CodecsWorkspaceDocument, getFileFingerprint } from "@/lib/codecs-document";
 import { downloadBytes, replaceExtension } from "@/lib/download";
 import { exportRawImage, normalizeImageFile } from "@/lib/ffmpeg-wasm";
-import { type WorkspaceFileIntake } from "@/lib/workspace-file-intake";
+import { isNistTransactionFileName, type WorkspaceFileIntake } from "@/lib/workspace-file-intake";
 import {
   decodeWsqBytes,
   encodeRawToWsqBytes,
@@ -126,6 +126,10 @@ export function CodecsWorkspace({
       const fingerprint = getFileFingerprint(file);
 
       try {
+        if (isNistTransactionFileName(fileName)) {
+          return;
+        }
+
         if (fileName.toLowerCase().endsWith(".wsq")) {
           const loadedDocument = await withBusy(
             "Decoding WSQ with OpenNist.Wasm and rendering a browser preview.",
