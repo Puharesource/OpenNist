@@ -12,6 +12,8 @@ const configuration = (process.argv[2] ?? "Debug").toLowerCase() === "release" ?
 const interopProject = resolve(repoRoot, "src/dotnet/interop/OpenNist.Wasm/OpenNist.Wasm.csproj");
 const outputDirectory = resolve(projectRoot, "public/opennist-wasm");
 const contentDirectory = resolve(projectRoot, "public/_content");
+const appFrameworkDirectory = resolve(projectRoot, "public/app/_framework");
+const appContentDirectory = resolve(projectRoot, "public/app/_content");
 const publishDirectory = await mkdtemp(resolve(tmpdir(), "opennist-wasm-publish-"));
 
 async function directoryExists(path) {
@@ -51,12 +53,24 @@ await rm(outputDirectory, { recursive: true, force: true });
 await mkdir(outputDirectory, { recursive: true });
 await cp(resolve(publishDirectory, "wwwroot"), outputDirectory, { recursive: true });
 
+const publishedFrameworkDirectory = resolve(publishDirectory, "wwwroot/_framework");
+await rm(appFrameworkDirectory, { recursive: true, force: true });
+
+if (await directoryExists(publishedFrameworkDirectory)) {
+  await mkdir(appFrameworkDirectory, { recursive: true });
+  await cp(publishedFrameworkDirectory, appFrameworkDirectory, { recursive: true });
+}
+
 const publishedContentDirectory = resolve(publishDirectory, "wwwroot/_content");
 await rm(contentDirectory, { recursive: true, force: true });
+await rm(appContentDirectory, { recursive: true, force: true });
 
 if (await directoryExists(publishedContentDirectory)) {
   await mkdir(contentDirectory, { recursive: true });
   await cp(publishedContentDirectory, contentDirectory, { recursive: true });
+
+  await mkdir(appContentDirectory, { recursive: true });
+  await cp(publishedContentDirectory, appContentDirectory, { recursive: true });
 }
 
 await rm(publishDirectory, { recursive: true, force: true });

@@ -1,12 +1,9 @@
 namespace OpenNist.Wasm;
 
-using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-
 internal static class Program
 {
-    private static Task Main(string[] args)
+    private static void Main()
     {
-        var builder = WebAssemblyHostBuilder.CreateDefault(args);
-        return builder.Build().RunAsync();
+        // The browser host only needs the assembly loaded so JSExport entrypoints are available.
     }
 }

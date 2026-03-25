@@ -54,7 +54,7 @@ internal sealed class Nfiq2RandomForestModel
         return Parse(yaml, CalculateMd5Hex(yaml));
     }
 
-    private static Nfiq2RandomForestModel Parse(string yaml, string parameterHash)
+    internal static Nfiq2RandomForestModel Parse(string yaml, string parameterHash)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(yaml);
         ArgumentException.ThrowIfNullOrWhiteSpace(parameterHash);

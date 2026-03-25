@@ -50,14 +50,9 @@ public sealed class Nfiq2ManagedModel
     {
         if (Nfiq2BundledModelFiles.TryLoad(out var bundledModelInfo, out var bundledYaml))
         {
-            var modelHash = Nfiq2RandomForestModel.CalculateMd5Hex(bundledYaml);
-            if (!modelHash.Equals(bundledModelInfo.ModelHash, StringComparison.Ordinal))
-            {
-                throw new Nfiq2Exception(
-                    $"The bundled NFIQ 2 model hash '{modelHash}' did not match the declared model-info hash '{bundledModelInfo.ModelHash}'.");
-            }
-
-            return new(bundledModelInfo, Nfiq2RandomForestModel.Parse(bundledYaml));
+            // Bundled model assets ship with the assembly, so we can trust the declared model-info hash
+            // without recomputing MD5 in browser WASM environments where that algorithm may be unavailable.
+            return new(bundledModelInfo, Nfiq2RandomForestModel.Parse(bundledYaml, bundledModelInfo.ModelHash));
         }
 
         var installation = Nfiq2Installation.FindDefault();

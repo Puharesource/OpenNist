@@ -1,76 +1,84 @@
 namespace OpenNist.Wasm;
 
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using Microsoft.JSInterop;
+using System.Runtime.InteropServices.JavaScript;
+using System.Runtime.Versioning;
+using OpenNist.Nfiq;
 using OpenNist.Wsq;
 
-public static class OpenNistWasmExports
+[SupportedOSPlatform("browser")]
+internal static partial class OpenNistWasmExports
 {
     private static readonly WsqCodec Codec = new();
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.Never,
-    };
+    private static readonly Nfiq2Algorithm Nfiq2 = new();
 
-    [JSInvokable("openNist_getVersion")]
+    [JSExport]
     public static string GetVersion()
     {
         return typeof(OpenNistWasmExports).Assembly.GetName().Version?.ToString() ?? "0.0.0";
     }
 
-    [JSInvokable("openNist_encodeWsq")]
-    public static async Task<string> EncodeWsqAsync(
-        string rawPixelsBase64,
+    [JSExport]
+    public static byte[] EncodeWsq(
+        byte[] rawPixels,
         int width,
         int height,
         int pixelsPerInch,
         double bitRate)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(rawPixelsBase64);
-
-        var rawPixels = Convert.FromBase64String(rawPixelsBase64);
+        ArgumentNullException.ThrowIfNull(rawPixels);
         using var rawImageStream = new MemoryStream(rawPixels, writable: false);
         using var wsqStream = new MemoryStream();
 
-        await Codec.EncodeAsync(
+        Codec.EncodeAsync(
             rawImageStream,
             wsqStream,
             new WsqRawImageDescription(width, height, BitsPerPixel: 8, PixelsPerInch: pixelsPerInch),
             new WsqEncodeOptions(bitRate),
-            CancellationToken.None).ConfigureAwait(false);
+            CancellationToken.None).AsTask().GetAwaiter().GetResult();
 
-        return Convert.ToBase64String(wsqStream.ToArray());
+        return wsqStream.ToArray();
     }
 
-    [JSInvokable("openNist_decodeWsq")]
-    public static async Task<string> DecodeWsqAsync(string wsqBase64)
+    [JSExport]
+    public static string InspectWsq(byte[] wsqBytes)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(wsqBase64);
+        ArgumentNullException.ThrowIfNull(wsqBytes);
 
-        var wsqBytes = Convert.FromBase64String(wsqBase64);
-        using var wsqStream = new MemoryStream(wsqBytes, writable: false);
         using var metadataStream = new MemoryStream(wsqBytes, writable: false);
+        var fileInfo = Codec.InspectAsync(metadataStream, CancellationToken.None).AsTask().GetAwaiter().GetResult();
+
+        return JsonSerializer.Serialize(fileInfo, OpenNistWasmJsonContext.Default.WsqFileInfo);
+    }
+
+    [JSExport]
+    public static byte[] DecodeWsq(byte[] wsqBytes)
+    {
+        ArgumentNullException.ThrowIfNull(wsqBytes);
+
+        using var wsqStream = new MemoryStream(wsqBytes, writable: false);
         using var rawImageStream = new MemoryStream();
 
-        var fileInfo = await Codec.InspectAsync(metadataStream, CancellationToken.None).ConfigureAwait(false);
-        var description = await Codec.DecodeAsync(wsqStream, rawImageStream, CancellationToken.None).ConfigureAwait(false);
+        Codec.DecodeAsync(wsqStream, rawImageStream, CancellationToken.None).AsTask().GetAwaiter().GetResult();
 
-        return JsonSerializer.Serialize(new WsqDecodeResult(
-            description.Width,
-            description.Height,
-            description.BitsPerPixel,
-            description.PixelsPerInch,
-            Convert.ToBase64String(rawImageStream.ToArray()),
-            fileInfo), JsonOptions);
+        return rawImageStream.ToArray();
     }
 
-    private sealed record WsqDecodeResult(
-        int Width,
-        int Height,
-        int BitsPerPixel,
-        int PixelsPerInch,
-        string RawPixelsBase64,
-        WsqFileInfo FileInfo);
+    [JSExport]
+    public static string AssessNfiq(
+        byte[] rawPixels,
+        int width,
+        int height,
+        int pixelsPerInch)
+    {
+        ArgumentNullException.ThrowIfNull(rawPixels);
+
+        var assessment = Nfiq2.AnalyzeAsync(
+            rawPixels,
+            new Nfiq2RawImageDescription(width, height, BitsPerPixel: 8, PixelsPerInch: pixelsPerInch),
+            cancellationToken: CancellationToken.None).AsTask().GetAwaiter().GetResult();
+
+        var browserAssessment = OpenNistNfiqAssessmentResult.FromAssessment(assessment);
+        return JsonSerializer.Serialize(browserAssessment, OpenNistWasmJsonContext.Default.OpenNistNfiqAssessmentResult);
+    }
 }

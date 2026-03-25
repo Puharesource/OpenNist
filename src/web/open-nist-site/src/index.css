@@ -109,6 +109,11 @@
   backdrop-filter: blur(var(--effect-glass-blur));
 }
 
+@utility blueprint-grid {
+  background-image: radial-gradient(color-mix(in srgb, var(--color-primary) 30%, transparent) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
 @utility pixel-grid-overlay {
   background-image: radial-gradient(var(--effect-pixel-grid-dot) 1px, transparent 1px);
   background-size: 8px 8px;
@@ -124,4 +129,25 @@
 
 @utility surface-module {
   background: var(--color-surface-container-lowest);
+}
+
+@layer utilities {
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-outline-variant) transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-outline-variant) 80%, transparent);
+    border-radius: 999px;
+  }
 }

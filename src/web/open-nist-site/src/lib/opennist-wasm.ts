@@ -1,109 +1,124 @@
-import { base64ToBytes, bytesToBase64 } from "@/lib/base64";
+import type { DecodedWsqDocument, NfiqAssessmentResult } from "@/lib/opennist-models";
 
-type OpenNistWasmModule = {
-  getVersion(): Promise<string>;
-  encodeWsq(
-    rawPixelsBase64: string,
-    width: number,
-    height: number,
-    pixelsPerInch?: number,
-    bitRate?: number,
-  ): Promise<string>;
-  decodeWsq(wsqBase64: string): Promise<{
-    width: number;
-    height: number;
-    bitsPerPixel: number;
-    pixelsPerInch: number;
-    rawPixelsBase64: string;
-    fileInfo: WsqFileInfo;
-  }>;
-};
+export type { DecodedWsqDocument, NfiqAssessmentResult, WsqCommentInfo, WsqFileInfo } from "@/lib/opennist-models";
 
-export type WsqCommentInfo = {
-  text: string;
-  fields: Record<string, string>;
-};
-
-export type WsqFileInfo = {
-  width: number;
-  height: number;
-  bitsPerPixel: number;
-  pixelsPerInch: number;
-  black: number;
-  white: number;
-  shift: number;
-  scale: number;
-  wsqEncoder: number;
-  softwareImplementationNumber: number;
-  highPassFilterLength: number;
-  lowPassFilterLength: number;
-  quantizationBinCenter: number;
-  huffmanTableIds: number[];
-  blockCount: number;
-  encodedBlockByteCount: number;
-  commentCount: number;
-  nistCommentCount: number;
-  comments: WsqCommentInfo[];
-};
-
-type DecodedWsqDocument = {
-  width: number;
-  height: number;
-  bitsPerPixel: number;
-  pixelsPerInch: number;
+type GetVersionRequest = { id: number; type: "getVersion" };
+type EncodeWsqRequest = {
+  id: number;
+  type: "encodeWsq";
   rawPixels: Uint8Array;
-  fileInfo: WsqFileInfo;
+  width: number;
+  height: number;
+  pixelsPerInch: number;
+  bitRate: number;
 };
+type DecodeWsqRequest = { id: number; type: "decodeWsq"; wsqBytes: Uint8Array };
+type AssessNfiqRequest = {
+  id: number;
+  type: "assessNfiq";
+  rawPixels: Uint8Array;
+  width: number;
+  height: number;
+  pixelsPerInch: number;
+};
+type WorkerRequestInput =
+  | Omit<GetVersionRequest, "id">
+  | Omit<EncodeWsqRequest, "id">
+  | Omit<DecodeWsqRequest, "id">
+  | Omit<AssessNfiqRequest, "id">;
 
-let modulePromise: Promise<OpenNistWasmModule> | undefined;
+type WorkerResponse =
+  | { id: number; type: "success"; payload: string | Uint8Array | DecodedWsqDocument | NfiqAssessmentResult }
+  | { id: number; type: "error"; error: string };
 
-declare global {
-  interface Window {
-    OpenNistWasm?: OpenNistWasmModule;
+const WORKER_BUILD_ID = "2026-03-25-7";
+let workerPromise: Promise<Worker> | undefined;
+let nextRequestId = 1;
+const WORKER_REQUEST_TIMEOUT_MS = 45000;
+const pendingRequests = new Map<
+  number,
+  {
+    resolve: (value: unknown) => void;
+    reject: (error: Error) => void;
   }
+>();
+
+function createWorker(): Worker {
+  const worker = new Worker(
+    new URL("./opennist-wasm.worker.ts?v=2026-03-25-7", import.meta.url),
+    { type: "module" },
+  );
+
+  console.info("[OpenNist] Starting codec worker.", { workerBuildId: WORKER_BUILD_ID });
+
+  worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
+    console.info("[OpenNist] Worker response received.", { id: event.data.id, type: event.data.type });
+    const pending = pendingRequests.get(event.data.id);
+
+    if (!pending) {
+      return;
+    }
+
+    pendingRequests.delete(event.data.id);
+
+    if (event.data.type === "error") {
+      pending.reject(new Error(event.data.error));
+      return;
+    }
+
+    pending.resolve(event.data.payload);
+  };
+
+  worker.onerror = (event) => {
+    console.error("[OpenNist] Worker crashed.", event);
+    const error = new Error(event.message || "OpenNist worker crashed.");
+
+    for (const pending of pendingRequests.values()) {
+      pending.reject(error);
+    }
+
+    pendingRequests.clear();
+    workerPromise = undefined;
+  };
+
+  return worker;
 }
 
-async function loadModule(): Promise<OpenNistWasmModule> {
-  modulePromise ??= (async () => {
-    if (window.OpenNistWasm) {
-      return window.OpenNistWasm;
-    }
+async function getWorker(): Promise<Worker> {
+  workerPromise ??= Promise.resolve(createWorker());
+  return workerPromise;
+}
 
-    await new Promise<void>((resolve, reject) => {
-      const existingScript = document.querySelector<HTMLScriptElement>(
-        'script[data-opennist-wasm="true"]',
-      );
+async function callWorker<T>(request: WorkerRequestInput): Promise<T> {
+  const worker = await getWorker();
+  const id = nextRequestId++;
 
-      if (existingScript) {
-        existingScript.addEventListener("load", () => resolve(), { once: true });
-        existingScript.addEventListener("error", () => reject(new Error("OpenNist.Wasm could not be loaded.")), {
-          once: true,
-        });
-        return;
-      }
+  console.info("[OpenNist] Worker request posted.", { id, type: request.type });
 
-      const script = document.createElement("script");
-      script.type = "module";
-      script.src = "/opennist-wasm/opennist.interop.js";
-      script.dataset.opennistWasm = "true";
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error("OpenNist.Wasm could not be loaded."));
-      document.head.appendChild(script);
+  return await new Promise<T>((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      pendingRequests.delete(id);
+      console.error("[OpenNist] Worker request timed out.", { id, type: request.type });
+      reject(new Error("OpenNist worker request timed out."));
+    }, WORKER_REQUEST_TIMEOUT_MS);
+
+    pendingRequests.set(id, {
+      resolve: (value) => {
+        window.clearTimeout(timeoutId);
+        resolve(value as T);
+      },
+      reject: (error) => {
+        window.clearTimeout(timeoutId);
+        reject(error);
+      },
     });
 
-    if (!window.OpenNistWasm) {
-      throw new Error("OpenNist.Wasm loaded, but no browser API was registered.");
-    }
-
-    return window.OpenNistWasm;
-  })();
-
-  return modulePromise;
+    worker.postMessage({ ...request, id });
+  });
 }
 
 export async function getOpenNistVersion(): Promise<string> {
-  const module = await loadModule();
-  return module.getVersion();
+  return callWorker<string>({ type: "getVersion" });
 }
 
 export async function encodeRawToWsqBytes(
@@ -113,21 +128,34 @@ export async function encodeRawToWsqBytes(
   pixelsPerInch: number,
   bitRate: number,
 ): Promise<Uint8Array> {
-  const module = await loadModule();
-  const wsqBase64 = await module.encodeWsq(bytesToBase64(rawPixels), width, height, pixelsPerInch, bitRate);
-  return base64ToBytes(wsqBase64);
+  return callWorker<Uint8Array>({
+    type: "encodeWsq",
+    rawPixels,
+    width,
+    height,
+    pixelsPerInch,
+    bitRate,
+  });
 }
 
 export async function decodeWsqBytes(wsqBytes: Uint8Array): Promise<DecodedWsqDocument> {
-  const module = await loadModule();
-  const decoded = await module.decodeWsq(bytesToBase64(wsqBytes));
+  return callWorker<DecodedWsqDocument>({
+    type: "decodeWsq",
+    wsqBytes,
+  });
+}
 
-  return {
-    width: decoded.width,
-    height: decoded.height,
-    bitsPerPixel: decoded.bitsPerPixel,
-    pixelsPerInch: decoded.pixelsPerInch,
-    rawPixels: base64ToBytes(decoded.rawPixelsBase64),
-    fileInfo: decoded.fileInfo,
-  };
+export async function assessNfiqRawImage(
+  rawPixels: Uint8Array,
+  width: number,
+  height: number,
+  pixelsPerInch: number,
+): Promise<NfiqAssessmentResult> {
+  return callWorker<NfiqAssessmentResult>({
+    type: "assessNfiq",
+    rawPixels,
+    width,
+    height,
+    pixelsPerInch,
+  });
 }
