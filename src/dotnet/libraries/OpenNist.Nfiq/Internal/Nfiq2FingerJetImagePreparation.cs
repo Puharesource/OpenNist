@@ -28,7 +28,7 @@ internal static class Nfiq2FingerJetImagePreparation
             throw new Nfiq2Exception("FingerJet raw input dimensions exceed the native CreateFeatureSet limits.");
         }
 
-        if (pixelsPerInch < s_createFeatureSetMinDpi || pixelsPerInch > s_createFeatureSetMaxDpi)
+        if (pixelsPerInch is < s_createFeatureSetMinDpi or > s_createFeatureSetMaxDpi)
         {
             throw new Nfiq2Exception("FingerJet raw input resolution falls outside the native CreateFeatureSet limits.");
         }
@@ -132,7 +132,7 @@ internal static class Nfiq2FingerJetImagePreparation
             throw new Nfiq2Exception("FingerJet input pixel buffer is smaller than the declared image size.");
         }
 
-        if (image.PixelsPerInch < s_extractMinDpi || image.PixelsPerInch > s_extractMaxDpi)
+        if (image.PixelsPerInch is < s_extractMinDpi or > s_extractMaxDpi)
         {
             throw new Nfiq2Exception("FingerJet extraction resolution falls outside the native extractor limits.");
         }

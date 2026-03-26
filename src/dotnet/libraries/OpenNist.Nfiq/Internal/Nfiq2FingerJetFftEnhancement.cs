@@ -120,7 +120,7 @@ internal static class Nfiq2FingerJetFftEnhancement
     private static Complex32 Enhance(Complex32 value, int x, int y)
     {
         var r2 = x * x + y * y;
-        if (r2 <= 6 || r2 >= 169)
+        if (r2 is <= 6 or >= 169)
         {
             return Complex32.Zero;
         }
