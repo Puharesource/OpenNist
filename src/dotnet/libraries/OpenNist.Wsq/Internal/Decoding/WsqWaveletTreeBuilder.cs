@@ -1,18 +1,37 @@
 namespace OpenNist.Wsq.Internal.Decoding;
 
+using System.Collections.Concurrent;
+
 internal static class WsqWaveletTreeBuilder
 {
+    private static readonly ConcurrentDictionary<ulong, WsqTreeLayout> s_layoutCache = new();
+
     public static void Build(
         int width,
         int height,
         out WsqWaveletNode[] waveletTree,
         out WsqQuantizationNode[] quantizationTree)
     {
-        waveletTree = new WsqWaveletNode[WsqConstants.WaveletTreeLength];
-        quantizationTree = new WsqQuantizationNode[WsqConstants.QuantizationTreeLength];
+        var layout = s_layoutCache.GetOrAdd(CreateCacheKey(width, height), static key =>
+        {
+            var layoutWidth = (int)(key >> 32);
+            var layoutHeight = (int)(key & uint.MaxValue);
+            var layoutWaveletTree = new WsqWaveletNode[WsqConstants.WaveletTreeLength];
+            var layoutQuantizationTree = new WsqQuantizationNode[WsqConstants.QuantizationTreeLength];
 
-        BuildWaveletTree(waveletTree, width, height);
-        BuildQuantizationTree(waveletTree, quantizationTree);
+            BuildWaveletTree(layoutWaveletTree, layoutWidth, layoutHeight);
+            BuildQuantizationTree(layoutWaveletTree, layoutQuantizationTree);
+
+            return new(layoutWaveletTree, layoutQuantizationTree);
+        });
+
+        waveletTree = layout.WaveletTree;
+        quantizationTree = layout.QuantizationTree;
+    }
+
+    private static ulong CreateCacheKey(int width, int height)
+    {
+        return ((ulong)(uint)width << 32) | (uint)height;
     }
 
     private static void BuildWaveletTree(WsqWaveletNode[] waveletTree, int width, int height)
@@ -307,6 +326,10 @@ internal static class WsqWaveletTreeBuilder
         quantizationTree[index].Height = height;
     }
 }
+
+internal readonly record struct WsqTreeLayout(
+    WsqWaveletNode[] WaveletTree,
+    WsqQuantizationNode[] QuantizationTree);
 
 internal struct WsqWaveletNode
 {

@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router"
 import {
   useCallback,
   useEffect,
@@ -5,153 +6,209 @@ import {
   useState,
   type ChangeEvent,
   type ClipboardEvent as ReactClipboardEvent,
-  type DragEvent,
-} from "react";
-import { useNavigate } from "@tanstack/react-router";
+  type DragEvent
+} from "react"
 
-import type { WorkspaceView } from "@/lib/site-content";
-import { getFileFingerprint } from "@/lib/codecs-document";
-import { setWorkspaceActiveFile } from "@/lib/workspace-session";
+import { getFileFingerprint } from "@/lib/codecs-document"
+import type { WorkspaceView } from "@/lib/site-content"
+import { setWorkspaceActiveFile } from "@/lib/workspace-session"
 
-export const ACCEPTED_FILES =
-  ".nist,.an2,.eft,.wsq,.jp2,.j2k,.j2c,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp,.gif";
+export const ACCEPTED_FILES = ".nist,.nst,.an2,.eft,.wsq,.jp2,.j2k,.j2c,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp,.gif"
 
-export function isNistTransactionFileName(fileName: string): boolean {
-  const normalizedName = fileName.toLowerCase();
-  return normalizedName.endsWith(".nist") || normalizedName.endsWith(".an2") || normalizedName.endsWith(".eft");
+const OPEN_PICKER_TYPES = [
+  {
+    description: "Biometric transaction and image files",
+    accept: {
+      "application/octet-stream": [".nist", ".nst", ".an2", ".eft", ".wsq", ".jp2", ".j2k", ".j2c"],
+      "image/png": [".png"],
+      "image/jpeg": [".jpg", ".jpeg"],
+      "image/tiff": [".tif", ".tiff"],
+      "image/bmp": [".bmp"],
+      "image/webp": [".webp"],
+      "image/gif": [".gif"]
+    }
+  }
+] as const
+
+type FilePickerWindow = Window & {
+  showOpenFilePicker?: (options?: {
+    multiple?: boolean
+    excludeAcceptAllOption?: boolean
+    types?: ReadonlyArray<{
+      description?: string
+      accept: Record<string, readonly string[]>
+    }>
+  }) => Promise<Array<{ getFile(): Promise<File> }>>
 }
 
-function routeForFile(file: File, currentView: WorkspaceView): "/app/nist" | "/app/codecs" | "/app/nfiq" {
-  if (isNistTransactionFileName(file.name)) {
-    return "/app/nist";
+export function isNistTransactionFileName(fileName: string): boolean {
+  const normalizedName = fileName.toLowerCase()
+  return (
+    normalizedName.endsWith(".nist") ||
+    normalizedName.endsWith(".nst") ||
+    normalizedName.endsWith(".an2") ||
+    normalizedName.endsWith(".eft")
+  )
+}
+
+export function routeForFileName(
+  fileName: string,
+  currentView: WorkspaceView
+): "/app/nist" | "/app/codecs" | "/app/nfiq" {
+  if (isNistTransactionFileName(fileName)) {
+    return "/app/nist"
   }
 
-  return currentView === "nfiq" ? "/app/nfiq" : "/app/codecs";
+  return currentView === "nfiq" ? "/app/nfiq" : "/app/codecs"
 }
 
 export type WorkspaceFileIntake = {
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
-  isDragActive: boolean;
-  openPicker(): void;
-  handleInputChange(event: ChangeEvent<HTMLInputElement>): void;
-  handleDrop(event: DragEvent<HTMLElement>): void;
-  handlePaste(event: ReactClipboardEvent<HTMLElement>): void;
-  activateDrag(): void;
-  deactivateDrag(): void;
-};
+  fileInputRef: React.RefObject<HTMLInputElement | null>
+  isDragActive: boolean
+  openPicker(): void
+  handleInputChange(event: ChangeEvent<HTMLInputElement>): void
+  handleDrop(event: DragEvent<HTMLElement>): void
+  handlePaste(event: ReactClipboardEvent<HTMLElement>): void
+  activateDrag(): void
+  deactivateDrag(): void
+}
 
-export function useWorkspaceFileIntake(
-  currentView: WorkspaceView,
-): WorkspaceFileIntake {
-  const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isDragActive, setIsDragActive] = useState(false);
+export function useWorkspaceFileIntake(currentView: WorkspaceView): WorkspaceFileIntake {
+  const navigate = useNavigate()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isDragActive, setIsDragActive] = useState(false)
 
   const handleResolvedFile = useCallback(
     (file: File) => {
-      const targetRoute = routeForFile(file, currentView);
-      setWorkspaceActiveFile(file, getFileFingerprint(file));
+      const targetRoute = routeForFileName(file.name, currentView)
+      setWorkspaceActiveFile(file, getFileFingerprint(file))
 
       if (targetRoute === "/app/codecs") {
         if (currentView !== "codecs") {
-          void navigate({ to: "/app/codecs" });
+          void navigate({ to: "/app/codecs" })
         }
 
-        return;
+        return
       }
 
       if (targetRoute === "/app/nfiq") {
         if (currentView !== "nfiq") {
-          void navigate({ to: "/app/nfiq" });
+          void navigate({ to: "/app/nfiq" })
         }
 
-        return;
+        return
       }
 
       if (currentView !== "nist") {
-        void navigate({ to: "/app/nist" });
+        void navigate({ to: "/app/nist" })
       }
     },
-    [currentView, navigate],
-  );
+    [currentView, navigate]
+  )
 
   const handleFiles = useCallback(
     (files: ArrayLike<File> | null | undefined) => {
-      const file = files ? Array.from(files)[0] : undefined;
+      const file = files ? Array.from(files)[0] : undefined
 
       if (!file) {
-        return;
+        return
       }
 
-      handleResolvedFile(file);
+      handleResolvedFile(file)
     },
-    [handleResolvedFile],
-  );
+    [handleResolvedFile]
+  )
 
   const handleInputChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
-      handleFiles(event.target.files);
-      event.target.value = "";
+      handleFiles(event.target.files)
+      event.target.value = ""
     },
-    [handleFiles],
-  );
+    [handleFiles]
+  )
 
   const handleDrop = useCallback(
     (event: DragEvent<HTMLElement>) => {
-      event.preventDefault();
-      setIsDragActive(false);
-      handleFiles(event.dataTransfer.files);
+      event.preventDefault()
+      setIsDragActive(false)
+      handleFiles(event.dataTransfer.files)
     },
-    [handleFiles],
-  );
+    [handleFiles]
+  )
 
   const handlePasteData = useCallback(
     (clipboardData: DataTransfer | null) => {
       if (!clipboardData) {
-        return;
+        return
       }
 
       if (clipboardData.files.length > 0) {
-        handleFiles(clipboardData.files);
-        return;
+        handleFiles(clipboardData.files)
+        return
       }
 
       for (const item of Array.from(clipboardData.items)) {
         if (item.kind !== "file") {
-          continue;
+          continue
         }
 
-        const file = item.getAsFile();
+        const file = item.getAsFile()
 
         if (file) {
-          handleFiles([file]);
-          return;
+          handleFiles([file])
+          return
         }
       }
     },
-    [handleFiles],
-  );
+    [handleFiles]
+  )
 
   useEffect(() => {
     function handleWindowPaste(event: ClipboardEvent) {
-      handlePasteData(event.clipboardData);
+      handlePasteData(event.clipboardData)
     }
 
-    window.addEventListener("paste", handleWindowPaste);
+    window.addEventListener("paste", handleWindowPaste)
 
     return () => {
-      window.removeEventListener("paste", handleWindowPaste);
-    };
-  }, [handlePasteData]);
+      window.removeEventListener("paste", handleWindowPaste)
+    }
+  }, [handlePasteData])
 
   return {
     fileInputRef,
     isDragActive,
-    openPicker: () => fileInputRef.current?.click(),
+    openPicker: () => {
+      const nativeWindow = window as FilePickerWindow
+
+      if (!nativeWindow.showOpenFilePicker) {
+        fileInputRef.current?.click()
+        return
+      }
+
+      void nativeWindow
+        .showOpenFilePicker({
+          multiple: false,
+          types: OPEN_PICKER_TYPES
+        })
+        .then(async (handles) => {
+          const file = await handles[0]?.getFile()
+          if (file) {
+            handleResolvedFile(file)
+          }
+        })
+        .catch((error: unknown) => {
+          if (error instanceof DOMException && error.name === "AbortError") {
+            return
+          }
+
+          fileInputRef.current?.click()
+        })
+    },
     handleInputChange,
     handleDrop,
     handlePaste: (event) => handlePasteData(event.clipboardData),
     activateDrag: () => setIsDragActive(true),
-    deactivateDrag: () => setIsDragActive(false),
-  };
+    deactivateDrag: () => setIsDragActive(false)
+  }
 }

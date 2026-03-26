@@ -2,6 +2,7 @@ namespace OpenNist.Nist;
 
 using System.Buffers.Binary;
 using System.Buffers.Text;
+using System.Text;
 using JetBrains.Annotations;
 
 /// <summary>
@@ -29,7 +30,29 @@ public static class NistDecoder
     public static NistFile Decode(Stream stream)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        return Decode(ReadAllBytes(stream));
+
+        if (stream is MemoryStream memoryStream && memoryStream.TryGetBuffer(out var buffer))
+        {
+            return Decode(
+                buffer.AsSpan(
+                    checked((int)memoryStream.Position),
+                    checked((int)(memoryStream.Length - memoryStream.Position))));
+        }
+
+        if (stream.CanSeek)
+        {
+            var remainingLength = stream.Length - stream.Position;
+            if (remainingLength is >= 0 and <= int.MaxValue)
+            {
+                var bytes = GC.AllocateUninitializedArray<byte>(checked((int)remainingLength));
+                stream.ReadExactly(bytes);
+                return Decode(bytes);
+            }
+        }
+
+        using var copy = new MemoryStream();
+        stream.CopyTo(copy);
+        return Decode(copy.GetBuffer().AsSpan(0, checked((int)copy.Length)));
     }
 
     /// <summary>
@@ -75,7 +98,7 @@ public static class NistDecoder
             }
         }
 
-        return new NistFile(records);
+        return new(records);
     }
 
     private static NistRecord ParseFieldedRecord(ReadOnlySpan<byte> bytes)
@@ -87,7 +110,7 @@ public static class NistDecoder
         }
 
         var recordBytes = bytes[..recordLength];
-        if (recordBytes[^1] != NistSeparators.FileSeparatorByte)
+        if (recordBytes[^1] != NistSeparators.s_fileSeparatorByte)
         {
             throw new FormatException("Logical record did not end with the expected file separator.");
         }
@@ -103,7 +126,7 @@ public static class NistDecoder
             throw new FormatException("Logical record length exceeds the remaining file size.");
         }
 
-        return new NistRecord(expectedRecordType, bytes[..recordLength]);
+        return new(expectedRecordType, bytes[..recordLength]);
     }
 
     private static int ReadRecordLength(ReadOnlySpan<byte> bytes)
@@ -120,7 +143,7 @@ public static class NistDecoder
             throw new FormatException("Logical record does not start with a LEN field.");
         }
 
-        var separatorIndex = bytes[(colonIndex + 1)..].IndexOfAny(NistSeparators.GroupSeparatorByte, NistSeparators.FileSeparatorByte);
+        var separatorIndex = bytes[(colonIndex + 1)..].IndexOfAny(NistSeparators.s_groupSeparatorByte, NistSeparators.s_fileSeparatorByte);
         if (separatorIndex < 0)
         {
             throw new FormatException("LEN field does not contain a terminating separator.");
@@ -170,17 +193,8 @@ public static class NistDecoder
             var valueEnd = nextSeparatorIndex >= 0 ? nextSeparatorIndex : recordPayload.Length;
             var value = valueStart == valueEnd
                 ? string.Empty
-                : string.Create(
-                    valueEnd - valueStart,
-                    recordPayload[valueStart..valueEnd],
-                    static (destination, source) =>
-                    {
-                        for (var index = 0; index < source.Length; index++)
-                        {
-                            destination[index] = (char)source[index];
-                        }
-                    });
-            fields.Add(new NistField(tag, value));
+                : Encoding.Latin1.GetString(recordPayload[valueStart..valueEnd]);
+            fields.Add(new(tag, value));
 
             if (nextSeparatorIndex < 0)
             {
@@ -195,14 +209,14 @@ public static class NistDecoder
             throw new FormatException("Logical record does not contain any fields.");
         }
 
-        return new NistRecord(recordType.Value, fields);
+        return new(recordType.Value, fields);
     }
 
     private static int FindNextFieldSeparator(ReadOnlySpan<byte> recordPayload, int searchStart)
     {
         for (var index = searchStart; index < recordPayload.Length; index++)
         {
-            if (recordPayload[index] != NistSeparators.GroupSeparatorByte)
+            if (recordPayload[index] != NistSeparators.s_groupSeparatorByte)
             {
                 continue;
             }
@@ -258,23 +272,59 @@ public static class NistDecoder
         }
 
         var contentField = type1Record.FindField(3);
-        if (contentField is null || contentField.Subfields.Count <= 1)
+        if (contentField is null)
         {
             return null;
         }
 
-        var expectedRecordTypes = new int[contentField.Subfields.Count - 1];
-
-        for (var index = 1; index < contentField.Subfields.Count; index++)
+        var source = contentField.Value.AsSpan();
+        var subfieldCount = 1;
+        for (var index = 0; index < source.Length; index++)
         {
-            var items = contentField.Subfields[index].Items;
-            if (items.Count == 0)
+            if (source[index] == NistSeparators.RecordSeparator)
+            {
+                subfieldCount++;
+            }
+        }
+
+        if (subfieldCount <= 1)
+        {
+            return null;
+        }
+
+        var expectedRecordTypes = new int[subfieldCount - 1];
+        var subfieldStart = 0;
+        var subfieldIndex = 0;
+
+        while (subfieldStart <= source.Length)
+        {
+            var subfieldLength = source[subfieldStart..].IndexOf(NistSeparators.RecordSeparator);
+            ReadOnlySpan<char> subfieldSpan;
+
+            if (subfieldLength < 0)
+            {
+                subfieldSpan = source[subfieldStart..];
+                subfieldStart = source.Length + 1;
+            }
+            else
+            {
+                subfieldSpan = source.Slice(subfieldStart, subfieldLength);
+                subfieldStart += subfieldLength + 1;
+            }
+
+            if (subfieldIndex++ == 0)
+            {
+                continue;
+            }
+
+            var firstItemLength = subfieldSpan.IndexOf(NistSeparators.UnitSeparator);
+            var firstItem = firstItemLength < 0 ? subfieldSpan : subfieldSpan[..firstItemLength];
+            if (firstItem.IsEmpty)
             {
                 throw new FormatException("Transaction content field contained an empty logical record descriptor.");
             }
 
-            var firstItem = items[0];
-            if (!int.TryParse(firstItem, out expectedRecordTypes[index - 1]))
+            if (!int.TryParse(firstItem, out expectedRecordTypes[subfieldIndex - 2]))
             {
                 throw new FormatException("Transaction content field contained an invalid logical record type.");
             }
@@ -291,30 +341,5 @@ public static class NistDecoder
         }
 
         return expectedRecordTypes[expectedRecordTypeIndex];
-    }
-
-    private static byte[] ReadAllBytes(Stream stream)
-    {
-        if (stream is MemoryStream memoryStream && memoryStream.TryGetBuffer(out var buffer))
-        {
-            return buffer.AsSpan(
-                checked((int)memoryStream.Position),
-                checked((int)(memoryStream.Length - memoryStream.Position))).ToArray();
-        }
-
-        if (stream.CanSeek)
-        {
-            var remainingLength = stream.Length - stream.Position;
-            if (remainingLength is >= 0 and <= int.MaxValue)
-            {
-                var result = GC.AllocateUninitializedArray<byte>(checked((int)remainingLength));
-                stream.ReadExactly(result);
-                return result;
-            }
-        }
-
-        using var copy = new MemoryStream();
-        stream.CopyTo(copy);
-        return copy.ToArray();
     }
 }

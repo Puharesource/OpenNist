@@ -4,8 +4,8 @@ using System.Globalization;
 
 internal static class Nfiq2ComplianceEvaluator
 {
-    private const string MetadataColumnName = "__metadata__";
-    private const string RowCountFilename = "*";
+    private const string s_metadataColumnName = "__metadata__";
+    private const string s_rowCountFilename = "*";
 
     public static Nfiq2ComplianceResult Evaluate(string expectedCsv, string actualCsv)
     {
@@ -21,8 +21,8 @@ internal static class Nfiq2ComplianceEvaluator
         if (expectedRows.Count != actualRows.Count)
         {
             differences.Add(new(
-                RowCountFilename,
-                MetadataColumnName,
+                s_rowCountFilename,
+                s_metadataColumnName,
                 expectedRows.Count.ToString(CultureInfo.InvariantCulture),
                 actualRows.Count.ToString(CultureInfo.InvariantCulture)));
         }

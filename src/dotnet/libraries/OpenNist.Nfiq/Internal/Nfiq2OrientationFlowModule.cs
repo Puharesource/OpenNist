@@ -2,12 +2,12 @@ namespace OpenNist.Nfiq.Internal;
 
 internal static class Nfiq2OrientationFlowModule
 {
-    private const int LocalRegionSquare = 32;
-    private const int SlantedBlockSizeX = 32;
-    private const int SlantedBlockSizeY = 16;
-    private const double SegmentationThreshold = 0.1;
-    private const double AngleMinDegrees = 4.0;
-    private const string FeaturePrefix = "OF_Bin10_";
+    private const int s_localRegionSquare = 32;
+    private const int s_slantedBlockSizeX = 32;
+    private const int s_slantedBlockSizeY = 16;
+    private const double s_segmentationThreshold = 0.1;
+    private const double s_angleMinDegrees = 4.0;
+    private const string s_featurePrefix = "OF_Bin10_";
     private static ReadOnlySpan<double> HistogramBoundaries => [1.715e-2, 3.5e-2, 5.57e-2, 8.1e-2, 1.15e-1, 1.718e-1, 2.569e-1, 4.758e-1, 7.48e-1];
 
     public static Nfiq2OrientationFlowResult Compute(Nfiq2FingerprintImage fingerprintImage)
@@ -21,15 +21,15 @@ internal static class Nfiq2OrientationFlowModule
 
         var segmentationMask = Nfiq2BlockFeatureSupport.CreateSegmentationMask(
             fingerprintImage,
-            LocalRegionSquare,
-            SegmentationThreshold);
+            s_localRegionSquare,
+            s_segmentationThreshold);
 
         var blocks = EnumerateInteriorBlockGrid(fingerprintImage, segmentationMask);
         var loqAll = ComputeLocalOrientationQualityMap(blocks);
         var maskBloqSeg = ComputeForegroundNeighborhoodMask(blocks);
 
-        var angleMinRadians = AngleMinDegrees * (Math.PI / 180.0);
-        var angleDiff = ((90.0 - AngleMinDegrees) * Math.PI) / 180.0;
+        var angleMinRadians = s_angleMinDegrees * (Math.PI / 180.0);
+        var angleDiff = ((90.0 - s_angleMinDegrees) * Math.PI) / 180.0;
 
         var values = new List<double>(loqAll.Length);
         for (var index = 0; index < loqAll.Length; index++)
@@ -48,27 +48,28 @@ internal static class Nfiq2OrientationFlowModule
             values.Add((loq - angleMinRadians) / angleDiff);
         }
 
-        var features = Nfiq2FeatureMath.CreateHistogramFeatures(FeaturePrefix, HistogramBoundaries, values.ToArray(), 10);
-        return new(values.ToArray(), features);
+        var valueArray = values.ToArray();
+        var features = Nfiq2FeatureMath.CreateHistogramFeatures(s_featurePrefix, HistogramBoundaries, valueArray, 10);
+        return new(valueArray, features);
     }
 
     private static Nfiq2OrientationBlock[] EnumerateInteriorBlockGrid(
         Nfiq2FingerprintImage fingerprintImage,
         ReadOnlySpan<byte> segmentationMask)
     {
-        var sumSquare = (SlantedBlockSizeX * SlantedBlockSizeX) + (SlantedBlockSizeY * SlantedBlockSizeY);
+        var sumSquare = (s_slantedBlockSizeX * s_slantedBlockSizeX) + (s_slantedBlockSizeY * s_slantedBlockSizeY);
         var extractedBlockSize = Math.Ceiling(Math.Sqrt(sumSquare));
-        var overlapDifference = extractedBlockSize - LocalRegionSquare;
+        var overlapDifference = extractedBlockSize - s_localRegionSquare;
         var blockOffset = (int)Math.Ceiling(overlapDifference / 2.0);
 
         var blockRows = 0;
-        for (var row = blockOffset; row < fingerprintImage.Height - (LocalRegionSquare + blockOffset - 1); row += LocalRegionSquare)
+        for (var row = blockOffset; row < fingerprintImage.Height - (s_localRegionSquare + blockOffset - 1); row += s_localRegionSquare)
         {
             blockRows++;
         }
 
         var blockColumns = 0;
-        for (var column = blockOffset; column < fingerprintImage.Width - (LocalRegionSquare + blockOffset - 1); column += LocalRegionSquare)
+        for (var column = blockOffset; column < fingerprintImage.Width - (s_localRegionSquare + blockOffset - 1); column += s_localRegionSquare)
         {
             blockColumns++;
         }
@@ -76,26 +77,26 @@ internal static class Nfiq2OrientationFlowModule
         var blocks = new Nfiq2OrientationBlock[blockRows * blockColumns];
 
         var blockRow = 0;
-        for (var row = blockOffset; row < fingerprintImage.Height - (LocalRegionSquare + blockOffset - 1); row += LocalRegionSquare)
+        for (var row = blockOffset; row < fingerprintImage.Height - (s_localRegionSquare + blockOffset - 1); row += s_localRegionSquare)
         {
             var blockColumn = 0;
-            for (var column = blockOffset; column < fingerprintImage.Width - (LocalRegionSquare + blockOffset - 1); column += LocalRegionSquare)
+            for (var column = blockOffset; column < fingerprintImage.Width - (s_localRegionSquare + blockOffset - 1); column += s_localRegionSquare)
             {
                 var allNonZero = Nfiq2BlockFeatureSupport.AreAllNonZero(
                     segmentationMask,
                     fingerprintImage.Width,
                     row,
                     column,
-                    LocalRegionSquare,
-                    LocalRegionSquare);
+                    s_localRegionSquare,
+                    s_localRegionSquare);
 
                 var orientation = Nfiq2BlockFeatureSupport.ComputeRidgeOrientation(
                     fingerprintImage.Pixels.Span,
                     fingerprintImage.Width,
                     row,
                     column,
-                    LocalRegionSquare,
-                    LocalRegionSquare);
+                    s_localRegionSquare,
+                    s_localRegionSquare);
 
                 blocks[GetBlockIndex(blockRow, blockColumn, blockColumns)] = new(blockRow, blockColumn, allNonZero, orientation);
                 blockColumn++;
@@ -126,7 +127,7 @@ internal static class Nfiq2OrientationFlowModule
             for (var column = 1; column <= columns; column++)
             {
                 var center = padded[GetPaddedIndex(row, column, columns)];
-                double sum = 0.0;
+                var sum = 0.0;
                 for (var y = row - 1; y <= row + 1; y++)
                 {
                     for (var x = column - 1; x <= column + 1; x++)

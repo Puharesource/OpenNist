@@ -91,7 +91,7 @@ public readonly record struct NistTag
             throw new FormatException($"'{value.ToString()}' is not a valid NIST tag.");
         }
 
-        return new NistTag(recordType, fieldNumber);
+        return new(recordType, fieldNumber);
     }
 
     /// <summary>
@@ -109,7 +109,7 @@ public readonly record struct NistTag
         var separatorIndex = value.IndexOf('.');
         if (separatorIndex <= 0 || separatorIndex >= value.Length - 1)
         {
-            throw new FormatException($"'{value.ToString()}' is not a valid NIST tag.");
+            throw new FormatException($"'{value}' is not a valid NIST tag.");
         }
 
         var recordTypeSpan = value[..separatorIndex];
@@ -117,15 +117,15 @@ public readonly record struct NistTag
 
         if (fieldNumberSpan.Length != 3)
         {
-            throw new FormatException($"'{value.ToString()}' is not a valid NIST tag.");
+            throw new FormatException($"'{value}' is not a valid NIST tag.");
         }
 
         if (!int.TryParse(recordTypeSpan, NumberStyles.None, CultureInfo.InvariantCulture, out var recordType) ||
             !int.TryParse(fieldNumberSpan, NumberStyles.None, CultureInfo.InvariantCulture, out var fieldNumber))
         {
-            throw new FormatException($"'{value.ToString()}' is not a valid NIST tag.");
+            throw new FormatException($"'{value}' is not a valid NIST tag.");
         }
 
-        return new NistTag(recordType, fieldNumber);
+        return new(recordType, fieldNumber);
     }
 }

@@ -8,9 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="OpenNist.Core">
-      <HintPath>../../src/dotnet/libraries/OpenNist.Core/bin/Debug/net10.0/OpenNist.Core.dll</HintPath>
-    </Reference>
     <Reference Include="OpenNist.Wsq">
       <HintPath>../../src/dotnet/libraries/OpenNist.Wsq/bin/Debug/net10.0/OpenNist.Wsq.dll</HintPath>
     </Reference>

@@ -1,9 +1,9 @@
-import { ArrowRight, BookOpenText, Boxes, Fingerprint, FileCode2, ScanSearch } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router"
+import { ArrowRight, BookOpenText, Boxes, Fingerprint, FileCode2, ScanSearch } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export function LibraryDocumentationPage() {
   return (
@@ -63,7 +63,7 @@ export function LibraryDocumentationPage() {
         </Card>
       </div>
     </section>
-  );
+  )
 }
 
 export function BiometricSubjectsPage() {
@@ -114,7 +114,10 @@ export function BiometricSubjectsPage() {
             <InfoRow label="WSQ" value="Compression model, grayscale assumptions, operational tradeoffs" />
             <InfoRow label="JPEG2000" value="Codestream structure, lossy/lossless use, transport considerations" />
             <InfoRow label="NIST records" value="Type families, field semantics, interchange context" />
-            <InfoRow label="Capture quality" value="How scoring and downstream matching depend on acquisition quality" />
+            <InfoRow
+              label="Capture quality"
+              value="How scoring and downstream matching depend on acquisition quality"
+            />
           </CardContent>
         </Card>
 
@@ -131,17 +134,17 @@ export function BiometricSubjectsPage() {
         </div>
       </div>
     </section>
-  );
+  )
 }
 
 function DocCard({
   icon: Icon,
   title,
-  description,
+  description
 }: {
-  icon: typeof BookOpenText;
-  title: string;
-  description: string;
+  icon: typeof BookOpenText
+  title: string
+  description: string
 }) {
   return (
     <Card className="surface-module border-0 shadow-none ring-1 ring-[color:var(--effect-ghost-border)]">
@@ -157,17 +160,17 @@ function DocCard({
         </div>
       </CardHeader>
     </Card>
-  );
+  )
 }
 
 function SubjectCard({
   icon: Icon,
   title,
-  description,
+  description
 }: {
-  icon: typeof Fingerprint;
-  title: string;
-  description: string;
+  icon: typeof Fingerprint
+  title: string
+  description: string
 }) {
   return (
     <Card className="surface-module border-0 shadow-none ring-1 ring-[color:var(--effect-ghost-border)]">
@@ -183,14 +186,16 @@ function SubjectCard({
         </div>
       </CardHeader>
     </Card>
-  );
+  )
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[var(--radius-lg)] bg-[var(--color-surface-container-low)] px-4 py-3">
-      <p className="font-mono text-[0.64rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">{label}</p>
+      <p className="font-mono text-[0.64rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
+        {label}
+      </p>
       <p className="mt-2 text-sm leading-7 text-[var(--color-on-surface)]">{value}</p>
     </div>
-  );
+  )
 }

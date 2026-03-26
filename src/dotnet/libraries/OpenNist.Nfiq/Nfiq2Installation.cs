@@ -9,9 +9,9 @@ using JetBrains.Annotations;
 [PublicAPI]
 public sealed record Nfiq2Installation
 {
-    private const string OpenNistNfiq2RootEnvironmentVariable = "OPENNIST_NFIQ2_ROOT";
-    private const string Nfiq2RootEnvironmentVariable = "NFIQ2_ROOT";
-    private const string ModelInfoFileName = "nist_plain_tir-ink.txt";
+    private const string s_openNistNfiq2RootEnvironmentVariable = "OPENNIST_NFIQ2_ROOT";
+    private const string s_nfiq2RootEnvironmentVariable = "NFIQ2_ROOT";
+    private const string s_modelInfoFileName = "nist_plain_tir-ink.txt";
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Nfiq2Installation"/> class.
@@ -59,7 +59,7 @@ public sealed record Nfiq2Installation
 
         throw new Nfiq2Exception(
             "Could not locate an official NFIQ 2 installation. "
-            + $"Set {OpenNistNfiq2RootEnvironmentVariable} or {Nfiq2RootEnvironmentVariable}, "
+            + $"Set {s_openNistNfiq2RootEnvironmentVariable} or {s_nfiq2RootEnvironmentVariable}, "
             + "or install NIST NFIQ 2 into a standard location.");
     }
 
@@ -100,8 +100,8 @@ public sealed record Nfiq2Installation
 
     private static IEnumerable<string> EnumerateCandidateRoots()
     {
-        yield return FromEnvironment(OpenNistNfiq2RootEnvironmentVariable);
-        yield return FromEnvironment(Nfiq2RootEnvironmentVariable);
+        yield return FromEnvironment(s_openNistNfiq2RootEnvironmentVariable);
+        yield return FromEnvironment(s_nfiq2RootEnvironmentVariable);
 
         var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         if (!string.IsNullOrWhiteSpace(userProfile))
@@ -137,7 +137,7 @@ public sealed record Nfiq2Installation
         var normalizedRootPath = Path.GetFullPath(rootPath);
         var executableFileName = OperatingSystem.IsWindows() ? "nfiq2.exe" : "nfiq2";
         var executablePath = Path.Combine(normalizedRootPath, "bin", executableFileName);
-        var modelInfoPath = Path.Combine(normalizedRootPath, "share", ModelInfoFileName);
+        var modelInfoPath = Path.Combine(normalizedRootPath, "share", s_modelInfoFileName);
 
         if (!File.Exists(executablePath) || !File.Exists(modelInfoPath))
         {

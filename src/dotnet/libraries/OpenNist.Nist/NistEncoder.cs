@@ -1,7 +1,9 @@
 namespace OpenNist.Nist;
 
 using System.Buffers;
+using System.Buffers.Text;
 using System.Globalization;
+using System.Text;
 using JetBrains.Annotations;
 
 /// <summary>
@@ -84,7 +86,7 @@ public static class NistEncoder
         }
 
         var fields = new NistField[record.Fields.Count + 1];
-        fields[0] = new NistField(lengthTag, string.Empty);
+        fields[0] = new(lengthTag, string.Empty);
 
         for (var index = 0; index < record.Fields.Count; index++)
         {
@@ -105,11 +107,26 @@ public static class NistEncoder
             var field = fields[index];
             var value = field.Tag == lengthTag ? logicalRecordLength : field.Value;
 
-            WriteText(output, field.Tag.ToString().AsSpan());
+            WriteTag(output, field.Tag);
             output.WriteByte((byte)':');
             WriteText(output, value.AsSpan());
-            output.WriteByte(index == fields.Length - 1 ? NistSeparators.FileSeparatorByte : NistSeparators.GroupSeparatorByte);
+            output.WriteByte(index == fields.Length - 1 ? NistSeparators.s_fileSeparatorByte : NistSeparators.s_groupSeparatorByte);
         }
+    }
+
+    private static void WriteTag(Stream output, NistTag tag)
+    {
+        Span<byte> buffer = stackalloc byte[16];
+        if (!Utf8Formatter.TryFormat(tag.RecordType, buffer, out var bytesWritten))
+        {
+            throw new InvalidOperationException("Failed to format the record type.");
+        }
+
+        buffer[bytesWritten++] = (byte)'.';
+        buffer[bytesWritten++] = checked((byte)('0' + (tag.FieldNumber / 100)));
+        buffer[bytesWritten++] = checked((byte)('0' + ((tag.FieldNumber / 10) % 10)));
+        buffer[bytesWritten++] = checked((byte)('0' + (tag.FieldNumber % 10)));
+        output.Write(buffer[..bytesWritten]);
     }
 
     private static void WriteText(Stream output, ReadOnlySpan<char> value)
@@ -119,16 +136,21 @@ public static class NistEncoder
             return;
         }
 
+        const int stackLimit = 256;
+        if (value.Length <= stackLimit)
+        {
+            Span<byte> stackBuffer = stackalloc byte[stackLimit];
+            var bytesWritten = Encoding.Latin1.GetBytes(value, stackBuffer);
+            output.Write(stackBuffer[..bytesWritten]);
+            return;
+        }
+
         var rented = ArrayPool<byte>.Shared.Rent(value.Length);
 
         try
         {
-            for (var index = 0; index < value.Length; index++)
-            {
-                rented[index] = checked((byte)value[index]);
-            }
-
-            output.Write(rented, 0, value.Length);
+            var bytesWritten = Encoding.Latin1.GetBytes(value, rented);
+            output.Write(rented, 0, bytesWritten);
         }
         finally
         {

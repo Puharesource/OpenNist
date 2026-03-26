@@ -1,55 +1,55 @@
-import { createRootRoute, createRoute, createRouter, Navigate } from "@tanstack/react-router";
+import { createRootRoute, createRoute, createRouter, Navigate } from "@tanstack/react-router"
 
-import { RootLayout } from "@/components/site-chrome";
-import { LandingPage } from "@/components/landing-page";
-import { WorkspacePage } from "@/components/workspace-page";
-import { BiometricSubjectsPage, LibraryDocumentationPage } from "@/components/docs-pages";
+import { BiometricSubjectsPage, LibraryDocumentationPage } from "@/components/docs-pages"
+import { LandingPage } from "@/components/landing-page"
+import { RootLayout } from "@/components/site-chrome"
+import { WorkspacePage } from "@/components/workspace-page"
 
 const rootRoute = createRootRoute({
-  component: RootLayout,
-});
+  component: RootLayout
+})
 
 const landingRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: LandingPage,
-});
+  component: LandingPage
+})
 
 const documentationRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "docs",
-  component: LibraryDocumentationPage,
-});
+  component: LibraryDocumentationPage
+})
 
 const subjectsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "subjects",
-  component: BiometricSubjectsPage,
-});
+  component: BiometricSubjectsPage
+})
 
 const appRedirectRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "app",
-  component: AppRedirect,
-});
+  component: AppRedirect
+})
 
 const codecsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "app/codecs",
-  component: () => <WorkspacePage view="codecs" />,
-});
+  component: () => <WorkspacePage view="codecs" />
+})
 
 const nistRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "app/nist",
-  component: () => <WorkspacePage view="nist" />,
-});
+  component: () => <WorkspacePage view="nist" />
+})
 
 const nfiqRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "app/nfiq",
-  component: () => <WorkspacePage view="nfiq" />,
-});
+  component: () => <WorkspacePage view="nfiq" />
+})
 
 const routeTree = rootRoute.addChildren({
   landingRoute,
@@ -58,21 +58,21 @@ const routeTree = rootRoute.addChildren({
   appRedirectRoute,
   codecsRoute,
   nistRoute,
-  nfiqRoute,
-});
+  nfiqRoute
+})
 
 export const router = createRouter({
   routeTree,
   defaultPreload: "intent",
-  scrollRestoration: true,
-});
+  scrollRestoration: true
+})
 
 declare module "@tanstack/react-router" {
   interface Register {
-    router: typeof router;
+    router: typeof router
   }
 }
 
 function AppRedirect() {
-  return <Navigate to="/app/codecs" replace />;
+  return <Navigate to="/app/nist" replace />
 }

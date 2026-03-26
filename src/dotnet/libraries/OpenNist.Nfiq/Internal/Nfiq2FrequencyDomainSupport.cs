@@ -4,7 +4,7 @@ using System.Numerics;
 
 internal static class Nfiq2FrequencyDomainSupport
 {
-    private const double NeighborContributionWeight = 0.3;
+    private const double s_neighborContributionWeight = 0.3;
 
     public static double ComputeFrequencyDomainAnalysisScore(
         ReadOnlySpan<byte> blockCropped,
@@ -29,7 +29,7 @@ internal static class Nfiq2FrequencyDomainSupport
         var rowMeans = new double[height];
         for (var row = 0; row < height; row++)
         {
-            double sum = 0.0;
+            var sum = 0.0;
             var rowOffset = row * width;
             for (var column = 0; column < width; column++)
             {
@@ -62,13 +62,13 @@ internal static class Nfiq2FrequencyDomainSupport
         }
 
         var denominatorLength = (int)Math.Floor(amplitudes.Length / 2.0);
-        double denominator = 0.0;
+        var denominator = 0.0;
         for (var index = 0; index < denominatorLength; index++)
         {
             denominator += amplitudes[index];
         }
 
-        return (maxValue + (NeighborContributionWeight * (amplitudes[maxIndex - 1] + amplitudes[maxIndex + 1]))) / denominator;
+        return (maxValue + (s_neighborContributionWeight * (amplitudes[maxIndex - 1] + amplitudes[maxIndex + 1]))) / denominator;
     }
 
     private static double[] ComputeMagnitudeSpectrum(double[] samples)
@@ -76,7 +76,7 @@ internal static class Nfiq2FrequencyDomainSupport
         var amplitudes = new double[samples.Length - 1];
         for (var frequency = 1; frequency < samples.Length; frequency++)
         {
-            Complex sum = Complex.Zero;
+            var sum = Complex.Zero;
             for (var sampleIndex = 0; sampleIndex < samples.Length; sampleIndex++)
             {
                 var angle = (-2.0 * Math.PI * frequency * sampleIndex) / samples.Length;

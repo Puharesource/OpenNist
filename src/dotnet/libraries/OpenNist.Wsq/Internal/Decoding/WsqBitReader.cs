@@ -7,6 +7,17 @@ internal ref struct WsqBitReader(ReadOnlySpan<byte> buffer)
     private int _bitsRemaining = 0;
     private byte _currentByte = 0;
 
+    public int ReadBit()
+    {
+        if (_bitsRemaining == 0)
+        {
+            LoadNextByte();
+        }
+
+        _bitsRemaining--;
+        return (_currentByte >> _bitsRemaining) & 1;
+    }
+
     public ushort ReadBits(int bitCount)
     {
         if (bitCount is < 1 or > 16)

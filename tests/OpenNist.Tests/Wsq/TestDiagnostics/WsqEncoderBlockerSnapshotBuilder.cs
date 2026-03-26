@@ -8,7 +8,7 @@ using OpenNist.Wsq.Internal.Encoding;
 
 internal static class WsqEncoderBlockerSnapshotBuilder
 {
-    private const double SubbandZeroDiagnosticQuantizationBias = 0.999996;
+    private const double s_subbandZeroDiagnosticQuantizationBias = 0.999996;
 
     public static async Task<WsqEncoderBlockerSnapshot> CreateAsync(WsqEncodingReferenceCase testCase)
     {
@@ -115,7 +115,7 @@ internal static class WsqEncoderBlockerSnapshotBuilder
         var subbandZeroBiasedQuantizationBins = rawQuantizationArtifacts.QuantizationBins.ToArray();
         if (subbandZeroBiasedQuantizationBins[0].CompareTo(0.0) > 0)
         {
-            subbandZeroBiasedQuantizationBins[0] *= SubbandZeroDiagnosticQuantizationBias;
+            subbandZeroBiasedQuantizationBins[0] *= s_subbandZeroDiagnosticQuantizationBias;
         }
 
         var productionWithSubbandZeroBiasQuantizedCoefficients = WsqCoefficientQuantizer.Quantize(

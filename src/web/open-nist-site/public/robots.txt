@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://opennist.tarkan.dev/sitemap.xml

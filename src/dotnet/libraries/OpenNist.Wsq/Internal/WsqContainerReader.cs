@@ -43,9 +43,10 @@ internal static class WsqContainerReader
 
         WsqTransformTable? transformTable = null;
         WsqQuantizationTable? quantizationTable = null;
-        var huffmanTables = new Dictionary<byte, WsqHuffmanTable>();
-        var comments = new List<WsqCommentSegment>();
-        var blocks = new List<WsqBlock>();
+        var huffmanTables = new WsqHuffmanTable?[byte.MaxValue + 1];
+        var huffmanTableCount = 0;
+        var comments = new List<WsqCommentSegment>(capacity: 2);
+        var blocks = new List<WsqBlock>(capacity: WsqConstants.BlockCount);
         int? pixelsPerInch = null;
 
         var marker = reader.ReadMarker();
@@ -64,6 +65,7 @@ internal static class WsqContainerReader
                 ref transformTable,
                 ref quantizationTable,
                 huffmanTables,
+                ref huffmanTableCount,
                 comments,
                 ref pixelsPerInch);
 
@@ -95,6 +97,7 @@ internal static class WsqContainerReader
                 ref transformTable,
                 ref quantizationTable,
                 huffmanTables,
+                ref huffmanTableCount,
                 comments,
                 ref pixelsPerInch);
 
@@ -105,7 +108,7 @@ internal static class WsqContainerReader
             frameHeader,
             transformTable ?? throw new InvalidDataException("WSQ transform table is missing."),
             quantizationTable ?? throw new InvalidDataException("WSQ quantization table is missing."),
-            huffmanTables.Values.OrderBy(static table => table.TableId).ToArray(),
+            GetSortedHuffmanTables(huffmanTables, huffmanTableCount),
             comments,
             blocks,
             pixelsPerInch);
@@ -116,7 +119,8 @@ internal static class WsqContainerReader
         ref WsqBufferReader reader,
         ref WsqTransformTable? transformTable,
         ref WsqQuantizationTable? quantizationTable,
-        Dictionary<byte, WsqHuffmanTable> huffmanTables,
+        WsqHuffmanTable?[] huffmanTables,
+        ref int huffmanTableCount,
         List<WsqCommentSegment> comments,
         ref int? pixelsPerInch)
     {
@@ -131,6 +135,11 @@ internal static class WsqContainerReader
             case WsqMarker.DefineHuffmanTable:
                 foreach (var table in ReadHuffmanTables(ref reader))
                 {
+                    if (huffmanTables[table.TableId] is null)
+                    {
+                        huffmanTableCount++;
+                    }
+
                     huffmanTables[table.TableId] = table;
                 }
 
@@ -224,13 +233,18 @@ internal static class WsqContainerReader
     private static List<WsqHuffmanTable> ReadHuffmanTables(ref WsqBufferReader reader)
     {
         var segmentReader = new WsqBufferReader(reader.ReadSegmentPayload());
-        var tables = new List<WsqHuffmanTable>();
+        var tables = new List<WsqHuffmanTable>(capacity: 2);
 
         while (segmentReader.Remaining > 0)
         {
             var tableId = segmentReader.ReadByte();
             var codeLengthCounts = segmentReader.ReadBytes(16).ToArray();
-            var valueCount = codeLengthCounts.Sum(static value => value);
+            var valueCount = 0;
+            for (var index = 0; index < codeLengthCounts.Length; index++)
+            {
+                valueCount += codeLengthCounts[index];
+            }
+
             var values = segmentReader.ReadBytes(valueCount).ToArray();
 
             tables.Add(new(tableId, codeLengthCounts, values));
@@ -241,10 +255,7 @@ internal static class WsqContainerReader
 
     private static WsqCommentSegment ReadComment(ref WsqBufferReader reader)
     {
-        var payload = reader.ReadSegmentPayload();
-        var text = System.Text.Encoding.ASCII.GetString(payload);
-        var fields = ParseNistComFields(text);
-        return new(text, fields);
+        return WsqCommentParser.ReadCommentSegment(ref reader);
     }
 
     private static WsqFrameHeader ReadFrameHeader(ref WsqBufferReader reader)
@@ -274,7 +285,7 @@ internal static class WsqContainerReader
 
     private static WsqBlock ReadBlock(
         ref WsqBufferReader reader,
-        Dictionary<byte, WsqHuffmanTable> huffmanTables,
+        WsqHuffmanTable?[] huffmanTables,
         out WsqMarker nextMarker)
     {
         var segmentReader = new WsqBufferReader(reader.ReadSegmentPayload());
@@ -285,7 +296,8 @@ internal static class WsqContainerReader
             throw new InvalidDataException("WSQ block header contains unexpected trailing data.");
         }
 
-        if (!huffmanTables.TryGetValue(huffmanTableId, out var huffmanTable))
+        var huffmanTable = huffmanTables[huffmanTableId];
+        if (huffmanTable is null)
         {
             throw new InvalidDataException($"WSQ block references undefined Huffman table {huffmanTableId}.");
         }
@@ -367,36 +379,22 @@ internal static class WsqContainerReader
         return (power & 1) == 0 ? 1 : -1;
     }
 
-    private static Dictionary<string, string> ParseNistComFields(string text)
+    private static WsqHuffmanTable[] GetSortedHuffmanTables(WsqHuffmanTable?[] huffmanTables, int huffmanTableCount)
     {
-        if (!text.StartsWith("NIST_COM", StringComparison.Ordinal))
+        var tables = new WsqHuffmanTable[huffmanTableCount];
+        var index = 0;
+
+        for (var tableId = 0; tableId < huffmanTables.Length; tableId++)
         {
-            return new(0, StringComparer.Ordinal);
-        }
-
-        var fields = new Dictionary<string, string>(StringComparer.Ordinal);
-        var lines = text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-        foreach (var line in lines)
-        {
-            var separatorIndex = line.IndexOfAny([' ', '\t']);
-
-            if (separatorIndex <= 0 || separatorIndex == line.Length - 1)
+            var table = huffmanTables[tableId];
+            if (table is null)
             {
                 continue;
             }
 
-            var key = line[..separatorIndex].Trim();
-            var value = line[(separatorIndex + 1)..].Trim();
-
-            if (key.Length == 0 || value.Length == 0)
-            {
-                continue;
-            }
-
-            fields[key] = value;
+            tables[index++] = table;
         }
 
-        return fields;
+        return tables;
     }
 }

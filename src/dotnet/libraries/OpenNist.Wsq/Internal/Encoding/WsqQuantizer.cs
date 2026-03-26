@@ -121,7 +121,109 @@ internal static class WsqQuantizer
         Span<float> quantizationBins,
         Span<float> zeroBins)
     {
-        ComputeQuantizationBinsTrace(variances, bitRate, quantizationBins, zeroBins);
+        var reciprocalSubbandAreas = new float[WsqConstants.NumberOfSubbands];
+        var sigma = new float[WsqConstants.NumberOfSubbands];
+        var initialQuantizationBins = new float[WsqConstants.NumberOfSubbands];
+        var initialSubbands = new int[WsqConstants.NumberOfSubbands];
+        var workingSubbands = new int[WsqConstants.NumberOfSubbands];
+        var nonPositiveBitRateFlags = new int[WsqConstants.NumberOfSubbands];
+
+        WsqQuantizationParameters.SetReciprocalSubbandAreas(reciprocalSubbandAreas);
+
+        var initialSubbandCount = 0;
+        for (var subband = 0; subband < WsqConstants.NumberOfSubbands; subband++)
+        {
+            if (variances[subband] < WsqConstants.VarianceThreshold)
+            {
+                quantizationBins[subband] = 0.0f;
+                zeroBins[subband] = 0.0f;
+                continue;
+            }
+
+            sigma[subband] = SqrtLikeNbis(variances[subband]);
+            initialQuantizationBins[subband] = subband < WsqConstants.StartSizeRegion2
+                ? 1.0f
+                : 10.0f / (WsqQuantizationParameters.SubbandWeights[subband] * (float)Math.Log(variances[subband]));
+            quantizationBins[subband] = initialQuantizationBins[subband];
+            initialSubbands[initialSubbandCount] = subband;
+            workingSubbands[initialSubbandCount++] = subband;
+        }
+
+        if (initialSubbandCount == 0)
+        {
+            return;
+        }
+
+        Span<int> activeSubbands = workingSubbands;
+        var activeSubbandCount = initialSubbandCount;
+
+        while (true)
+        {
+            var reciprocalAreaSum = 0.0f;
+            for (var index = 0; index < activeSubbandCount; index++)
+            {
+                reciprocalAreaSum += reciprocalSubbandAreas[activeSubbands[index]];
+            }
+
+            var product = 1.0f;
+            for (var index = 0; index < activeSubbandCount; index++)
+            {
+                var subband = activeSubbands[index];
+                product = (float)(
+                    product
+                    * Math.Pow(
+                        sigma[subband] / quantizationBins[subband],
+                        reciprocalSubbandAreas[subband]));
+            }
+
+            var quantizationScale = (float)(
+                (Math.Pow(2.0, ((bitRate / reciprocalAreaSum) - 1.0)) / 2.5f)
+                / Math.Pow(product, 1.0 / reciprocalAreaSum));
+            var nonPositiveBitRateCount = 0;
+
+            Array.Clear(nonPositiveBitRateFlags);
+            for (var index = 0; index < activeSubbandCount; index++)
+            {
+                var subband = activeSubbands[index];
+                if ((quantizationBins[subband] / quantizationScale) >= (5.0f * sigma[subband]))
+                {
+                    nonPositiveBitRateFlags[subband] = 1;
+                    nonPositiveBitRateCount++;
+                }
+            }
+
+            if (nonPositiveBitRateCount == 0)
+            {
+                Array.Clear(nonPositiveBitRateFlags);
+                for (var index = 0; index < initialSubbandCount; index++)
+                {
+                    nonPositiveBitRateFlags[initialSubbands[index]] = 1;
+                }
+
+                for (var subband = 0; subband < WsqConstants.NumberOfSubbands; subband++)
+                {
+                    quantizationBins[subband] = nonPositiveBitRateFlags[subband] != 0
+                        ? quantizationBins[subband] / quantizationScale
+                        : 0.0f;
+                    zeroBins[subband] = (float)(1.2 * quantizationBins[subband]);
+                }
+
+                return;
+            }
+
+            var nextActiveSubbandCount = 0;
+            for (var index = 0; index < activeSubbandCount; index++)
+            {
+                var subband = activeSubbands[index];
+                if (nonPositiveBitRateFlags[subband] == 0)
+                {
+                    workingSubbands[nextActiveSubbandCount++] = subband;
+                }
+            }
+
+            activeSubbands = workingSubbands;
+            activeSubbandCount = nextActiveSubbandCount;
+        }
     }
 
     private static WsqQuantizationTrace ComputeQuantizationBinsTrace(

@@ -4,9 +4,8 @@ using System.Collections.Frozen;
 
 internal static class Nfiq2QualityMapModule
 {
-    private const int LocalRegionSquare = 32;
-    private const string CoherenceRelative = "OrientationMap_ROIFilter_CoherenceRel";
-    private const string CoherenceSum = "OrientationMap_ROIFilter_CoherenceSum";
+    private const string s_coherenceRelative = "OrientationMap_ROIFilter_CoherenceRel";
+    private const string s_coherenceSum = "OrientationMap_ROIFilter_CoherenceSum";
 
     public static Nfiq2QualityMapResult Compute(
         Nfiq2FingerprintImage fingerprintImage,
@@ -20,38 +19,23 @@ internal static class Nfiq2QualityMapModule
             throw new Nfiq2Exception("Only 500 dpi fingerprint images are supported!");
         }
 
-        var roiBlocks = roiResult.RoiBlocks
-            .ToFrozenSet();
-
-        double coherenceSum = 0.0;
-
-        for (var row = 0; row < fingerprintImage.Height; row += LocalRegionSquare)
+        var coherenceSum = 0.0;
+        foreach (var roiBlock in roiResult.RoiBlocks)
         {
-            for (var column = 0; column < fingerprintImage.Width; column += LocalRegionSquare)
+            var coherence = ComputeBlockCoherence(
+                fingerprintImage.Pixels.Span,
+                fingerprintImage.Width,
+                roiBlock.Y,
+                roiBlock.X,
+                roiBlock.Width,
+                roiBlock.Height);
+
+            if (double.IsNaN(coherence))
             {
-                var actualWidth = Math.Min(LocalRegionSquare, fingerprintImage.Width - column);
-                var actualHeight = Math.Min(LocalRegionSquare, fingerprintImage.Height - row);
-                var roiBlock = new Nfiq2RegionBlock(column, row, actualWidth, actualHeight);
-                if (!roiBlocks.Contains(roiBlock))
-                {
-                    continue;
-                }
-
-                var coherence = ComputeBlockCoherence(
-                    fingerprintImage.Pixels.Span,
-                    fingerprintImage.Width,
-                    row,
-                    column,
-                    actualWidth,
-                    actualHeight);
-
-                if (double.IsNaN(coherence))
-                {
-                    coherence = 0.0;
-                }
-
-                coherenceSum += coherence;
+                coherence = 0.0;
             }
+
+            coherenceSum += coherence;
         }
 
         var coherenceRelative = roiResult.RoiBlocks.Count == 0
@@ -63,8 +47,8 @@ internal static class Nfiq2QualityMapModule
             coherenceSum,
             new Dictionary<string, double>(2, StringComparer.Ordinal)
             {
-                [CoherenceRelative] = coherenceRelative,
-                [CoherenceSum] = coherenceSum,
+                [s_coherenceRelative] = coherenceRelative,
+                [s_coherenceSum] = coherenceSum,
             }.ToFrozenDictionary(StringComparer.Ordinal));
     }
 
@@ -76,20 +60,19 @@ internal static class Nfiq2QualityMapModule
         int blockWidth,
         int blockHeight)
     {
-        var gradientX = Nfiq2FeatureMath.ComputeNumericalGradientX(image, imageWidth, row, column, blockWidth, blockHeight);
-        var gradientY = Nfiq2FeatureMath.ComputeNumericalGradientY(image, imageWidth, row, column, blockWidth, blockHeight);
-
-        double sumY = 0.0;
-        double sumX = 0.0;
-        double coherenceDenominator = 0.0;
+        var sumY = 0.0;
+        var sumX = 0.0;
+        var coherenceDenominator = 0.0;
 
         for (var y = 0; y < blockHeight; y++)
         {
-            var rowOffset = y * blockWidth;
+            var imageRow = row + y;
+            var imageRowOffset = imageRow * imageWidth;
             for (var x = 0; x < blockWidth; x++)
             {
-                var gx = gradientX[rowOffset + x];
-                var gy = gradientY[rowOffset + x];
+                var imageColumn = column + x;
+                var gx = Nfiq2FeatureMath.ComputeGradientXAt(image, imageRowOffset, imageColumn, x, blockWidth);
+                var gy = Nfiq2FeatureMath.ComputeGradientYAt(image, imageWidth, imageRow, imageColumn, y, blockHeight);
 
                 var twiceProduct = 2.0 * gx * gy;
                 if (!double.IsNaN(twiceProduct))

@@ -1,7 +1,7 @@
 namespace OpenNist.Nfiq;
 
-using OpenNist.Nfiq.Internal;
 using JetBrains.Annotations;
+using OpenNist.Nfiq.Internal;
 
 /// <summary>
 /// Compares NFIQ 2 CSV reports using the official conformance-column rules.

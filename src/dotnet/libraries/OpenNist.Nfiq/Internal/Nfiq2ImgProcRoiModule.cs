@@ -1,16 +1,19 @@
 namespace OpenNist.Nfiq.Internal;
 
+using System.Buffers;
 using System.Collections.Frozen;
 
 internal static class Nfiq2ImgProcRoiModule
 {
-    private const int LocalRegionSquare = 32;
-    private const int ErosionKernelSize = 5;
-    private const int FirstGaussianKernelSize = 41;
-    private const int SecondGaussianKernelSize = 91;
-    private const byte WhitePixel = 255;
-    private const byte BlackPixel = 0;
-    private const string RegionOfInterestMean = "ImgProcROIArea_Mean";
+    private const int s_localRegionSquare = 32;
+    private const int s_erosionKernelSize = 5;
+    private const int s_firstGaussianKernelSize = 41;
+    private const int s_secondGaussianKernelSize = 91;
+    private const byte s_whitePixel = 255;
+    private const byte s_blackPixel = 0;
+    private const string s_regionOfInterestMean = "ImgProcROIArea_Mean";
+    private static readonly double[] s_firstGaussianKernel = BuildGaussianKernel(s_firstGaussianKernelSize);
+    private static readonly double[] s_secondGaussianKernel = BuildGaussianKernel(s_secondGaussianKernelSize);
 
     public static Nfiq2ImgProcRoiResult Compute(Nfiq2FingerprintImage fingerprintImage)
     {
@@ -22,23 +25,23 @@ internal static class Nfiq2ImgProcRoiModule
         }
 
         var source = fingerprintImage.Pixels.Span;
-        var eroded = Erode(source, fingerprintImage.Width, fingerprintImage.Height, ErosionKernelSize);
-        var blurred = GaussianBlur(eroded, fingerprintImage.Width, fingerprintImage.Height, FirstGaussianKernelSize);
+        var eroded = Erode(source, fingerprintImage.Width, fingerprintImage.Height, s_erosionKernelSize);
+        var blurred = GaussianBlur(eroded, fingerprintImage.Width, fingerprintImage.Height, s_firstGaussianKernel);
         var threshold = ThresholdOtsu(blurred);
-        var blurredThreshold = GaussianBlur(threshold, fingerprintImage.Width, fingerprintImage.Height, SecondGaussianKernelSize);
+        var blurredThreshold = GaussianBlur(threshold, fingerprintImage.Width, fingerprintImage.Height, s_secondGaussianKernel);
         var roiMask = ThresholdOtsu(blurredThreshold);
 
         FillWhiteHoles(roiMask, fingerprintImage.Width, fingerprintImage.Height);
         KeepLargestBlackComponent(roiMask, fingerprintImage.Width, fingerprintImage.Height);
 
         var roiPixels = 0U;
-        double meanOfRoiPixels = 0.0;
+        var meanOfRoiPixels = 0.0;
         for (var row = 0; row < fingerprintImage.Height; row++)
         {
             var rowOffset = row * fingerprintImage.Width;
             for (var column = 0; column < fingerprintImage.Width; column++)
             {
-                if (roiMask[rowOffset + column] != BlackPixel)
+                if (roiMask[rowOffset + column] != s_blackPixel)
                 {
                     continue;
                 }
@@ -50,14 +53,14 @@ internal static class Nfiq2ImgProcRoiModule
 
         if (roiPixels == 0)
         {
-            meanOfRoiPixels = WhitePixel;
+            meanOfRoiPixels = s_whitePixel;
         }
         else
         {
             meanOfRoiPixels /= roiPixels;
         }
 
-        double varianceSum = 0.0;
+        var varianceSum = 0.0;
         if (roiPixels > 1)
         {
             for (var row = 0; row < fingerprintImage.Height; row++)
@@ -65,7 +68,7 @@ internal static class Nfiq2ImgProcRoiModule
                 var rowOffset = row * fingerprintImage.Width;
                 for (var column = 0; column < fingerprintImage.Width; column++)
                 {
-                    if (roiMask[rowOffset + column] != BlackPixel)
+                    if (roiMask[rowOffset + column] != s_blackPixel)
                     {
                         continue;
                     }
@@ -83,14 +86,14 @@ internal static class Nfiq2ImgProcRoiModule
         var roiBlocks = new List<Nfiq2RegionBlock>();
         var allBlocks = 0U;
         var completeBlocks = 0U;
-        for (var row = 0; row < fingerprintImage.Height; row += LocalRegionSquare)
+        for (var row = 0; row < fingerprintImage.Height; row += s_localRegionSquare)
         {
-            for (var column = 0; column < fingerprintImage.Width; column += LocalRegionSquare)
+            for (var column = 0; column < fingerprintImage.Width; column += s_localRegionSquare)
             {
-                var takenWidth = Math.Min(LocalRegionSquare, fingerprintImage.Width - column);
-                var takenHeight = Math.Min(LocalRegionSquare, fingerprintImage.Height - row);
+                var takenWidth = Math.Min(s_localRegionSquare, fingerprintImage.Width - column);
+                var takenHeight = Math.Min(s_localRegionSquare, fingerprintImage.Height - row);
                 allBlocks++;
-                if (takenWidth == LocalRegionSquare && takenHeight == LocalRegionSquare)
+                if (takenWidth == s_localRegionSquare && takenHeight == s_localRegionSquare)
                 {
                     completeBlocks++;
                 }
@@ -103,7 +106,7 @@ internal static class Nfiq2ImgProcRoiModule
         }
 
         return new(
-            LocalRegionSquare,
+            s_localRegionSquare,
             completeBlocks,
             allBlocks,
             roiBlocks.ToArray(),
@@ -113,7 +116,7 @@ internal static class Nfiq2ImgProcRoiModule
             stdDevOfRoiPixels,
             new Dictionary<string, double>(1, StringComparer.Ordinal)
             {
-                [RegionOfInterestMean] = meanOfRoiPixels,
+                [s_regionOfInterestMean] = meanOfRoiPixels,
             }.ToFrozenDictionary(StringComparer.Ordinal));
     }
 
@@ -126,7 +129,7 @@ internal static class Nfiq2ImgProcRoiModule
             var rowOffset = row * width;
             for (var column = 0; column < width; column++)
             {
-                var minValue = WhitePixel;
+                var minValue = s_whitePixel;
                 for (var dy = -radius; dy <= radius; dy++)
                 {
                     var sampleRow = row + dy;
@@ -135,7 +138,7 @@ internal static class Nfiq2ImgProcRoiModule
                         var sampleColumn = column + dx;
                         var sampleValue = IsInside(sampleRow, sampleColumn, width, height)
                             ? source[(sampleRow * width) + sampleColumn]
-                            : WhitePixel;
+                            : s_whitePixel;
                         if (sampleValue < minValue)
                         {
                             minValue = sampleValue;
@@ -150,9 +153,8 @@ internal static class Nfiq2ImgProcRoiModule
         return destination;
     }
 
-    private static byte[] GaussianBlur(ReadOnlySpan<byte> source, int width, int height, int kernelSize)
+    private static byte[] GaussianBlur(ReadOnlySpan<byte> source, int width, int height, ReadOnlySpan<double> kernel)
     {
-        var kernel = BuildGaussianKernel(kernelSize);
         var horizontal = new double[source.Length];
         var radius = kernel.Length / 2;
 
@@ -161,7 +163,7 @@ internal static class Nfiq2ImgProcRoiModule
             var rowOffset = row * width;
             for (var column = 0; column < width; column++)
             {
-                double sum = 0.0;
+                var sum = 0.0;
                 for (var index = 0; index < kernel.Length; index++)
                 {
                     var sampleColumn = Reflect101(column + index - radius, width);
@@ -178,7 +180,7 @@ internal static class Nfiq2ImgProcRoiModule
             var rowOffset = row * width;
             for (var column = 0; column < width; column++)
             {
-                double sum = 0.0;
+                var sum = 0.0;
                 for (var index = 0; index < kernel.Length; index++)
                 {
                     var sampleRow = Reflect101(row + index - radius, height);
@@ -204,7 +206,7 @@ internal static class Nfiq2ImgProcRoiModule
         var destination = new byte[source.Length];
         for (var index = 0; index < source.Length; index++)
         {
-            destination[index] = source[index] > threshold ? WhitePixel : BlackPixel;
+            destination[index] = source[index] > threshold ? s_whitePixel : s_blackPixel;
         }
 
         return destination;
@@ -256,38 +258,45 @@ internal static class Nfiq2ImgProcRoiModule
     private static void FillWhiteHoles(byte[] image, int width, int height)
     {
         var visited = new bool[image.Length];
-        var queue = new Queue<int>();
+        var queue = ArrayPool<int>.Shared.Rent(image.Length);
+        var queueHead = 0;
+        var queueTail = 0;
 
-        for (var row = 0; row < height; row++)
+        try
         {
-            EnqueueBoundaryWhite(row, 0);
-            EnqueueBoundaryWhite(row, width - 1);
-        }
-
-        for (var column = 0; column < width; column++)
-        {
-            EnqueueBoundaryWhite(0, column);
-            EnqueueBoundaryWhite(height - 1, column);
-        }
-
-        while (queue.Count > 0)
-        {
-            var index = queue.Dequeue();
-            var row = index / width;
-            var column = index % width;
-
-            EnqueueNeighbors(row, column);
-        }
-
-        for (var index = 0; index < image.Length; index++)
-        {
-            if (image[index] == WhitePixel && !visited[index])
+            for (var row = 0; row < height; row++)
             {
-                image[index] = BlackPixel;
+                EnqueueBoundaryWhite(row, 0);
+                EnqueueBoundaryWhite(row, width - 1);
+            }
+
+            for (var column = 0; column < width; column++)
+            {
+                EnqueueBoundaryWhite(0, column);
+                EnqueueBoundaryWhite(height - 1, column);
+            }
+
+            while (queueHead < queueTail)
+            {
+                var index = queue[queueHead++];
+                var row = index / width;
+                var column = index % width;
+
+                EnqueueNeighbors(row, column);
+            }
+
+            for (var index = 0; index < image.Length; index++)
+            {
+                if (image[index] == s_whitePixel && !visited[index])
+                {
+                    image[index] = s_blackPixel;
+                }
             }
         }
-
-        return;
+        finally
+        {
+            ArrayPool<int>.Shared.Return(queue);
+        }
 
         void EnqueueBoundaryWhite(int row, int column)
         {
@@ -297,13 +306,13 @@ internal static class Nfiq2ImgProcRoiModule
             }
 
             var index = (row * width) + column;
-            if (visited[index] || image[index] != WhitePixel)
+            if (visited[index] || image[index] != s_whitePixel)
             {
                 return;
             }
 
             visited[index] = true;
-            queue.Enqueue(index);
+            queue[queueTail++] = index;
         }
 
         void Enqueue(int row, int column)
@@ -331,62 +340,73 @@ internal static class Nfiq2ImgProcRoiModule
     private static void KeepLargestBlackComponent(byte[] image, int width, int height)
     {
         var visited = new bool[image.Length];
-        var componentPixels = new List<int>();
-        var queue = new Queue<int>();
+        var queue = ArrayPool<int>.Shared.Rent(image.Length);
+        var componentPixels = ArrayPool<int>.Shared.Rent(image.Length);
+        var largestComponent = ArrayPool<int>.Shared.Rent(image.Length);
         var maxArea = -1;
-        var largestComponent = Array.Empty<int>();
+        var largestComponentCount = 0;
 
-        for (var index = 0; index < image.Length; index++)
+        try
         {
-            if (visited[index] || image[index] != BlackPixel)
+            for (var index = 0; index < image.Length; index++)
             {
-                continue;
+                if (visited[index] || image[index] != s_blackPixel)
+                {
+                    continue;
+                }
+
+                var componentCount = 0;
+                var queueHead = 0;
+                var queueTail = 0;
+                visited[index] = true;
+                queue[queueTail++] = index;
+
+                var minRow = int.MaxValue;
+                var maxRow = int.MinValue;
+                var minColumn = int.MaxValue;
+                var maxColumn = int.MinValue;
+
+                while (queueHead < queueTail)
+                {
+                    var current = queue[queueHead++];
+                    componentPixels[componentCount++] = current;
+
+                    var row = current / width;
+                    var column = current % width;
+                    minRow = Math.Min(minRow, row);
+                    maxRow = Math.Max(maxRow, row);
+                    minColumn = Math.Min(minColumn, column);
+                    maxColumn = Math.Max(maxColumn, column);
+
+                    Visit(row - 1, column, ref queueTail);
+                    Visit(row + 1, column, ref queueTail);
+                    Visit(row, column - 1, ref queueTail);
+                    Visit(row, column + 1, ref queueTail);
+                }
+
+                var area = (maxColumn - minColumn + 1) * (maxRow - minRow + 1);
+                if (area > maxArea)
+                {
+                    maxArea = area;
+                    largestComponentCount = componentCount;
+                    componentPixels.AsSpan(0, componentCount).CopyTo(largestComponent);
+                }
             }
 
-            componentPixels.Clear();
-            visited[index] = true;
-            queue.Enqueue(index);
-
-            var minRow = int.MaxValue;
-            var maxRow = int.MinValue;
-            var minColumn = int.MaxValue;
-            var maxColumn = int.MinValue;
-
-            while (queue.Count > 0)
+            Array.Fill(image, s_whitePixel);
+            for (var index = 0; index < largestComponentCount; index++)
             {
-                var current = queue.Dequeue();
-                componentPixels.Add(current);
-
-                var row = current / width;
-                var column = current % width;
-                minRow = Math.Min(minRow, row);
-                maxRow = Math.Max(maxRow, row);
-                minColumn = Math.Min(minColumn, column);
-                maxColumn = Math.Max(maxColumn, column);
-
-                Visit(row - 1, column);
-                Visit(row + 1, column);
-                Visit(row, column - 1);
-                Visit(row, column + 1);
-            }
-
-            var area = (maxColumn - minColumn + 1) * (maxRow - minRow + 1);
-            if (area > maxArea)
-            {
-                maxArea = area;
-                largestComponent = componentPixels.ToArray();
+                image[largestComponent[index]] = s_blackPixel;
             }
         }
-
-        Array.Fill(image, WhitePixel);
-        foreach (var index in largestComponent)
+        finally
         {
-            image[index] = BlackPixel;
+            ArrayPool<int>.Shared.Return(queue);
+            ArrayPool<int>.Shared.Return(componentPixels);
+            ArrayPool<int>.Shared.Return(largestComponent);
         }
 
-        return;
-
-        void Visit(int row, int column)
+        void Visit(int row, int column, ref int queueTail)
         {
             if (!IsInside(row, column, width, height))
             {
@@ -394,13 +414,13 @@ internal static class Nfiq2ImgProcRoiModule
             }
 
             var candidate = (row * width) + column;
-            if (visited[candidate] || image[candidate] != BlackPixel)
+            if (visited[candidate] || image[candidate] != s_blackPixel)
             {
                 return;
             }
 
             visited[candidate] = true;
-            queue.Enqueue(candidate);
+            queue[queueTail++] = candidate;
         }
     }
 
@@ -411,7 +431,7 @@ internal static class Nfiq2ImgProcRoiModule
             var rowOffset = (row + y) * width;
             for (var x = 0; x < takenWidth; x++)
             {
-                if (image[rowOffset + column + x] == BlackPixel)
+                if (image[rowOffset + column + x] == s_blackPixel)
                 {
                     return true;
                 }
@@ -426,7 +446,7 @@ internal static class Nfiq2ImgProcRoiModule
         var sigma = ComputeGaussianSigma(kernelSize);
         var radius = kernelSize / 2;
         var kernel = new double[kernelSize];
-        double sum = 0.0;
+        var sum = 0.0;
 
         for (var index = 0; index < kernelSize; index++)
         {

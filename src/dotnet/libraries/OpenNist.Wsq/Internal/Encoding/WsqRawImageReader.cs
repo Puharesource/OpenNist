@@ -54,6 +54,32 @@ internal static class WsqRawImageReader
             : buffer.ToArray();
     }
 
+    public static bool TryGetExactBuffer(
+        Stream rawImageStream,
+        WsqRawImageDescription rawImage,
+        out ReadOnlySpan<byte> rawPixels)
+    {
+        ArgumentNullException.ThrowIfNull(rawImageStream);
+        ValidateRawImage(rawImage);
+
+        var expectedByteCount = checked(rawImage.Width * rawImage.Height);
+        if (rawImageStream is not MemoryStream memoryStream || !memoryStream.TryGetBuffer(out var bufferSegment))
+        {
+            rawPixels = default;
+            return false;
+        }
+
+        var remainingLength = checked((int)(memoryStream.Length - memoryStream.Position));
+        if (remainingLength != expectedByteCount)
+        {
+            throw new InvalidDataException(
+                $"Expected {expectedByteCount} raw bytes for a {rawImage.Width}x{rawImage.Height} image, but found {remainingLength}.");
+        }
+
+        rawPixels = bufferSegment.AsSpan(checked((int)memoryStream.Position), remainingLength);
+        return true;
+    }
+
     private static void ValidateRawImage(WsqRawImageDescription rawImage)
     {
         if (rawImage.Width <= 0)

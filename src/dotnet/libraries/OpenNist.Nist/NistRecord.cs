@@ -19,16 +19,31 @@ public sealed class NistRecord
         ArgumentNullException.ThrowIfNull(fields);
 
         Type = type;
-        Fields = fields.ToArray();
 
-        var mismatchedField = Fields.FirstOrDefault(field => field.Tag.RecordType != type);
-        if (mismatchedField is not null)
+        NistField[] copiedFields;
+        if (fields is ICollection<NistField> collection)
         {
+            copiedFields = new NistField[collection.Count];
+            collection.CopyTo(copiedFields, 0);
+        }
+        else
+        {
+            copiedFields = [.. fields];
+        }
+
+        for (var index = 0; index < copiedFields.Length; index++)
+        {
+            if (copiedFields[index].Tag.RecordType == type)
+            {
+                continue;
+            }
+
             throw new ArgumentException(
-                $"Field '{mismatchedField.Tag}' does not belong to logical record type {type}.",
+                $"Field '{copiedFields[index].Tag}' does not belong to logical record type {type}.",
                 nameof(fields));
         }
 
+        Fields = copiedFields;
         EncodedBytes = ReadOnlyMemory<byte>.Empty;
     }
 
@@ -73,7 +88,15 @@ public sealed class NistRecord
     /// <returns>The matching field, or <see langword="null"/> when absent.</returns>
     public NistField? FindField(int fieldNumber)
     {
-        return Fields.FirstOrDefault(field => field.Tag.FieldNumber == fieldNumber);
+        for (var index = 0; index < Fields.Count; index++)
+        {
+            if (Fields[index].Tag.FieldNumber == fieldNumber)
+            {
+                return Fields[index];
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -83,6 +106,14 @@ public sealed class NistRecord
     /// <returns>The matching field, or <see langword="null"/> when absent.</returns>
     public NistField? FindField(NistTag tag)
     {
-        return Fields.FirstOrDefault(field => field.Tag == tag);
+        for (var index = 0; index < Fields.Count; index++)
+        {
+            if (Fields[index].Tag == tag)
+            {
+                return Fields[index];
+            }
+        }
+
+        return null;
     }
 }

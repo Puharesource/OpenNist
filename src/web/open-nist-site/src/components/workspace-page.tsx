@@ -1,65 +1,45 @@
-import { Link } from "@tanstack/react-router";
-import {
-  CloudDownload,
-} from "lucide-react";
+import { Link } from "@tanstack/react-router"
+import { CloudDownload } from "lucide-react"
 
-import { Button } from "@/components/ui/button";
-import { CodecsWorkspace } from "@/components/codecs-workspace";
-import { NfiqWorkspace } from "@/components/nfiq-workspace";
-import { NistWorkspace } from "@/components/nist-workspace";
+import { CodecsWorkspace } from "@/components/codecs-workspace"
+import { NfiqWorkspace } from "@/components/nfiq-workspace"
+import { NistWorkspace } from "@/components/nist-workspace"
+import { Button } from "@/components/ui/button"
 import {
   WorkspaceSidebarBackdrop,
   WorkspaceSidebarsProvider,
-  useWorkspaceSidebars,
-} from "@/components/workspace-sidebars";
-import { workspaceViews, type WorkspaceView, getWorkspaceViewConfig } from "@/lib/site-content";
-import { ACCEPTED_FILES, useWorkspaceFileIntake, type WorkspaceFileIntake } from "@/lib/workspace-file-intake";
-import { useWorkspaceSession } from "@/lib/workspace-session";
+  useWorkspaceSidebars
+} from "@/components/workspace-sidebars"
+import { workspaceViews, type WorkspaceView, getWorkspaceViewConfig } from "@/lib/site-content"
+import { ACCEPTED_FILES, useWorkspaceFileIntake, type WorkspaceFileIntake } from "@/lib/workspace-file-intake"
+import { useWorkspaceSession } from "@/lib/workspace-session"
 
 export function WorkspacePage({ view }: { view: WorkspaceView }) {
-  const currentView = getWorkspaceViewConfig(view);
-  const { activeFile } = useWorkspaceSession();
-  const intake = useWorkspaceFileIntake(view);
+  const currentView = getWorkspaceViewConfig(view)
+  const { activeFile } = useWorkspaceSession()
+  const intake = useWorkspaceFileIntake(view)
 
   return (
     <WorkspaceSidebarsProvider>
-      <section className="flex h-[calc(100vh-81px)] flex-col overflow-hidden">
-        <div className="mx-auto relative flex h-full w-full max-w-[1600px] flex-1 overflow-hidden">
+      <section className="flex h-[calc(100dvh-73px)] flex-col overflow-hidden md:h-[calc(100dvh-81px)]">
+        <div className="relative flex h-full w-full flex-1 overflow-hidden">
           <WorkspaceSidebarBackdrop />
           <WorkspaceSidebar currentView={view} intake={intake} />
           {view === "nist" ? (
-            <NistWorkspace
-              currentLabel={currentView.label}
-              intake={intake}
-              incomingFile={activeFile}
-            />
+            <NistWorkspace currentLabel={currentView.label} intake={intake} incomingFile={activeFile} />
           ) : view === "codecs" ? (
-            <CodecsWorkspace
-              currentLabel={currentView.label}
-              intake={intake}
-              incomingFile={activeFile}
-            />
+            <CodecsWorkspace currentLabel={currentView.label} intake={intake} incomingFile={activeFile} />
           ) : (
-            <NfiqWorkspace
-              currentLabel={currentView.label}
-              intake={intake}
-              incomingFile={activeFile}
-            />
+            <NfiqWorkspace currentLabel={currentView.label} intake={intake} incomingFile={activeFile} />
           )}
         </div>
       </section>
     </WorkspaceSidebarsProvider>
-  );
+  )
 }
 
-function WorkspaceSidebar({
-  currentView,
-  intake,
-}: {
-  currentView: WorkspaceView;
-  intake: WorkspaceFileIntake;
-}) {
-  const { leftDocked, leftInlineVisible, leftOverlayVisible } = useWorkspaceSidebars();
+function WorkspaceSidebar({ currentView, intake }: { currentView: WorkspaceView; intake: WorkspaceFileIntake }) {
+  const { leftDocked, leftInlineVisible, leftOverlayVisible } = useWorkspaceSidebars()
 
   return (
     <aside
@@ -73,9 +53,9 @@ function WorkspaceSidebar({
             }`
       }`}
     >
-      <nav className="custom-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
+      <nav aria-label="Workspace views" className="custom-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
         {workspaceViews.map((view) => {
-          const isActive = view.id === currentView;
+          const isActive = view.id === currentView
           return (
             <Link
               key={view.id}
@@ -83,7 +63,7 @@ function WorkspaceSidebar({
               className={`flex w-full items-center gap-3 rounded-[var(--radius-lg)] px-3 py-3 text-left transition-colors ${
                 isActive
                   ? "bg-[var(--color-primary-fixed)]/30 text-[var(--color-primary)]"
-                  : "text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container-low)]"
+                  : "text-[var(--color-on-surface)]/78 hover:bg-[var(--color-surface-container-low)]"
               }`}
             >
               <div className="flex size-9 items-center justify-center rounded-[var(--radius-md)]">
@@ -96,7 +76,7 @@ function WorkspaceSidebar({
                 </p>
               </div>
             </Link>
-          );
+          )
         })}
       </nav>
 
@@ -106,12 +86,12 @@ function WorkspaceSidebar({
         }`}
         onDragEnter={intake.activateDrag}
         onDragOver={(event) => {
-          event.preventDefault();
-          intake.activateDrag();
+          event.preventDefault()
+          intake.activateDrag()
         }}
         onDragLeave={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-            intake.deactivateDrag();
+            intake.deactivateDrag()
           }
         }}
         onDrop={intake.handleDrop}
@@ -144,5 +124,5 @@ function WorkspaceSidebar({
         </Button>
       </div>
     </aside>
-  );
+  )
 }

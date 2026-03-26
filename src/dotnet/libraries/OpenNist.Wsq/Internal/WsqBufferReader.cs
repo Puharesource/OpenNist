@@ -45,7 +45,7 @@ internal ref struct WsqBufferReader(ReadOnlySpan<byte> buffer)
     {
         var markerValue = ReadUInt16BigEndian();
 
-        if (!Enum.IsDefined(typeof(WsqMarker), markerValue))
+        if (!markerValue.IsValid())
         {
             throw new InvalidDataException($"Encountered unsupported WSQ marker 0x{markerValue:X4}.");
         }
@@ -92,7 +92,7 @@ internal ref struct WsqBufferReader(ReadOnlySpan<byte> buffer)
 
             var markerValue = (ushort)((current << 8) | markerLowByte);
 
-            if (!Enum.IsDefined(typeof(WsqMarker), markerValue))
+            if (!markerValue.IsValid())
             {
                 throw new InvalidDataException(
                     $"Encountered invalid WSQ marker candidate 0x{markerValue:X4} inside compressed block data.");
@@ -101,6 +101,46 @@ internal ref struct WsqBufferReader(ReadOnlySpan<byte> buffer)
             var encodedByteCount = _position - blockStart - sizeof(ushort);
             nextMarker = (WsqMarker)markerValue;
             return _buffer.Slice(blockStart, encodedByteCount);
+        }
+
+        throw new InvalidDataException("WSQ compressed block terminated without a following marker.");
+    }
+
+    public int SkipCompressedDataUntilNextMarker(out WsqMarker nextMarker)
+    {
+        var blockStart = _position;
+
+        while (Remaining > 0)
+        {
+            var current = ReadByte();
+
+            if (current != 0xFF)
+            {
+                continue;
+            }
+
+            if (Remaining == 0)
+            {
+                throw new InvalidDataException("Unexpected end of WSQ stream while scanning compressed block data.");
+            }
+
+            var markerLowByte = ReadByte();
+
+            if (markerLowByte == 0x00)
+            {
+                continue;
+            }
+
+            var markerValue = (ushort)((current << 8) | markerLowByte);
+
+            if (!markerValue.IsValid())
+            {
+                throw new InvalidDataException(
+                    $"Encountered invalid WSQ marker candidate 0x{markerValue:X4} inside compressed block data.");
+            }
+
+            nextMarker = (WsqMarker)markerValue;
+            return _position - blockStart - sizeof(ushort);
         }
 
         throw new InvalidDataException("WSQ compressed block terminated without a following marker.");

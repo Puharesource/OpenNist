@@ -5,10 +5,10 @@ using OpenNist.Wsq.Internal.Decoding;
 
 internal static class WsqEncoderAnalysisPipeline
 {
-    private const double HighPrecisionAnalysisBitRateThreshold = 2.0;
-    private const byte BlackPixelValue = 0;
-    private const byte WhitePixelValue = byte.MaxValue;
-    private const ushort DefaultSoftwareImplementationNumber = 0;
+    private const double s_highPrecisionAnalysisBitRateThreshold = 2.0;
+    private const byte s_blackPixelValue = 0;
+    private const byte s_whitePixelValue = byte.MaxValue;
+    private const ushort s_defaultSoftwareImplementationNumber = 0;
 
     public static async ValueTask<WsqEncoderAnalysisResult> AnalyzeAsync(
         Stream rawImageStream,
@@ -18,8 +18,13 @@ internal static class WsqEncoderAnalysisPipeline
     {
         ArgumentNullException.ThrowIfNull(rawImageStream);
 
-        var rawPixels = await WsqRawImageReader.ReadAsync(rawImageStream, rawImage, cancellationToken).ConfigureAwait(false);
-        return Analyze(rawPixels, rawImage, options);
+        if (WsqRawImageReader.TryGetExactBuffer(rawImageStream, rawImage, out var rawPixels))
+        {
+            return Analyze(rawPixels, rawImage, options);
+        }
+
+        var rawBytes = await WsqRawImageReader.ReadAsync(rawImageStream, rawImage, cancellationToken).ConfigureAwait(false);
+        return Analyze(rawBytes, rawImage, options);
     }
 
     public static WsqEncoderAnalysisResult Analyze(
@@ -45,10 +50,10 @@ internal static class WsqEncoderAnalysisPipeline
                 "WSQ software implementation number must fit in an unsigned 16-bit value.");
         }
 
-        var transformTable = WsqReferenceTables.CreateStandardTransformTable();
+        var transformTable = WsqReferenceTables.StandardTransformTable;
         WsqWaveletTreeBuilder.Build(rawImage.Width, rawImage.Height, out var waveletTree, out var quantizationTree);
 
-        if (options.BitRate >= HighPrecisionAnalysisBitRateThreshold)
+        if (options.BitRate >= s_highPrecisionAnalysisBitRateThreshold)
         {
             return AnalyzeHighPrecision(
                 rawPixels,
@@ -90,10 +95,9 @@ internal static class WsqEncoderAnalysisPipeline
         WsqWaveletNode[] waveletTree,
         WsqQuantizationNode[] quantizationTree)
     {
-        var normalizedImage = WsqDoubleImageNormalizer.Normalize(rawPixels);
-        var floatNormalizedImage = WsqFloatImageNormalizer.Normalize(rawPixels);
+        var dualNormalizedImage = WsqDualImageNormalizer.Normalize(rawPixels);
         var floatDecomposedPixels = WsqDecomposition.Decompose(
-            floatNormalizedImage.Pixels,
+            dualNormalizedImage.FloatImage.Pixels,
             rawImage.Width,
             rawImage.Height,
             waveletTree,
@@ -122,8 +126,8 @@ internal static class WsqEncoderAnalysisPipeline
             CreateFrameHeader(
                 rawImage,
                 options,
-                normalizedImage.Shift,
-                normalizedImage.Scale),
+                dualNormalizedImage.DoubleImage.Shift,
+                dualNormalizedImage.DoubleImage.Scale),
             transformTable,
             serializedQuantizationTable,
             quantizedCoefficients,
@@ -136,24 +140,23 @@ internal static class WsqEncoderAnalysisPipeline
         WsqTransformTable transformTable,
         WsqWaveletNode[] waveletTree)
     {
-        var doubleNormalizedImage = WsqDoubleImageNormalizer.Normalize(rawPixels);
-        var floatNormalizedImage = WsqFloatImageNormalizer.Normalize(rawPixels);
+        var dualNormalizedImage = WsqDualImageNormalizer.Normalize(rawPixels);
         var doubleDecomposedPixels = WsqDoubleDecomposition.Decompose(
-            doubleNormalizedImage.Pixels,
+            dualNormalizedImage.DoubleImage.Pixels,
             rawImage.Width,
             rawImage.Height,
             waveletTree,
             transformTable);
         var floatDecomposedPixels = WsqDecomposition.Decompose(
-            floatNormalizedImage.Pixels,
+            dualNormalizedImage.FloatImage.Pixels,
             rawImage.Width,
             rawImage.Height,
             waveletTree,
             transformTable);
 
         return new(
-            doubleNormalizedImage,
-            floatNormalizedImage,
+            dualNormalizedImage.DoubleImage,
+            dualNormalizedImage.FloatImage,
             doubleDecomposedPixels,
             floatDecomposedPixels);
     }
@@ -165,13 +168,13 @@ internal static class WsqEncoderAnalysisPipeline
         double scale)
     {
         return new(
-            Black: BlackPixelValue,
-            White: WhitePixelValue,
+            Black: s_blackPixelValue,
+            White: s_whitePixelValue,
             Height: checked((ushort)rawImage.Height),
             Width: checked((ushort)rawImage.Width),
             Shift: shift,
             Scale: scale,
             WsqEncoder: checked((byte)options.EncoderNumber),
-            SoftwareImplementationNumber: checked((ushort)(options.SoftwareImplementationNumber ?? DefaultSoftwareImplementationNumber)));
+            SoftwareImplementationNumber: checked((ushort)(options.SoftwareImplementationNumber ?? s_defaultSoftwareImplementationNumber)));
     }
 }

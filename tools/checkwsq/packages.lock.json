@@ -105,39 +105,22 @@
           "TUnit.Core": "1.19.22"
         }
       },
-      "opennist.core": {
+      "opennist.nfiq": {
         "type": "Project",
         "dependencies": {
           "JetBrains.Annotations": "[2025.2.0, )"
         }
       },
-      "opennist.jp2000": {
-        "type": "Project",
-        "dependencies": {
-          "JetBrains.Annotations": "[2025.2.0, )",
-          "OpenNist.Core": "[1.0.0, )"
-        }
-      },
-      "opennist.nfiq": {
-        "type": "Project",
-        "dependencies": {
-          "JetBrains.Annotations": "[2025.2.0, )",
-          "OpenNist.Core": "[1.0.0, )"
-        }
-      },
       "opennist.nist": {
         "type": "Project",
         "dependencies": {
-          "JetBrains.Annotations": "[2025.2.0, )",
-          "OpenNist.Core": "[1.0.0, )"
+          "JetBrains.Annotations": "[2025.2.0, )"
         }
       },
       "opennist.tests": {
         "type": "Project",
         "dependencies": {
           "JetBrains.Annotations": "[2025.2.0, )",
-          "OpenNist.Core": "[1.0.0, )",
-          "OpenNist.Jp2000": "[1.0.0, )",
           "OpenNist.Nfiq": "[1.0.0, )",
           "OpenNist.Nist": "[1.0.0, )",
           "OpenNist.Wsq": "[1.0.0, )",
@@ -147,8 +130,7 @@
       "opennist.wsq": {
         "type": "Project",
         "dependencies": {
-          "JetBrains.Annotations": "[2025.2.0, )",
-          "OpenNist.Core": "[1.0.0, )"
+          "JetBrains.Annotations": "[2025.2.0, )"
         }
       },
       "TUnit": {

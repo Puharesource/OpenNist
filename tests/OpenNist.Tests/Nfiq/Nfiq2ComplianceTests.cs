@@ -1,7 +1,7 @@
 namespace OpenNist.Tests.Nfiq;
 
-using OpenNist.Tests.Nfiq.TestSupport;
 using OpenNist.Nfiq;
+using OpenNist.Tests.Nfiq.TestSupport;
 
 [Category("Contract: NFIQ2 - Conformance CSV")]
 internal sealed class Nfiq2ComplianceTests

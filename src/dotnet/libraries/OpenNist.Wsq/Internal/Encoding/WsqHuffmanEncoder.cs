@@ -4,11 +4,11 @@ using OpenNist.Wsq.Internal;
 
 internal static class WsqHuffmanEncoder
 {
-    private const byte Block1HuffmanTableId = 0;
-    private const byte Block23HuffmanTableId = 1;
-    private const int HuffmanCategoryCount = 256;
-    private const int MaximumCoefficientInTable = 74;
-    private const int MaximumZeroRunInTable = 100;
+    private const byte s_block1HuffmanTableId = 0;
+    private const byte s_block23HuffmanTableId = 1;
+    private const int s_huffmanCategoryCount = 256;
+    private const int s_maximumCoefficientInTable = 74;
+    private const int s_maximumZeroRunInTable = 100;
 
     public static WsqHuffmanEncodingResult EncodeBlocks(
         ReadOnlySpan<short> quantizedCoefficients,
@@ -44,15 +44,15 @@ internal static class WsqHuffmanEncoder
         block23Sizes[0] = block2Size;
         block23Sizes[1] = block3Size;
 
-        var block1Table = CreateHuffmanTable(block1Coefficients, block1Sizes, Block1HuffmanTableId);
-        var block23Table = CreateHuffmanTable(block23Coefficients, block23Sizes, Block23HuffmanTableId);
+        var block1Table = CreateHuffmanTable(block1Coefficients, block1Sizes, s_block1HuffmanTableId);
+        var block23Table = CreateHuffmanTable(block23Coefficients, block23Sizes, s_block23HuffmanTableId);
         var block1EncodingTable = WsqHuffmanEncodingTable.Create(block1Table);
         var block23EncodingTable = WsqHuffmanEncodingTable.Create(block23Table);
 
         var blocks = new WsqBlock[WsqConstants.BlockCount];
-        blocks[0] = new(Block1HuffmanTableId, block1Table, EncodeBlock(block1Coefficients, block1EncodingTable));
-        blocks[1] = new(Block23HuffmanTableId, block23Table, EncodeBlock(block2Coefficients, block23EncodingTable));
-        blocks[2] = new(Block23HuffmanTableId, block23Table, EncodeBlock(block3Coefficients, block23EncodingTable));
+        blocks[0] = new(s_block1HuffmanTableId, block1Table, EncodeBlock(block1Coefficients, block1EncodingTable));
+        blocks[1] = new(s_block23HuffmanTableId, block23Table, EncodeBlock(block2Coefficients, block23EncodingTable));
+        blocks[2] = new(s_block23HuffmanTableId, block23Table, EncodeBlock(block3Coefficients, block23EncodingTable));
 
         return new([block1Table, block23Table], blocks);
     }
@@ -87,8 +87,8 @@ internal static class WsqHuffmanEncoder
         ReadOnlySpan<short> coefficients,
         ReadOnlySpan<int> blockSizes)
     {
-        var categoryFrequencies = new int[HuffmanCategoryCount + 1];
-        categoryFrequencies[HuffmanCategoryCount] = 1;
+        var categoryFrequencies = new int[s_huffmanCategoryCount + 1];
+        categoryFrequencies[s_huffmanCategoryCount] = 1;
         var coefficientOffset = 0;
 
         for (var blockIndex = 0; blockIndex < blockSizes.Length; blockIndex++)
@@ -108,61 +108,37 @@ internal static class WsqHuffmanEncoder
 
     private static void CountBlockCategories(ReadOnlySpan<short> coefficients, Span<int> categoryFrequencies)
     {
-        var lowerMaximumCoefficient = 1 - MaximumCoefficientInTable;
-        var currentState = WsqHuffmanState.Coefficient;
-        ushort zeroRunLength = 0;
+        var lowerMaximumCoefficient = 1 - s_maximumCoefficientInTable;
+        var coefficientIndex = 0;
 
-        for (var coefficientIndex = 0; coefficientIndex < coefficients.Length; coefficientIndex++)
+        while (coefficientIndex < coefficients.Length)
         {
             var coefficient = coefficients[coefficientIndex];
-
-            switch (currentState)
+            if (coefficient != 0)
             {
-                case WsqHuffmanState.Coefficient:
-                    if (coefficient == 0)
-                    {
-                        currentState = WsqHuffmanState.ZeroRun;
-                        zeroRunLength = 1;
-                        break;
-                    }
-
-                    CountCoefficientCategory(categoryFrequencies, coefficient, lowerMaximumCoefficient);
-                    break;
-                case WsqHuffmanState.ZeroRun:
-                    if (coefficient == 0 && zeroRunLength < ushort.MaxValue)
-                    {
-                        zeroRunLength++;
-                        break;
-                    }
-
-                    CountZeroRunCategory(categoryFrequencies, zeroRunLength);
-
-                    if (coefficient != 0)
-                    {
-                        CountCoefficientCategory(categoryFrequencies, coefficient, lowerMaximumCoefficient);
-                        currentState = WsqHuffmanState.Coefficient;
-                    }
-                    else
-                    {
-                        currentState = WsqHuffmanState.ZeroRun;
-                        zeroRunLength = 1;
-                    }
-
-                    break;
-                default:
-                    throw new InvalidOperationException($"Unsupported WSQ Huffman state {currentState}.");
+                CountCoefficientCategory(categoryFrequencies, coefficient, lowerMaximumCoefficient);
+                coefficientIndex++;
+                continue;
             }
-        }
 
-        if (currentState == WsqHuffmanState.ZeroRun)
-        {
+            ushort zeroRunLength = 1;
+            coefficientIndex++;
+
+            while (coefficientIndex < coefficients.Length
+                && coefficients[coefficientIndex] == 0
+                && zeroRunLength < ushort.MaxValue)
+            {
+                zeroRunLength++;
+                coefficientIndex++;
+            }
+
             CountZeroRunCategory(categoryFrequencies, zeroRunLength);
         }
     }
 
     private static void CountCoefficientCategory(Span<int> categoryFrequencies, short coefficient, int lowerMaximumCoefficient)
     {
-        if (coefficient > MaximumCoefficientInTable)
+        if (coefficient > s_maximumCoefficientInTable)
         {
             categoryFrequencies[coefficient > byte.MaxValue ? 103 : 101]++;
             return;
@@ -179,7 +155,7 @@ internal static class WsqHuffmanEncoder
 
     private static void CountZeroRunCategory(Span<int> categoryFrequencies, ushort zeroRunLength)
     {
-        if (zeroRunLength <= MaximumZeroRunInTable)
+        if (zeroRunLength <= s_maximumZeroRunInTable)
         {
             categoryFrequencies[zeroRunLength]++;
             return;
@@ -191,8 +167,8 @@ internal static class WsqHuffmanEncoder
     private static int[] FindHuffmanCodeSizes(ReadOnlySpan<int> categoryFrequencies)
     {
         var mutableFrequencies = categoryFrequencies.ToArray();
-        var codeSizes = new int[HuffmanCategoryCount + 1];
-        var chainedSymbols = new int[HuffmanCategoryCount + 1];
+        var codeSizes = new int[s_huffmanCategoryCount + 1];
+        var chainedSymbols = new int[s_huffmanCategoryCount + 1];
         Array.Fill(chainedSymbols, -1);
 
         while (true)
@@ -288,7 +264,7 @@ internal static class WsqHuffmanEncoder
         var huffmanBitCounts = new byte[WsqConstants.MaxHuffmanBits << 1];
         requiresAdjustment = false;
 
-        for (var symbol = 0; symbol < HuffmanCategoryCount; symbol++)
+        for (var symbol = 0; symbol < s_huffmanCategoryCount; symbol++)
         {
             var codeSize = codeSizes[symbol];
             if (codeSize == 0)
@@ -354,12 +330,12 @@ internal static class WsqHuffmanEncoder
 
     private static byte[] SortSymbolsByCodeSize(ReadOnlySpan<int> codeSizes)
     {
-        var orderedValues = new byte[HuffmanCategoryCount + 1];
+        var orderedValues = new byte[s_huffmanCategoryCount + 1];
         var orderedValueCount = 0;
 
         for (var codeLength = 1; codeLength <= (WsqConstants.MaxHuffmanBits << 1); codeLength++)
         {
-            for (var symbol = 0; symbol < HuffmanCategoryCount; symbol++)
+            for (var symbol = 0; symbol < s_huffmanCategoryCount; symbol++)
             {
                 if (codeSizes[symbol] != codeLength)
                 {
@@ -378,7 +354,7 @@ internal static class WsqHuffmanEncoder
         ReadOnlySpan<byte> huffmanBitCounts,
         out int codeCount)
     {
-        var sizedCodes = new HuffmanCodeDefinition[HuffmanCategoryCount + 1];
+        var sizedCodes = new HuffmanCodeDefinition[s_huffmanCategoryCount + 1];
         codeCount = 0;
 
         for (var codeLength = 1; codeLength <= WsqConstants.MaxHuffmanBits; codeLength++)
@@ -461,55 +437,31 @@ internal static class WsqHuffmanEncoder
             return [];
         }
 
-        var lowerMaximumCoefficient = 1 - MaximumCoefficientInTable;
+        var lowerMaximumCoefficient = 1 - s_maximumCoefficientInTable;
         var bitWriter = new WsqBitWriter();
-        var currentState = WsqHuffmanState.Coefficient;
-        ushort zeroRunLength = 0;
+        var coefficientIndex = 0;
 
-        for (var coefficientIndex = 0; coefficientIndex < coefficients.Length; coefficientIndex++)
+        while (coefficientIndex < coefficients.Length)
         {
             var coefficient = coefficients[coefficientIndex];
-
-            switch (currentState)
+            if (coefficient != 0)
             {
-                case WsqHuffmanState.Coefficient:
-                    if (coefficient == 0)
-                    {
-                        currentState = WsqHuffmanState.ZeroRun;
-                        zeroRunLength = 1;
-                        break;
-                    }
-
-                    WriteCoefficient(bitWriter, encodingTable, coefficient, lowerMaximumCoefficient);
-                    break;
-                case WsqHuffmanState.ZeroRun:
-                    if (coefficient == 0 && zeroRunLength < ushort.MaxValue)
-                    {
-                        zeroRunLength++;
-                        break;
-                    }
-
-                    WriteZeroRun(bitWriter, encodingTable, zeroRunLength);
-
-                    if (coefficient != 0)
-                    {
-                        WriteCoefficient(bitWriter, encodingTable, coefficient, lowerMaximumCoefficient);
-                        currentState = WsqHuffmanState.Coefficient;
-                    }
-                    else
-                    {
-                        currentState = WsqHuffmanState.ZeroRun;
-                        zeroRunLength = 1;
-                    }
-
-                    break;
-                default:
-                    throw new InvalidOperationException($"Unsupported WSQ Huffman state {currentState}.");
+                WriteCoefficient(bitWriter, encodingTable, coefficient, lowerMaximumCoefficient);
+                coefficientIndex++;
+                continue;
             }
-        }
 
-        if (currentState == WsqHuffmanState.ZeroRun)
-        {
+            ushort zeroRunLength = 1;
+            coefficientIndex++;
+
+            while (coefficientIndex < coefficients.Length
+                && coefficients[coefficientIndex] == 0
+                && zeroRunLength < ushort.MaxValue)
+            {
+                zeroRunLength++;
+                coefficientIndex++;
+            }
+
             WriteZeroRun(bitWriter, encodingTable, zeroRunLength);
         }
 
@@ -522,7 +474,7 @@ internal static class WsqHuffmanEncoder
         short coefficient,
         int lowerMaximumCoefficient)
     {
-        if (coefficient > MaximumCoefficientInTable)
+        if (coefficient > s_maximumCoefficientInTable)
         {
             if (coefficient > byte.MaxValue)
             {
@@ -564,7 +516,7 @@ internal static class WsqHuffmanEncoder
         WsqHuffmanEncodingTable encodingTable,
         ushort zeroRunLength)
     {
-        if (zeroRunLength <= MaximumZeroRunInTable)
+        if (zeroRunLength <= s_maximumZeroRunInTable)
         {
             WriteSymbol(bitWriter, encodingTable, zeroRunLength);
             return;
@@ -585,12 +537,6 @@ internal static class WsqHuffmanEncoder
     {
         var huffmanCode = encodingTable.Codes[symbol];
         bitWriter.WriteBits(huffmanCode.Bits, huffmanCode.BitCount);
-    }
-
-    private enum WsqHuffmanState
-    {
-        Coefficient,
-        ZeroRun,
     }
 
     private struct HuffmanCodeDefinition

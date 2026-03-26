@@ -1,5 +1,6 @@
 namespace OpenNist.Wsq.Internal.Encoding;
 
+using System.Buffers;
 using OpenNist.Wsq.Internal.Decoding;
 
 internal static class WsqDoubleDecomposition
@@ -39,43 +40,66 @@ internal static class WsqDoubleDecomposition
         ArgumentNullException.ThrowIfNull(waveletTree);
         ArgumentNullException.ThrowIfNull(transformTable);
 
-        var lowPassFilter = s_referenceLowPassFilter.ToArray();
-        var highPassFilter = s_referenceHighPassFilter.ToArray();
-        var temporaryBuffer = new double[waveletData.Length];
-
-        for (var nodeIndex = 0; nodeIndex < waveletTree.Length; nodeIndex++)
+        var activeHighPassFilter = GetActiveHighPassFilter(s_referenceHighPassFilter, s_referenceLowPassFilter.Length % 2 != 0);
+        var temporaryBuffer = ArrayPool<double>.Shared.Rent(waveletData.Length);
+        try
         {
-            var node = waveletTree[nodeIndex];
-            var baseOffset = node.Y * width + node.X;
+            for (var nodeIndex = 0; nodeIndex < waveletTree.Length; nodeIndex++)
+            {
+                var node = waveletTree[nodeIndex];
+                var baseOffset = node.Y * width + node.X;
 
-            GetLets(
-                temporaryBuffer,
-                0,
-                waveletData,
-                baseOffset,
-                node.Height,
-                node.Width,
-                width,
-                1,
-                highPassFilter,
-                lowPassFilter,
-                node.InvertRows);
+                GetLets(
+                    temporaryBuffer.AsSpan(0, waveletData.Length),
+                    0,
+                    waveletData,
+                    baseOffset,
+                    node.Height,
+                    node.Width,
+                    width,
+                    1,
+                    activeHighPassFilter,
+                    s_referenceLowPassFilter,
+                    node.InvertRows);
 
-            GetLets(
-                waveletData,
-                baseOffset,
-                temporaryBuffer,
-                0,
-                node.Width,
-                node.Height,
-                1,
-                width,
-                highPassFilter,
-                lowPassFilter,
-                node.InvertColumns);
+                GetLets(
+                    waveletData,
+                    baseOffset,
+                    temporaryBuffer.AsSpan(0, waveletData.Length),
+                    0,
+                    node.Width,
+                    node.Height,
+                    1,
+                    width,
+                    activeHighPassFilter,
+                    s_referenceLowPassFilter,
+                    node.InvertColumns);
+            }
+        }
+        finally
+        {
+            ArrayPool<double>.Shared.Return(temporaryBuffer);
         }
 
         return waveletData;
+    }
+
+    private static ReadOnlySpan<double> GetActiveHighPassFilter(
+        ReadOnlySpan<double> highPassFilter,
+        bool lowPassFilterLengthIsOdd)
+    {
+        if (lowPassFilterLengthIsOdd)
+        {
+            return highPassFilter;
+        }
+
+        var negatedHighPassFilter = GC.AllocateUninitializedArray<double>(highPassFilter.Length);
+        for (var index = 0; index < highPassFilter.Length; index++)
+        {
+            negatedHighPassFilter[index] = -highPassFilter[index];
+        }
+
+        return negatedHighPassFilter;
     }
 
     private static void GetLets(
@@ -87,8 +111,8 @@ internal static class WsqDoubleDecomposition
         int lineLength,
         int linePitch,
         int sampleStride,
-        double[] highPassFilter,
-        double[] lowPassFilter,
+        ReadOnlySpan<double> activeHighPassFilter,
+        ReadOnlySpan<double> lowPassFilter,
         bool invertSubbands)
     {
         var destinationSamples = destination[destinationBaseOffset..];
@@ -107,8 +131,8 @@ internal static class WsqDoubleDecomposition
             ? (lowPassFilter.Length - 1) / 2
             : lowPassFilter.Length / 2 - 2;
         var highPassCenterOffset = filterLengthIsOdd != 0
-            ? (highPassFilter.Length - 1) / 2 - 1
-            : highPassFilter.Length / 2 - 2;
+            ? (activeHighPassFilter.Length - 1) / 2 - 1
+            : activeHighPassFilter.Length / 2 - 2;
         var initialLowPassLeftEdgeState = filterLengthIsOdd != 0 ? 0 : 1;
         var initialHighPassLeftEdgeState = filterLengthIsOdd != 0 ? 0 : 1;
         var initialLowPassRightEdgeState = 0;
@@ -129,11 +153,6 @@ internal static class WsqDoubleDecomposition
             {
                 highPassCenterOffset = 0;
                 initialHighPassLeftEdgeState = 0;
-            }
-
-            for (var filterIndex = 0; filterIndex < highPassFilter.Length; filterIndex++)
-            {
-                highPassFilter[filterIndex] *= -1.0;
             }
         }
 
@@ -183,7 +202,7 @@ internal static class WsqDoubleDecomposition
 
                 destinationSamples[highPassWriteIndex] = ComputeFilteredSample(
                     sourceSamples,
-                    highPassFilter,
+                    activeHighPassFilter,
                     highPassSourceIndex,
                     highPassSourceStride,
                     firstSourceIndex,
@@ -233,14 +252,6 @@ internal static class WsqDoubleDecomposition
                     ref lowPassRightEdgeState,
                     sampleStrideForward,
                     sampleStrideBackward);
-            }
-        }
-
-        if (filterLengthIsOdd == 0)
-        {
-            for (var filterIndex = 0; filterIndex < highPassFilter.Length; filterIndex++)
-            {
-                highPassFilter[filterIndex] *= -1.0;
             }
         }
     }

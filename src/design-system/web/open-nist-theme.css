@@ -2,9 +2,11 @@
   --on-primary: #f8f9ff;
   --color-primary: #001e40;
   --color-primary-container: #0d3a69;
+  --color-on-primary-container: #f2f7ff;
   --color-primary-fixed: #8db9ff;
   --color-secondary: #006a6a;
   --color-secondary-container: #c7f1ef;
+  --color-secondary-fixed: #8fe7e2;
   --color-tertiary-fixed: #ffdcc3;
   --color-surface: #f8f9ff;
   --color-surface-bright: #ffffff;
@@ -15,6 +17,7 @@
   --color-surface-container-highest: #d5e3fc;
   --color-on-surface: #0d1c2e;
   --color-on-surface-variant: #415469;
+  --color-outline: #5d738a;
   --color-outline-variant: #7d93ab;
 
   --font-display: "Space Grotesk", "Inter", sans-serif;

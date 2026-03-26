@@ -1,10 +1,8 @@
 namespace OpenNist.Nfiq.Internal;
 
-using System.Collections.Frozen;
-
 internal static class Nfiq2ManagedFeatureVectorBuilder
 {
-    public static IReadOnlyDictionary<string, double> BuildNativeQualityMeasures(
+    public static Nfiq2ManagedFeatureVector Build(
         Nfiq2FingerprintImage fingerprintImage,
         IReadOnlyList<Nfiq2Minutia> minutiae)
     {
@@ -16,13 +14,29 @@ internal static class Nfiq2ManagedFeatureVectorBuilder
         var qualityMap = Nfiq2QualityMapModule.Compute(fingerprintImage, roi);
         var ocl = Nfiq2OclHistogramModule.Compute(fingerprintImage);
         var orientationFlow = Nfiq2OrientationFlowModule.Compute(fingerprintImage);
-        var localClarity = Nfiq2LocalClarityModule.Compute(fingerprintImage);
-        var ridgeValleyUniformity = Nfiq2RidgeValleyUniformityModule.Compute(fingerprintImage);
-        var frequencyDomainAnalysis = Nfiq2FrequencyDomainAnalysisModule.Compute(fingerprintImage);
+        var ridgeValleyContext = Nfiq2RidgeValleySupport.CreateFeatureContext(
+            fingerprintImage,
+            blockSize: 32,
+            segmentationThreshold: 0.1,
+            slantedBlockWidth: 32,
+            slantedBlockHeight: 16);
+        var localClarity = Nfiq2LocalClarityModule.Compute(fingerprintImage, ridgeValleyContext);
+        var ridgeValleyUniformity = Nfiq2RidgeValleyUniformityModule.Compute(fingerprintImage, ridgeValleyContext);
+        var frequencyDomainAnalysis = Nfiq2FrequencyDomainAnalysisModule.Compute(fingerprintImage, ridgeValleyContext);
         var minutiaeCount = Nfiq2MinutiaeCountModule.Compute(minutiae, fingerprintImage.Width, fingerprintImage.Height);
         var minutiaeQuality = Nfiq2MinutiaeQualityModule.Compute(fingerprintImage, minutiae);
 
-        var features = new Dictionary<string, double>(StringComparer.Ordinal);
+        var featureCapacity = mu.Features.Count
+            + roi.Features.Count
+            + qualityMap.Features.Count
+            + ocl.Features.Count
+            + orientationFlow.Features.Count
+            + localClarity.Features.Count
+            + ridgeValleyUniformity.Features.Count
+            + frequencyDomainAnalysis.Features.Count
+            + minutiaeCount.Features.Count
+            + minutiaeQuality.Count;
+        var features = new Dictionary<string, double>(featureCapacity, StringComparer.Ordinal);
         AddAll(features, mu.Features);
         AddAll(features, roi.Features);
         AddAll(features, qualityMap.Features);
@@ -34,7 +48,14 @@ internal static class Nfiq2ManagedFeatureVectorBuilder
         AddAll(features, minutiaeCount.Features);
         AddAll(features, minutiaeQuality);
 
-        return features.ToFrozenDictionary(StringComparer.Ordinal);
+        return new(features, mu, roi);
+    }
+
+    public static IReadOnlyDictionary<string, double> BuildNativeQualityMeasures(
+        Nfiq2FingerprintImage fingerprintImage,
+        IReadOnlyList<Nfiq2Minutia> minutiae)
+    {
+        return Build(fingerprintImage, minutiae).Features;
     }
 
     private static void AddAll(
@@ -47,3 +68,8 @@ internal static class Nfiq2ManagedFeatureVectorBuilder
         }
     }
 }
+
+internal sealed record Nfiq2ManagedFeatureVector(
+    IReadOnlyDictionary<string, double> Features,
+    Nfiq2MuModuleResult Mu,
+    Nfiq2ImgProcRoiResult Roi);

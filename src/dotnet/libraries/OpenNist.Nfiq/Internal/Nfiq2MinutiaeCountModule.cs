@@ -2,10 +2,10 @@ namespace OpenNist.Nfiq.Internal;
 
 internal static class Nfiq2MinutiaeCountModule
 {
-    private const string CountFeatureName = "FingerJetFX_MinutiaeCount";
-    private const string CountComFeatureName = "FingerJetFX_MinCount_COMMinRect200x200";
-    private const int CountComWidth = 200;
-    private const int CountComHeight = 200;
+    private const string s_countFeatureName = "FingerJetFX_MinutiaeCount";
+    private const string s_countComFeatureName = "FingerJetFX_MinCount_COMMinRect200x200";
+    private const int s_countComWidth = 200;
+    private const int s_countComHeight = 200;
 
     public static Nfiq2MinutiaeCountResult Compute(
         IReadOnlyList<Nfiq2Minutia> minutiae,
@@ -22,14 +22,14 @@ internal static class Nfiq2MinutiaeCountModule
                 0,
                 new Dictionary<string, double>(StringComparer.Ordinal)
                 {
-                    [CountFeatureName] = 0,
-                    [CountComFeatureName] = 0,
+                    [s_countFeatureName] = 0,
+                    [s_countComFeatureName] = 0,
                 });
         }
 
         var centerOfMass = ComputeCenterOfMass(minutiae);
-        var halfWidth = CountComWidth / 2;
-        var halfHeight = CountComHeight / 2;
+        var halfWidth = s_countComWidth / 2;
+        var halfHeight = s_countComHeight / 2;
         var startX = Math.Max(0, centerOfMass.X - halfWidth);
         var startY = Math.Max(0, centerOfMass.Y - halfHeight);
         var endX = Math.Min(imageWidth - 1, centerOfMass.X + halfWidth);
@@ -52,8 +52,8 @@ internal static class Nfiq2MinutiaeCountModule
             centerOfMass.Y,
             new Dictionary<string, double>(StringComparer.Ordinal)
             {
-                [CountFeatureName] = minutiae.Count,
-                [CountComFeatureName] = countCom,
+                [s_countFeatureName] = minutiae.Count,
+                [s_countComFeatureName] = countCom,
             });
     }
 

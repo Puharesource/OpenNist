@@ -9,7 +9,7 @@ using OpenNist.Tests.Nfiq.TestSupport;
 [Category("Integration: NFIQ2 - Managed FDA Module")]
 internal sealed class Nfiq2FrequencyDomainAnalysisModuleTests
 {
-    private const double NativeFloatingPointTolerance = 0.1;
+    private const double s_nativeFloatingPointTolerance = 0.1;
     private static readonly string[] s_featureNames =
     [
         "FDA_Bin10_0",
@@ -56,7 +56,7 @@ internal sealed class Nfiq2FrequencyDomainAnalysisModuleTests
             throw new InvalidOperationException($"{context} was NA in the official NFIQ 2 result.");
         }
 
-        if (Math.Abs(expectedValue.Value - actualValue) > NativeFloatingPointTolerance)
+        if (Math.Abs(expectedValue.Value - actualValue) > s_nativeFloatingPointTolerance)
         {
             throw new InvalidOperationException(
                 $"{context} diverged from the official NFIQ 2 value. "

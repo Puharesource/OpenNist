@@ -8,6 +8,8 @@ using JetBrains.Annotations;
 [PublicAPI]
 public sealed class NistField
 {
+    private NistSubfield[]? _subfields;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="NistField"/> class from a raw field value.
     /// </summary>
@@ -17,7 +19,13 @@ public sealed class NistField
     {
         Tag = tag;
         Value = value ?? string.Empty;
-        Subfields = ParseSubfields(Value);
+    }
+
+    private NistField(NistTag tag, string value, NistSubfield[]? subfields)
+    {
+        Tag = tag;
+        Value = value;
+        _subfields = subfields;
     }
 
     /// <summary>
@@ -33,7 +41,7 @@ public sealed class NistField
     /// <summary>
     /// Gets the parsed subfield and item values.
     /// </summary>
-    public IReadOnlyList<NistSubfield> Subfields { get; }
+    public IReadOnlyList<NistSubfield> Subfields => _subfields ??= ParseSubfields(Value);
 
     /// <summary>
     /// Creates a field from one or more subfield item collections.
@@ -49,7 +57,22 @@ public sealed class NistField
             NistSeparators.RecordSeparator,
             subfields.Select(static subfield => string.Join(NistSeparators.UnitSeparator, subfield ?? [])));
 
-        return new NistField(tag, rawValue);
+        var normalizedSubfields = new NistSubfield[subfields.Length];
+
+        for (var index = 0; index < subfields.Length; index++)
+        {
+            var sourceItems = subfields[index] ?? [];
+            var items = new string[sourceItems.Length];
+
+            for (var itemIndex = 0; itemIndex < sourceItems.Length; itemIndex++)
+            {
+                items[itemIndex] = sourceItems[itemIndex] ?? string.Empty;
+            }
+
+            normalizedSubfields[index] = new(items, takeOwnership: true);
+        }
+
+        return new(tag, rawValue, normalizedSubfields);
     }
 
     private static NistSubfield[] ParseSubfields(string value)
@@ -57,11 +80,21 @@ public sealed class NistField
         var source = value.AsSpan();
         if (source.IsEmpty)
         {
-            return [new NistSubfield([string.Empty])];
+            return [new([string.Empty], takeOwnership: true)];
         }
 
-        var subfields = new List<NistSubfield>();
+        var subfieldCount = 1;
+        for (var index = 0; index < source.Length; index++)
+        {
+            if (source[index] == NistSeparators.RecordSeparator)
+            {
+                subfieldCount++;
+            }
+        }
+
+        var subfields = new NistSubfield[subfieldCount];
         var subfieldStart = 0;
+        var subfieldIndex = 0;
 
         while (subfieldStart <= source.Length)
         {
@@ -79,16 +112,26 @@ public sealed class NistField
                 subfieldStart += subfieldLength + 1;
             }
 
-            subfields.Add(ParseSubfield(subfieldSpan));
+            subfields[subfieldIndex++] = ParseSubfield(subfieldSpan);
         }
 
-        return [.. subfields];
+        return subfields;
     }
 
     private static NistSubfield ParseSubfield(ReadOnlySpan<char> value)
     {
-        var items = new List<string>();
+        var itemCount = 1;
+        for (var index = 0; index < value.Length; index++)
+        {
+            if (value[index] == NistSeparators.UnitSeparator)
+            {
+                itemCount++;
+            }
+        }
+
+        var items = new string[itemCount];
         var itemStart = 0;
+        var itemIndex = 0;
 
         while (itemStart <= value.Length)
         {
@@ -106,9 +149,9 @@ public sealed class NistField
                 itemStart += itemLength + 1;
             }
 
-            items.Add(itemSpan.IsEmpty ? string.Empty : itemSpan.ToString());
+            items[itemIndex++] = itemSpan.IsEmpty ? string.Empty : itemSpan.ToString();
         }
 
-        return new NistSubfield(items);
+        return new(items, takeOwnership: true);
     }
 }

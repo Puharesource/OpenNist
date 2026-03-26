@@ -15,7 +15,7 @@ public sealed class NistFile
     public NistFile(IEnumerable<NistRecord> records)
     {
         ArgumentNullException.ThrowIfNull(records);
-        Records = records.ToArray();
+        Records = records is ICollection<NistRecord> collection ? [.. collection] : [.. records];
     }
 
     /// <summary>
@@ -31,6 +31,16 @@ public sealed class NistFile
     public IReadOnlyList<NistRecord> FindRecords(int recordType)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(recordType);
-        return Records.Where(record => record.Type == recordType).ToArray();
+
+        var matches = new List<NistRecord>();
+        for (var index = 0; index < Records.Count; index++)
+        {
+            if (Records[index].Type == recordType)
+            {
+                matches.Add(Records[index]);
+            }
+        }
+
+        return matches;
     }
 }

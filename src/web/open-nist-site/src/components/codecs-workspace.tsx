@@ -1,142 +1,130 @@
-import { startTransition, useCallback, useEffect, useId, useRef, useState } from "react";
-import {
-  ArrowDownToLine,
-  Check,
-  ChevronDown,
-  FileArchive,
-  Fingerprint,
-  LoaderCircle,
-} from "lucide-react";
+import { ArrowDownToLine, Check, ChevronDown, FileArchive, Fingerprint, LoaderCircle } from "lucide-react"
+import { startTransition, useCallback, useEffect, useId, useRef, useState } from "react"
 
-import { Button } from "@/components/ui/button";
-import { InspectorPanel, InspectorSection } from "@/components/workspace-inspector";
-import { WorkspaceSidebarToggleGroup, useWorkspaceSidebars } from "@/components/workspace-sidebars";
-import { type CodecsWorkspaceDocument, getFileFingerprint } from "@/lib/codecs-document";
-import { downloadBytes, replaceExtension } from "@/lib/download";
-import { exportRawImage, normalizeImageFile } from "@/lib/ffmpeg-wasm";
-import { isNistTransactionFileName, type WorkspaceFileIntake } from "@/lib/workspace-file-intake";
-import {
-  decodeWsqBytes,
-  encodeRawToWsqBytes,
-  type WsqCommentInfo,
-  type WsqFileInfo,
-} from "@/lib/opennist-wasm";
-import { setWorkspaceCodecsDocument, useWorkspaceSession } from "@/lib/workspace-session";
+import { Button } from "@/components/ui/button"
+import { InspectorPanel, InspectorSection } from "@/components/workspace-inspector"
+import { WorkspaceSidebarToggleGroup, useWorkspaceSidebars } from "@/components/workspace-sidebars"
+import { type CodecsWorkspaceDocument, getFileFingerprint } from "@/lib/codecs-document"
+import { downloadBytes, replaceExtension } from "@/lib/download"
+import { exportRawImage, normalizeImageFile } from "@/lib/ffmpeg-wasm"
+import { decodeWsqBytes, encodeRawToWsqBytes, type WsqCommentInfo, type WsqFileInfo } from "@/lib/opennist-wasm"
+import { isNistTransactionFileName, type WorkspaceFileIntake } from "@/lib/workspace-file-intake"
+import { setWorkspaceCodecsDocument, useWorkspaceSession } from "@/lib/workspace-session"
 
-type ExportFormat = "png" | "jpeg" | "tiff" | "bmp" | "webp";
-type OutputFormat = "wsq" | ExportFormat;
+type ExportFormat = "png" | "jpeg" | "tiff" | "bmp" | "webp"
+type OutputFormat = "wsq" | ExportFormat
 
 const EXPORT_MIME_TYPES: Record<ExportFormat, string> = {
   png: "image/png",
   jpeg: "image/jpeg",
   tiff: "image/tiff",
   bmp: "image/bmp",
-  webp: "image/webp",
-};
+  webp: "image/webp"
+}
 
 const BIT_RATE_OPTIONS = [
   { label: "0.75", value: 0.75 },
-  { label: "2.25", value: 2.25 },
-] as const;
+  { label: "2.25", value: 2.25 }
+] as const
 
-const EXPORT_OPTIONS: ExportFormat[] = ["png", "jpeg", "tiff", "bmp", "webp"];
+const EXPORT_OPTIONS: ExportFormat[] = ["png", "jpeg", "tiff", "bmp", "webp"]
 
 function bytesToObjectUrl(bytes: Uint8Array, mimeType: string): string {
-  return URL.createObjectURL(new Blob([Uint8Array.from(bytes)], { type: mimeType }));
+  return URL.createObjectURL(new Blob([Uint8Array.from(bytes)], { type: mimeType }))
 }
 
 function formatByteSize(byteCount: number): string {
   if (byteCount < 1024) {
-    return `${byteCount} B`;
+    return `${byteCount} B`
   }
 
   if (byteCount < 1024 * 1024) {
-    return `${(byteCount / 1024).toFixed(1)} KB`;
+    return `${(byteCount / 1024).toFixed(1)} KB`
   }
 
-  return `${(byteCount / (1024 * 1024)).toFixed(2)} MB`;
+  return `${(byteCount / (1024 * 1024)).toFixed(2)} MB`
 }
 
 async function waitForUiPaint(): Promise<void> {
   await new Promise<void>((resolve) => {
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => resolve());
-    });
-  });
+      requestAnimationFrame(() => resolve())
+    })
+  })
 }
 
 function logRuntime(message: string, detail?: unknown): void {
   if (detail instanceof Error) {
-    console.error(`[OpenNist] ${message}`, detail);
-    return;
+    console.error(`[OpenNist] ${message}`, detail)
+    return
   }
 
   if (typeof detail !== "undefined") {
-    console.info(`[OpenNist] ${message}`, detail);
-    return;
+    console.info(`[OpenNist] ${message}`, detail)
+    return
   }
 
-  console.info(`[OpenNist] ${message}`);
+  console.info(`[OpenNist] ${message}`)
 }
 
 export function CodecsWorkspace({
   currentLabel,
   intake,
-  incomingFile,
+  incomingFile
 }: {
-  currentLabel: string;
-  intake: WorkspaceFileIntake;
-  incomingFile: File | null;
+  currentLabel: string
+  intake: WorkspaceFileIntake
+  incomingFile: File | null
 }) {
-  const { codecsDocument, codecsDocumentFingerprint, activeFileFingerprint } = useWorkspaceSession();
-  const [document, setDocument] = useState<CodecsWorkspaceDocument | null>(codecsDocument);
-  const [bitRate, setBitRate] = useState<(typeof BIT_RATE_OPTIONS)[number]["value"]>(2.25);
-  const [outputFormat, setOutputFormat] = useState<OutputFormat>("wsq");
-  const [busyMode, setBusyMode] = useState<"preview" | "action" | null>(null);
+  const { codecsDocument, codecsDocumentFingerprint, activeFileFingerprint } = useWorkspaceSession()
+  const [document, setDocument] = useState<CodecsWorkspaceDocument | null>(codecsDocument)
+  const [bitRate, setBitRate] = useState<(typeof BIT_RATE_OPTIONS)[number]["value"]>(2.25)
+  const [outputFormat, setOutputFormat] = useState<OutputFormat>("wsq")
+  const [busyMode, setBusyMode] = useState<"preview" | "action" | null>(null)
 
   const updateDocument = useCallback((next: CodecsWorkspaceDocument, fingerprint: string | null) => {
-    setWorkspaceCodecsDocument(next, fingerprint);
+    setWorkspaceCodecsDocument(next, fingerprint)
 
     startTransition(() => {
-      setDocument(next);
-    });
-  }, []);
+      setDocument(next)
+    })
+  }, [])
 
   const withBusy = useCallback(
     async <T,>(message: string, work: () => Promise<T>, mode: "preview" | "action" = "action"): Promise<T> => {
-      setBusyMode(mode);
-      logRuntime(message);
-      await waitForUiPaint();
+      setBusyMode(mode)
+      logRuntime(message)
+      await waitForUiPaint()
 
       try {
-        return await work();
+        return await work()
       } finally {
-        setBusyMode(null);
+        setBusyMode(null)
       }
     },
-    [],
-  );
-  const isBusy = busyMode !== null;
-  const showPreviewOverlay = busyMode === "preview" && Boolean(document);
-  const showInitialLoader = busyMode === "preview" && !document;
+    []
+  )
+  const isBusy = busyMode !== null
+  const showPreviewOverlay = busyMode === "preview" && Boolean(document)
+  const showInitialLoader = busyMode === "preview" && !document
 
   const handleFile = useCallback(
     async (file: File) => {
-      const fileName = file.name;
-      const fingerprint = getFileFingerprint(file);
+      const fileName = file.name
+      const fingerprint = getFileFingerprint(file)
 
       try {
         if (isNistTransactionFileName(fileName)) {
-          return;
+          return
         }
 
         if (fileName.toLowerCase().endsWith(".wsq")) {
           const loadedDocument = await withBusy(
             "Decoding WSQ with OpenNist.Wasm and rendering a browser preview.",
             async () => {
-              const wsqBytes = new Uint8Array(await file.arrayBuffer());
-              const decoded = await decodeWsqBytes(wsqBytes);
-              const previewBytes = await exportRawImage(decoded.rawPixels, decoded.width, decoded.height, "png");
+              const wsqBytes = new Uint8Array(await file.arrayBuffer())
+              const decoded = await decodeWsqBytes(wsqBytes)
+              const previewBytes = await exportRawImage(decoded.rawPixels, decoded.width, decoded.height, "png")
 
               return {
                 fileName,
@@ -148,24 +136,24 @@ export function CodecsWorkspace({
                 rawPixels: decoded.rawPixels,
                 previewUrl: bytesToObjectUrl(previewBytes, "image/png"),
                 wsqInfo: decoded.fileInfo,
-                wsqBytes,
-              };
+                wsqBytes
+              }
             },
-            "preview",
-          );
+            "preview"
+          )
 
-          updateDocument(loadedDocument, fingerprint);
+          updateDocument(loadedDocument, fingerprint)
           logRuntime(
             `Decoded ${fileName} into ${loadedDocument.width}×${loadedDocument.height} grayscale pixels.`,
-            loadedDocument.wsqInfo,
-          );
-          return;
+            loadedDocument.wsqInfo
+          )
+          return
         }
 
         const loadedDocument = await withBusy(
           "Normalizing the source image through ffmpeg.wasm for WSQ-safe grayscale output.",
           async () => {
-            const normalized = await normalizeImageFile(file);
+            const normalized = await normalizeImageFile(file)
 
             return {
               fileName,
@@ -175,36 +163,38 @@ export function CodecsWorkspace({
               height: normalized.height,
               pixelsPerInch: 500,
               rawPixels: normalized.rawPixels,
-              previewUrl: bytesToObjectUrl(normalized.previewBytes, "image/png"),
-            };
+              previewUrl: bytesToObjectUrl(normalized.previewBytes, "image/png")
+            }
           },
-          "preview",
-        );
+          "preview"
+        )
 
-        updateDocument(loadedDocument, fingerprint);
-        logRuntime(`Prepared ${fileName} as a grayscale ${loadedDocument.width}×${loadedDocument.height} working raster.`);
+        updateDocument(loadedDocument, fingerprint)
+        logRuntime(
+          `Prepared ${fileName} as a grayscale ${loadedDocument.width}×${loadedDocument.height} working raster.`
+        )
       } catch (error) {
-        const message = error instanceof Error ? error.message : "The file could not be processed.";
-        logRuntime(`Error: ${message}`, error);
+        const message = error instanceof Error ? error.message : "The file could not be processed."
+        logRuntime(`Error: ${message}`, error)
       }
     },
-    [updateDocument, withBusy],
-  );
+    [updateDocument, withBusy]
+  )
 
   useEffect(() => {
     if (!codecsDocument) {
-      return;
+      return
     }
 
-    setDocument(codecsDocument);
-  }, [codecsDocument]);
+    setDocument(codecsDocument)
+  }, [codecsDocument])
 
   useEffect(() => {
     if (!incomingFile) {
-      return;
+      return
     }
 
-    const fingerprint = getFileFingerprint(incomingFile);
+    const fingerprint = getFileFingerprint(incomingFile)
 
     if (
       codecsDocument &&
@@ -212,32 +202,32 @@ export function CodecsWorkspace({
       codecsDocumentFingerprint === fingerprint &&
       activeFileFingerprint === fingerprint
     ) {
-      setDocument(codecsDocument);
-      return;
+      setDocument(codecsDocument)
+      return
     }
 
-    void handleFile(incomingFile);
-  }, [activeFileFingerprint, codecsDocument, codecsDocumentFingerprint, handleFile, incomingFile]);
+    void handleFile(incomingFile)
+  }, [activeFileFingerprint, codecsDocument, codecsDocumentFingerprint, handleFile, incomingFile])
 
   useEffect(() => {
     if (!document) {
-      setOutputFormat("wsq");
-      return;
+      setOutputFormat("wsq")
+      return
     }
 
     if (document.sourceKind === "WSQ") {
-      setOutputFormat((current) => (current === "wsq" ? "png" : current));
-      return;
+      setOutputFormat((current) => (current === "wsq" ? "png" : current))
+      return
     }
 
-    setOutputFormat("wsq");
-  }, [document]);
+    setOutputFormat("wsq")
+  }, [document])
 
-  const activeExportFormat = outputFormat === "wsq" ? "png" : outputFormat;
+  const activeExportFormat = outputFormat === "wsq" ? "png" : outputFormat
 
   const onConvertToWsq = useCallback(async () => {
     if (!document) {
-      return;
+      return
     }
 
     try {
@@ -247,62 +237,62 @@ export function CodecsWorkspace({
           document.width,
           document.height,
           document.pixelsPerInch,
-          Number(bitRate),
-        ),
-      );
+          Number(bitRate)
+        )
+      )
 
       setDocument((current) => {
         if (!current) {
-          return current;
+          return current
         }
 
-        const nextDocument = { ...current, wsqBytes };
-        setWorkspaceCodecsDocument(nextDocument, activeFileFingerprint);
-        return nextDocument;
-      });
-      downloadBytes(wsqBytes, replaceExtension(document.fileName, ".wsq"), "image/x-wsq");
-      logRuntime(`Converted ${document.fileName} to WSQ at ${bitRate} bpp.`);
+        const nextDocument = { ...current, wsqBytes }
+        setWorkspaceCodecsDocument(nextDocument, activeFileFingerprint)
+        return nextDocument
+      })
+      await downloadBytes(wsqBytes, replaceExtension(document.fileName, ".wsq"), "image/x-wsq")
+      logRuntime(`Converted ${document.fileName} to WSQ at ${bitRate} bpp.`)
     } catch (error) {
-      const message = error instanceof Error ? error.message : "WSQ encoding failed.";
-      logRuntime(`Error: ${message}`, error);
+      const message = error instanceof Error ? error.message : "WSQ encoding failed."
+      logRuntime(`Error: ${message}`, error)
     }
-  }, [activeFileFingerprint, bitRate, document, withBusy]);
+  }, [activeFileFingerprint, bitRate, document, withBusy])
 
   const onExportImage = useCallback(async () => {
     if (!document) {
-      return;
+      return
     }
 
     try {
       const imageBytes = await withBusy(`Rendering a ${activeExportFormat.toUpperCase()} image.`, async () =>
-        exportRawImage(document.rawPixels, document.width, document.height, activeExportFormat),
-      );
+        exportRawImage(document.rawPixels, document.width, document.height, activeExportFormat)
+      )
 
-      downloadBytes(
+      await downloadBytes(
         imageBytes,
         replaceExtension(document.fileName, `.${activeExportFormat === "jpeg" ? "jpg" : activeExportFormat}`),
-        EXPORT_MIME_TYPES[activeExportFormat],
-      );
-      logRuntime(`Exported ${document.fileName} as ${activeExportFormat.toUpperCase()}.`);
+        EXPORT_MIME_TYPES[activeExportFormat]
+      )
+      logRuntime(`Exported ${document.fileName} as ${activeExportFormat.toUpperCase()}.`)
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Image export failed.";
-      logRuntime(`Error: ${message}`, error);
+      const message = error instanceof Error ? error.message : "Image export failed."
+      logRuntime(`Error: ${message}`, error)
     }
-  }, [activeExportFormat, document, withBusy]);
+  }, [activeExportFormat, document, withBusy])
 
-  const canRunActions = Boolean(document) && !isBusy;
-  const showInspector = Boolean(document);
-  const { rightDocked, rightInlineVisible, rightOverlayVisible } = useWorkspaceSidebars();
-  const showRightSidebar = showInspector && (rightInlineVisible || rightOverlayVisible);
-  const actionLabel = outputFormat === "wsq" ? "Convert to WSQ" : `Export ${outputFormat.toUpperCase()}`;
+  const canRunActions = Boolean(document) && !isBusy
+  const showInspector = Boolean(document)
+  const { rightDocked, rightInlineVisible, rightOverlayVisible } = useWorkspaceSidebars()
+  const showRightSidebar = showInspector && (rightInlineVisible || rightOverlayVisible)
+  const actionLabel = outputFormat === "wsq" ? "Convert to WSQ" : `Export ${outputFormat.toUpperCase()}`
   const handlePrimaryAction = useCallback(() => {
     if (outputFormat === "wsq") {
-      void onConvertToWsq();
-      return;
+      void onConvertToWsq()
+      return
     }
 
-    void onExportImage();
-  }, [onConvertToWsq, onExportImage, outputFormat]);
+    void onExportImage()
+  }, [onConvertToWsq, onExportImage, outputFormat])
 
   return (
     <>
@@ -334,12 +324,12 @@ export function CodecsWorkspace({
             onClick={intake.openPicker}
             onDragEnter={intake.activateDrag}
             onDragOver={(event) => {
-              event.preventDefault();
-              intake.activateDrag();
+              event.preventDefault()
+              intake.activateDrag()
             }}
             onDragLeave={(event) => {
               if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-                intake.deactivateDrag();
+                intake.deactivateDrag()
               }
             }}
             onDrop={intake.handleDrop}
@@ -418,7 +408,7 @@ export function CodecsWorkspace({
         />
       ) : null}
     </>
-  );
+  )
 }
 
 function CodecsInspector({
@@ -432,97 +422,91 @@ function CodecsInspector({
   onPrimaryAction,
   actionLabel,
   rightDocked,
-  rightOverlayVisible,
+  rightOverlayVisible
 }: {
-  document: CodecsWorkspaceDocument;
-  bitRate: (typeof BIT_RATE_OPTIONS)[number]["value"];
-  outputFormat: OutputFormat;
-  isBusy: boolean;
-  canRunActions: boolean;
-  onSelectBitRate(value: (typeof BIT_RATE_OPTIONS)[number]["value"]): void;
-  onSelectOutputFormat(value: OutputFormat): void;
-  onPrimaryAction(): void;
-  actionLabel: string;
-  rightDocked: boolean;
-  rightOverlayVisible: boolean;
+  document: CodecsWorkspaceDocument
+  bitRate: (typeof BIT_RATE_OPTIONS)[number]["value"]
+  outputFormat: OutputFormat
+  isBusy: boolean
+  canRunActions: boolean
+  onSelectBitRate(value: (typeof BIT_RATE_OPTIONS)[number]["value"]): void
+  onSelectOutputFormat(value: OutputFormat): void
+  onPrimaryAction(): void
+  actionLabel: string
+  rightDocked: boolean
+  rightOverlayVisible: boolean
 }) {
-  const popoverId = useId();
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
-  const popoverRef = useRef<HTMLDivElement | null>(null);
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const availableFormats: OutputFormat[] = document.sourceKind === "WSQ" ? EXPORT_OPTIONS : ["wsq"];
-  const outputLabel = outputFormat === "wsq" ? `WSQ · ${bitRate.toFixed(2)} bpp` : outputFormat.toUpperCase();
+  const popoverId = useId()
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const popoverRef = useRef<HTMLDivElement | null>(null)
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false)
+  const availableFormats: OutputFormat[] = document.sourceKind === "WSQ" ? EXPORT_OPTIONS : ["wsq"]
+  const outputLabel = outputFormat === "wsq" ? `WSQ · ${bitRate.toFixed(2)} bpp` : outputFormat.toUpperCase()
 
   const positionPopover = useCallback(() => {
-    const trigger = triggerRef.current;
-    const popover = popoverRef.current;
+    const trigger = triggerRef.current
+    const popover = popoverRef.current
 
     if (!trigger || !popover) {
-      return;
+      return
     }
 
-    const triggerRect = trigger.getBoundingClientRect();
-    const gutter = 16;
-    const width = Math.max(triggerRect.width, 224);
-    const left = Math.min(
-      Math.max(triggerRect.left, gutter),
-      Math.max(gutter, window.innerWidth - width - gutter),
-    );
+    const triggerRect = trigger.getBoundingClientRect()
+    const gutter = 16
+    const width = Math.max(triggerRect.width, 224)
+    const left = Math.min(Math.max(triggerRect.left, gutter), Math.max(gutter, window.innerWidth - width - gutter))
 
-    popover.style.position = "fixed";
-    popover.style.inset = "auto";
-    popover.style.margin = "0";
-    popover.style.width = `${width}px`;
-    popover.style.left = `${left}px`;
+    popover.style.position = "fixed"
+    popover.style.inset = "auto"
+    popover.style.margin = "0"
+    popover.style.width = `${width}px`
+    popover.style.left = `${left}px`
 
-    const popoverHeight = popover.offsetHeight;
-    const top = Math.min(
-      triggerRect.bottom + 8,
-      Math.max(gutter, window.innerHeight - popoverHeight - gutter),
-    );
+    const popoverHeight = popover.offsetHeight
+    const top = Math.min(triggerRect.bottom + 8, Math.max(gutter, window.innerHeight - popoverHeight - gutter))
 
-    popover.style.top = `${top}px`;
-  }, []);
+    popover.style.top = `${top}px`
+  }, [])
 
   useEffect(() => {
-    const popover = popoverRef.current;
+    const popover = popoverRef.current
 
     if (!popover) {
-      return;
+      return
     }
 
     const handleToggle = () => {
-      const open = popover.matches(":popover-open");
-      setIsPopoverOpen(open);
+      const open = popover.matches(":popover-open")
+      setIsPopoverOpen(open)
 
       if (open) {
-        requestAnimationFrame(positionPopover);
+        requestAnimationFrame(positionPopover)
       }
-    };
+    }
 
-    popover.addEventListener("toggle", handleToggle);
+    popover.addEventListener("toggle", handleToggle)
     return () => {
-      popover.removeEventListener("toggle", handleToggle);
-    };
-  }, [positionPopover]);
+      popover.removeEventListener("toggle", handleToggle)
+    }
+  }, [positionPopover])
 
   useEffect(() => {
     if (!isPopoverOpen) {
-      return;
+      return
     }
 
     const reposition = () => {
-      requestAnimationFrame(positionPopover);
-    };
+      requestAnimationFrame(positionPopover)
+    }
 
-    window.addEventListener("resize", reposition);
-    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("resize", reposition)
+    window.addEventListener("scroll", reposition, true)
 
     return () => {
-      window.removeEventListener("resize", reposition);
-      window.removeEventListener("scroll", reposition, true);
-    };
-  }, [isPopoverOpen, positionPopover]);
+      window.removeEventListener("resize", reposition)
+      window.removeEventListener("scroll", reposition, true)
+    }
+  }, [isPopoverOpen, positionPopover])
 
   return (
     <InspectorPanel
@@ -531,148 +515,150 @@ function CodecsInspector({
       rightDocked={rightDocked}
       rightOverlayVisible={rightOverlayVisible}
     >
-          <div className="space-y-3">
-            <SectionTitle>Output</SectionTitle>
-            <p className="text-sm leading-6 text-[var(--color-on-surface-variant)]">
-              Choose the format you want to download. WSQ is the fingerprint-specific compression format; the other options are regular image files.
-            </p>
-            <div className="space-y-3">
-              <div className="relative">
-                <Button
-                  ref={triggerRef}
-                  type="button"
-                  variant="outline"
-                  className="w-full justify-between rounded-[var(--radius-lg)] border-[color:var(--effect-ghost-border)] bg-transparent text-[var(--color-primary)] hover:bg-[var(--color-surface-container-low)]"
-                  onClick={() => {
-                    const popover = popoverRef.current;
+      <div className="space-y-3">
+        <SectionTitle>Output</SectionTitle>
+        <p className="text-sm leading-6 text-[var(--color-on-surface-variant)]">
+          Choose the format you want to download. WSQ is the fingerprint-specific compression format; the other options
+          are regular image files.
+        </p>
+        <div className="space-y-3">
+          <div className="relative">
+            <Button
+              ref={triggerRef}
+              type="button"
+              variant="outline"
+              className="w-full justify-between rounded-[var(--radius-lg)] border-[color:var(--effect-ghost-border)] bg-transparent text-[var(--color-primary)] hover:bg-[var(--color-surface-container-low)]"
+              onClick={() => {
+                const popover = popoverRef.current
 
-                    if (!popover) {
-                      return;
-                    }
+                if (!popover) {
+                  return
+                }
 
-                    if (popover.matches(":popover-open")) {
-                      popover.hidePopover();
-                      return;
-                    }
+                if (popover.matches(":popover-open")) {
+                  popover.hidePopover()
+                  return
+                }
 
-                    positionPopover();
-                    popover.showPopover();
-                  }}
-                >
-                  <span>{outputLabel}</span>
-                  <ChevronDown className="size-4 opacity-70" />
-                </Button>
-                <div
-                  ref={popoverRef}
-                  id={popoverId}
-                  popover="auto"
-                  className="rounded-[var(--radius-xl)] border border-[color:var(--effect-ghost-border)] bg-white p-2 text-[var(--color-on-surface)] shadow-[var(--effect-modal-shadow)] backdrop:bg-black/20"
-                >
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <p className="px-3 pt-1 font-mono text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
-                        Format
-                      </p>
-                      {availableFormats.map((option) => (
-                        <button
-                          key={option}
-                          type="button"
-                          className={`flex w-full items-center justify-between rounded-[var(--radius-lg)] px-3 py-2 text-left text-sm transition-colors ${
-                            outputFormat === option
-                              ? "bg-[var(--color-primary-fixed)]/30 text-[var(--color-primary)]"
-                              : "hover:bg-[var(--color-surface-container-low)]"
-                          }`}
-                          onClick={() => {
-                            onSelectOutputFormat(option);
+                positionPopover()
+                popover.showPopover()
+              }}
+            >
+              <span>{outputLabel}</span>
+              <ChevronDown className="size-4 opacity-70" />
+            </Button>
+            <div
+              ref={popoverRef}
+              id={popoverId}
+              popover="auto"
+              className="rounded-[var(--radius-xl)] border border-[color:var(--effect-ghost-border)] bg-white p-2 text-[var(--color-on-surface)] shadow-[var(--effect-modal-shadow)] backdrop:bg-black/20"
+            >
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <p className="px-3 pt-1 font-mono text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
+                    Format
+                  </p>
+                  {availableFormats.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      className={`flex w-full items-center justify-between rounded-[var(--radius-lg)] px-3 py-2 text-left text-sm transition-colors ${
+                        outputFormat === option
+                          ? "bg-[var(--color-primary-fixed)]/30 text-[var(--color-primary)]"
+                          : "hover:bg-[var(--color-surface-container-low)]"
+                      }`}
+                      onClick={() => {
+                        onSelectOutputFormat(option)
 
-                            if (option !== "wsq") {
-                              popoverRef.current?.hidePopover();
-                            }
-                          }}
-                        >
-                          <span>{option === "wsq" ? "WSQ" : option.toUpperCase()}</span>
-                          {outputFormat === option ? <Check className="size-4" /> : null}
-                        </button>
-                      ))}
-                    </div>
-
-                    {outputFormat === "wsq" ? (
-                      <div className="space-y-1 border-t border-[color:var(--effect-ghost-border)] pt-2">
-                        <p className="px-3 pt-1 font-mono text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
-                          WSQ bitrate
-                        </p>
-                        {BIT_RATE_OPTIONS.map((option) => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            className={`flex w-full items-center justify-between rounded-[var(--radius-lg)] px-3 py-2 text-left text-sm transition-colors ${
-                              bitRate === option.value
-                                ? "bg-[var(--color-primary-fixed)]/30 text-[var(--color-primary)]"
-                                : "hover:bg-[var(--color-surface-container-low)]"
-                            }`}
-                            onClick={() => {
-                              onSelectBitRate(option.value);
-                              popoverRef.current?.hidePopover();
-                            }}
-                          >
-                            <span>{option.label} bpp</span>
-                            {bitRate === option.value ? <Check className="size-4" /> : null}
-                          </button>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
+                        if (option !== "wsq") {
+                          popoverRef.current?.hidePopover()
+                        }
+                      }}
+                    >
+                      <span>{option === "wsq" ? "WSQ" : option.toUpperCase()}</span>
+                      {outputFormat === option ? <Check className="size-4" /> : null}
+                    </button>
+                  ))}
                 </div>
-              </div>
 
-              <Button
-                type="button"
-                className="w-full rounded-[var(--radius-lg)] bg-[var(--color-primary)] text-[var(--on-primary)] hover:opacity-95"
-                disabled={!canRunActions}
-                onClick={onPrimaryAction}
-              >
-                {isBusy ? (
-                  <LoaderCircle className="size-4 animate-spin" />
-                ) : outputFormat === "wsq" ? (
-                  <FileArchive className="size-4" />
-                ) : (
-                  <ArrowDownToLine className="size-4" />
-                )}
-                {actionLabel}
-              </Button>
+                {outputFormat === "wsq" ? (
+                  <div className="space-y-1 border-t border-[color:var(--effect-ghost-border)] pt-2">
+                    <p className="px-3 pt-1 font-mono text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
+                      WSQ bitrate
+                    </p>
+                    {BIT_RATE_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`flex w-full items-center justify-between rounded-[var(--radius-lg)] px-3 py-2 text-left text-sm transition-colors ${
+                          bitRate === option.value
+                            ? "bg-[var(--color-primary-fixed)]/30 text-[var(--color-primary)]"
+                            : "hover:bg-[var(--color-surface-container-low)]"
+                        }`}
+                        onClick={() => {
+                          onSelectBitRate(option.value)
+                          popoverRef.current?.hidePopover()
+                        }}
+                      >
+                        <span>{option.label} bpp</span>
+                        {bitRate === option.value ? <Check className="size-4" /> : null}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
 
-          <InspectorSection
-            title="File details"
-            description="Core information about the image currently shown in the preview."
-            items={[
-              {
-                label: "Format",
-                value: document.sourceKind === "WSQ" ? "WSQ" : "Image",
-                description: "WSQ is a fingerprint-focused compression format. Image means a regular raster file like PNG, TIFF, or JPEG2000.",
-              },
-              {
-                label: "Original file size",
-                value: formatByteSize(document.sourceByteCount),
-                description: "Size of the source file before any conversion or decoding.",
-              },
-              {
-                label: "Image size",
-                value: `${document.width} × ${document.height}`,
-                description: "Pixel width and height of the grayscale working image shown in the app.",
-              },
-              {
-                label: "Resolution",
-                value: `${document.pixelsPerInch} ppi`,
-                description: "Pixels per inch. Fingerprint workflows commonly expect 500 ppi images.",
-              },
-            ]}
-          />
+          <Button
+            type="button"
+            className="w-full rounded-[var(--radius-lg)] bg-[var(--color-primary)] text-[var(--on-primary)] hover:opacity-95"
+            disabled={!canRunActions}
+            onClick={onPrimaryAction}
+          >
+            {isBusy ? (
+              <LoaderCircle className="size-4 animate-spin" />
+            ) : outputFormat === "wsq" ? (
+              <FileArchive className="size-4" />
+            ) : (
+              <ArrowDownToLine className="size-4" />
+            )}
+            {actionLabel}
+          </Button>
+        </div>
+      </div>
 
-          {document.wsqInfo ? <WsqInfoSection wsqInfo={document.wsqInfo} /> : null}
+      <InspectorSection
+        title="File details"
+        description="Core information about the image currently shown in the preview."
+        items={[
+          {
+            label: "Format",
+            value: document.sourceKind === "WSQ" ? "WSQ" : "Image",
+            description:
+              "WSQ is a fingerprint-focused compression format. Image means a regular raster file like PNG, TIFF, or JPEG2000."
+          },
+          {
+            label: "Original file size",
+            value: formatByteSize(document.sourceByteCount),
+            description: "Size of the source file before any conversion or decoding."
+          },
+          {
+            label: "Image size",
+            value: `${document.width} × ${document.height}`,
+            description: "Pixel width and height of the grayscale working image shown in the app."
+          },
+          {
+            label: "Resolution",
+            value: `${document.pixelsPerInch} ppi`,
+            description: "Pixels per inch. Fingerprint workflows commonly expect 500 ppi images."
+          }
+        ]}
+      />
+
+      {document.wsqInfo ? <WsqInfoSection wsqInfo={document.wsqInfo} /> : null}
     </InspectorPanel>
-  );
+  )
 }
 
 function WsqInfoSection({ wsqInfo }: { wsqInfo: WsqFileInfo }) {
@@ -685,33 +671,33 @@ function WsqInfoSection({ wsqInfo }: { wsqInfo: WsqFileInfo }) {
           {
             label: "Bits per pixel",
             value: `${wsqInfo.bitsPerPixel}`,
-            description: "Gray depth stored for each pixel after decoding the image.",
+            description: "Gray depth stored for each pixel after decoding the image."
           },
           {
             label: "Black and white levels",
             value: `${wsqInfo.black} / ${wsqInfo.white}`,
-            description: "Tone endpoints used by the encoder for the darkest and lightest grayscale values.",
+            description: "Tone endpoints used by the encoder for the darkest and lightest grayscale values."
           },
           {
             label: "Wavelet filter sizes",
             value: `${wsqInfo.highPassFilterLength} / ${wsqInfo.lowPassFilterLength}`,
-            description: "The high-pass and low-pass filter lengths used by WSQ compression.",
+            description: "The high-pass and low-pass filter lengths used by WSQ compression."
           },
           {
             label: "Encoded block count",
             value: `${wsqInfo.blockCount}`,
-            description: "How many compressed data blocks were written into the WSQ stream.",
+            description: "How many compressed data blocks were written into the WSQ stream."
           },
           {
             label: "Compressed payload",
             value: `${wsqInfo.encodedBlockByteCount} bytes`,
-            description: "Byte size of the compressed image data inside the WSQ file.",
+            description: "Byte size of the compressed image data inside the WSQ file."
           },
           {
             label: "Embedded comments",
             value: `${wsqInfo.commentCount}`,
-            description: "Number of text metadata entries stored alongside the image.",
-          },
+            description: "Number of text metadata entries stored alongside the image."
+          }
         ]}
       />
 
@@ -727,11 +713,11 @@ function WsqInfoSection({ wsqInfo }: { wsqInfo: WsqFileInfo }) {
         </div>
       ) : null}
     </div>
-  );
+  )
 }
 
 function CommentCard({ comment }: { comment: WsqCommentInfo }) {
-  const fields = Object.entries(comment.fields);
+  const fields = Object.entries(comment.fields)
 
   return (
     <div className="rounded-[var(--radius-lg)] bg-[var(--color-surface-container-low)] p-4">
@@ -749,7 +735,7 @@ function CommentCard({ comment }: { comment: WsqCommentInfo }) {
         </div>
       ) : null}
     </div>
-  );
+  )
 }
 
 function SectionTitle({ children }: { children: string }) {
@@ -757,5 +743,5 @@ function SectionTitle({ children }: { children: string }) {
     <p className="border-b border-[color:var(--effect-ghost-border)] pb-2 font-mono text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
       {children}
     </p>
-  );
+  )
 }

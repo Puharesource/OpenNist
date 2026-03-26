@@ -16,7 +16,7 @@ internal sealed class Nfiq2QualityBlockMapperTests
         var exampleCase = Nfiq2TestDataSources.EnumerateExampleCases().First();
         var result = await s_algorithm.AnalyzeFileAsync(
             exampleCase.ImagePath,
-            new Nfiq2AnalysisOptions(IncludeMappedQualityMeasures: true, Force: true));
+            new(IncludeMappedQualityMeasures: true, Force: true));
 
         var nativeValues = result.NativeQualityMeasures
             .Where(static pair => pair.Value is not null)

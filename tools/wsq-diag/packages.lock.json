@@ -14,17 +14,10 @@
         "resolved": "10.15.0.120848",
         "contentHash": "1hM3HVRl5jdC/ZBDu+G7CCYLXRGe/QaP01Zy+c9ETPhY7lWD8g8HiefY6sGaH0T3CJ4wAy0/waGgQTh0TYy0oQ=="
       },
-      "opennist.core": {
-        "type": "Project",
-        "dependencies": {
-          "JetBrains.Annotations": "[2025.2.0, )"
-        }
-      },
       "opennist.wsq": {
         "type": "Project",
         "dependencies": {
-          "JetBrains.Annotations": "[2025.2.0, )",
-          "OpenNist.Core": "[1.0.0, )"
+          "JetBrains.Annotations": "[2025.2.0, )"
         }
       }
     }

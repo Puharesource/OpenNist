@@ -2,16 +2,16 @@ namespace OpenNist.Nfiq.Internal;
 
 internal static class Nfiq2RidgeValleySupport
 {
-    private const int RotationPaddingBorder = 2;
-    private const int AffineBits = 10;
-    private const int AffineScale = 1 << AffineBits;
-    private const double ScannerNormalizationBase = 125.0;
-    private const double RidgeWidthMaxAt125Ppi = 5.0;
-    private const double ValleyWidthMaxAt125Ppi = 5.0;
-    private const double RidgeWidthMin = 3.0;
-    private const double RidgeWidthMax = 10.0;
-    private const double ValleyWidthMin = 2.0;
-    private const double ValleyWidthMax = 10.0;
+    private const int s_rotationPaddingBorder = 2;
+    private const int s_affineBits = 10;
+    private const int s_affineScale = 1 << s_affineBits;
+    private const double s_scannerNormalizationBase = 125.0;
+    private const double s_ridgeWidthMaxAt125Ppi = 5.0;
+    private const double s_valleyWidthMaxAt125Ppi = 5.0;
+    private const double s_ridgeWidthMin = 3.0;
+    private const double s_ridgeWidthMax = 10.0;
+    private const double s_valleyWidthMin = 2.0;
+    private const double s_valleyWidthMax = 10.0;
 
     public static Nfiq2BlockGeometry GetOverlappingBlockGeometry(
         int blockSize,
@@ -43,6 +43,35 @@ internal static class Nfiq2RidgeValleySupport
         }
 
         return origins;
+    }
+
+    public static Nfiq2RidgeValleyFeatureContext CreateFeatureContext(
+        Nfiq2FingerprintImage fingerprintImage,
+        int blockSize,
+        double segmentationThreshold,
+        int slantedBlockWidth,
+        int slantedBlockHeight)
+    {
+        ArgumentNullException.ThrowIfNull(fingerprintImage);
+
+        var geometry = GetOverlappingBlockGeometry(blockSize, slantedBlockWidth, slantedBlockHeight);
+        var segmentationMask = Nfiq2BlockFeatureSupport.CreateSegmentationMask(fingerprintImage, blockSize, segmentationThreshold);
+        var validOrigins = EnumerateInteriorBlockOrigins(
+                fingerprintImage.Width,
+                fingerprintImage.Height,
+                blockSize,
+                slantedBlockWidth,
+                slantedBlockHeight)
+            .Where(origin => Nfiq2BlockFeatureSupport.AreAllNonZero(
+                segmentationMask,
+                fingerprintImage.Width,
+                origin.Row,
+                origin.Column,
+                blockSize,
+                blockSize))
+            .ToArray();
+
+        return new(geometry, validOrigins);
     }
 
     public static byte[] ExtractBlock(
@@ -77,13 +106,13 @@ internal static class Nfiq2RidgeValleySupport
             return RotateBlock(block, blockWidth, blockHeight, blockWidth, blockHeight, orientation);
         }
 
-        var paddedWidth = blockWidth + (RotationPaddingBorder * 2);
-        var paddedHeight = blockHeight + (RotationPaddingBorder * 2);
+        var paddedWidth = blockWidth + (s_rotationPaddingBorder * 2);
+        var paddedHeight = blockHeight + (s_rotationPaddingBorder * 2);
         var paddedBlock = new byte[paddedWidth * paddedHeight];
 
         for (var y = 0; y < blockHeight; y++)
         {
-            var destinationOffset = ((y + RotationPaddingBorder) * paddedWidth) + RotationPaddingBorder;
+            var destinationOffset = ((y + s_rotationPaddingBorder) * paddedWidth) + s_rotationPaddingBorder;
             block.Slice(y * blockWidth, blockWidth).CopyTo(paddedBlock.AsSpan(destinationOffset, blockWidth));
         }
 
@@ -108,17 +137,50 @@ internal static class Nfiq2RidgeValleySupport
         }
 
         var imageHeight = image.Length / imageWidth;
-        var sourceWidth = blockWidth + (padFlag ? RotationPaddingBorder * 2 : 0);
-        var sourceHeight = blockHeight + (padFlag ? RotationPaddingBorder * 2 : 0);
+        var sourceWidth = blockWidth + (padFlag ? s_rotationPaddingBorder * 2 : 0);
+        var sourceHeight = blockHeight + (padFlag ? s_rotationPaddingBorder * 2 : 0);
         var sourceBlock = ExtractBlockWithZeroPadding(
             image,
             imageWidth,
             imageHeight,
-            sourceRow - (padFlag ? RotationPaddingBorder : 0),
-            sourceColumn - (padFlag ? RotationPaddingBorder : 0),
+            sourceRow - (padFlag ? s_rotationPaddingBorder : 0),
+            sourceColumn - (padFlag ? s_rotationPaddingBorder : 0),
             sourceWidth,
             sourceHeight);
         return RotateBlock(sourceBlock, sourceWidth, sourceHeight, blockWidth, blockHeight, orientation);
+    }
+
+    public static byte[] GetCenteredRotatedBlock(
+        ReadOnlySpan<byte> image,
+        int imageWidth,
+        int sourceRow,
+        int sourceColumn,
+        int blockWidth,
+        int blockHeight,
+        int croppedWidth,
+        int croppedHeight,
+        double orientation,
+        bool padFlag)
+    {
+        ValidateEvenSquareBlock(blockWidth, blockHeight);
+
+        if (imageWidth <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(imageWidth), imageWidth, "Image width must be positive.");
+        }
+
+        var imageHeight = image.Length / imageWidth;
+        var sourceWidth = blockWidth + (padFlag ? s_rotationPaddingBorder * 2 : 0);
+        var sourceHeight = blockHeight + (padFlag ? s_rotationPaddingBorder * 2 : 0);
+        var sourceBlock = ExtractBlockWithZeroPadding(
+            image,
+            imageWidth,
+            imageHeight,
+            sourceRow - (padFlag ? s_rotationPaddingBorder : 0),
+            sourceColumn - (padFlag ? s_rotationPaddingBorder : 0),
+            sourceWidth,
+            sourceHeight);
+        return RotateCenteredRegion(sourceBlock, sourceWidth, sourceHeight, blockWidth, blockHeight, croppedWidth, croppedHeight, orientation);
     }
 
     private static byte[] RotateBlock(
@@ -137,26 +199,26 @@ internal static class Nfiq2RidgeValleySupport
             destinationWidth,
             destinationHeight,
             orientation);
-        var adelta = new int[destinationWidth];
-        var bdelta = new int[destinationWidth];
+        var adelta = destinationWidth <= 128 ? stackalloc int[destinationWidth] : new int[destinationWidth];
+        var bdelta = destinationWidth <= 128 ? stackalloc int[destinationWidth] : new int[destinationWidth];
         for (var x = 0; x < destinationWidth; x++)
         {
-            adelta[x] = CvRound(inverseMatrix.M00 * x * AffineScale);
-            bdelta[x] = CvRound(inverseMatrix.M10 * x * AffineScale);
+            adelta[x] = CvRound(inverseMatrix.M00 * x * s_affineScale);
+            bdelta[x] = CvRound(inverseMatrix.M10 * x * s_affineScale);
         }
 
         var rotatedBlock = new byte[destinationWidth * destinationHeight];
-        var roundDelta = AffineScale / 2;
+        var roundDelta = s_affineScale / 2;
         for (var y = 0; y < destinationHeight; y++)
         {
-            var x0 = CvRound(((inverseMatrix.M01 * y) + inverseMatrix.M02) * AffineScale) + roundDelta;
-            var y0 = CvRound(((inverseMatrix.M11 * y) + inverseMatrix.M12) * AffineScale) + roundDelta;
+            var x0 = CvRound(((inverseMatrix.M01 * y) + inverseMatrix.M02) * s_affineScale) + roundDelta;
+            var y0 = CvRound(((inverseMatrix.M11 * y) + inverseMatrix.M12) * s_affineScale) + roundDelta;
             var destinationOffset = y * destinationWidth;
 
             for (var x = 0; x < destinationWidth; x++)
             {
-                var sourceX = (x0 + adelta[x]) >> AffineBits;
-                var sourceY = (y0 + bdelta[x]) >> AffineBits;
+                var sourceX = (x0 + adelta[x]) >> s_affineBits;
+                var sourceY = (y0 + bdelta[x]) >> s_affineBits;
                 if ((uint)sourceX < (uint)sourceWidth && (uint)sourceY < (uint)sourceHeight)
                 {
                     rotatedBlock[destinationOffset + x] = sourceBlock[(sourceY * sourceWidth) + sourceX];
@@ -165,6 +227,58 @@ internal static class Nfiq2RidgeValleySupport
         }
 
         return rotatedBlock;
+    }
+
+    private static byte[] RotateCenteredRegion(
+        ReadOnlySpan<byte> sourceBlock,
+        int sourceWidth,
+        int sourceHeight,
+        int destinationWidth,
+        int destinationHeight,
+        int croppedWidth,
+        int croppedHeight,
+        double orientation)
+    {
+        ValidateEvenSquareBlock(destinationWidth, destinationHeight);
+
+        GetCenteredCropOrigin(destinationWidth, destinationHeight, croppedWidth, croppedHeight, out var rowStart, out var columnStart);
+
+        var inverseMatrix = CreateInverseAffineMatrix(
+            sourceWidth,
+            sourceHeight,
+            destinationWidth,
+            destinationHeight,
+            orientation);
+        var adelta = croppedWidth <= 128 ? stackalloc int[croppedWidth] : new int[croppedWidth];
+        var bdelta = croppedWidth <= 128 ? stackalloc int[croppedWidth] : new int[croppedWidth];
+        for (var x = 0; x < croppedWidth; x++)
+        {
+            var fullDestinationX = x + columnStart;
+            adelta[x] = CvRound(inverseMatrix.M00 * fullDestinationX * s_affineScale);
+            bdelta[x] = CvRound(inverseMatrix.M10 * fullDestinationX * s_affineScale);
+        }
+
+        var croppedBlock = new byte[croppedWidth * croppedHeight];
+        var roundDelta = s_affineScale / 2;
+        for (var y = 0; y < croppedHeight; y++)
+        {
+            var fullDestinationY = y + rowStart;
+            var x0 = CvRound(((inverseMatrix.M01 * fullDestinationY) + inverseMatrix.M02) * s_affineScale) + roundDelta;
+            var y0 = CvRound(((inverseMatrix.M11 * fullDestinationY) + inverseMatrix.M12) * s_affineScale) + roundDelta;
+            var destinationOffset = y * croppedWidth;
+
+            for (var x = 0; x < croppedWidth; x++)
+            {
+                var sourceX = (x0 + adelta[x]) >> s_affineBits;
+                var sourceY = (y0 + bdelta[x]) >> s_affineBits;
+                if ((uint)sourceX < (uint)sourceWidth && (uint)sourceY < (uint)sourceHeight)
+                {
+                    croppedBlock[destinationOffset + x] = sourceBlock[(sourceY * sourceWidth) + sourceX];
+                }
+            }
+        }
+
+        return croppedBlock;
     }
 
     public static byte[] CropCenteredRotatedBlock(
@@ -176,9 +290,7 @@ internal static class Nfiq2RidgeValleySupport
     {
         ValidateEvenSquareBlock(rotatedBlockWidth, rotatedBlockHeight);
 
-        var center = rotatedBlockHeight / 2;
-        var rowStart = center - ((croppedHeight / 2) - 1) - 1;
-        var columnStart = center - ((croppedWidth / 2) - 1) - 1;
+        GetCenteredCropOrigin(rotatedBlockWidth, rotatedBlockHeight, croppedWidth, croppedHeight, out var rowStart, out var columnStart);
         return ExtractBlock(rotatedBlock, rotatedBlockWidth, rowStart, columnStart, croppedWidth, croppedHeight);
     }
 
@@ -205,7 +317,7 @@ internal static class Nfiq2RidgeValleySupport
         var columnMeans = new double[width];
         for (var column = 0; column < width; column++)
         {
-            double sum = 0.0;
+            var sum = 0.0;
             for (var row = 0; row < height; row++)
             {
                 sum += blockCropped[(row * width) + column];
@@ -218,8 +330,8 @@ internal static class Nfiq2RidgeValleySupport
         var sumX = sampleCount * (sampleCount + 1.0) / 2.0;
         var sumXx = sampleCount * (sampleCount + 1.0) * ((2.0 * sampleCount) + 1.0) / 6.0;
 
-        double sumY = 0.0;
-        double sumXy = 0.0;
+        var sumY = 0.0;
+        var sumXy = 0.0;
         for (var index = 0; index < columnMeans.Length; index++)
         {
             var x = index + 1.0;
@@ -338,8 +450,8 @@ internal static class Nfiq2RidgeValleySupport
         var beginsWithRidge = ridgeValleyPattern[0] == 1;
         var ridgeWidths = new List<double>();
         var valleyWidths = new List<double>();
-        var ridgeScale = (scannerResolution / ScannerNormalizationBase) * RidgeWidthMaxAt125Ppi;
-        var valleyScale = (scannerResolution / ScannerNormalizationBase) * ValleyWidthMaxAt125Ppi;
+        var ridgeScale = (scannerResolution / s_scannerNormalizationBase) * s_ridgeWidthMaxAt125Ppi;
+        var valleyScale = (scannerResolution / s_scannerNormalizationBase) * s_valleyWidthMaxAt125Ppi;
 
         if (beginsWithRidge)
         {
@@ -369,10 +481,10 @@ internal static class Nfiq2RidgeValleySupport
         var ridgeMean = ridgeWidths.Count == 0 ? 0.0 : ridgeWidths.Average();
         var valleyMean = valleyWidths.Count == 0 ? 0.0 : valleyWidths.Average();
 
-        var normalizedRidgeMin = RidgeWidthMin / ridgeScale;
-        var normalizedRidgeMax = RidgeWidthMax / ridgeScale;
-        var normalizedValleyMin = ValleyWidthMin / ridgeScale;
-        var normalizedValleyMax = ValleyWidthMax / ridgeScale;
+        var normalizedRidgeMin = s_ridgeWidthMin / ridgeScale;
+        var normalizedRidgeMax = s_ridgeWidthMax / ridgeScale;
+        var normalizedValleyMin = s_valleyWidthMin / ridgeScale;
+        var normalizedValleyMax = s_valleyWidthMax / ridgeScale;
 
         if (ridgeMean < normalizedRidgeMin || ridgeMean > normalizedRidgeMax
             || valleyMean < normalizedValleyMin || valleyMean > normalizedValleyMax)
@@ -474,6 +586,19 @@ internal static class Nfiq2RidgeValleySupport
         return (int)Math.Round(value, MidpointRounding.ToEven);
     }
 
+    private static void GetCenteredCropOrigin(
+        int fullWidth,
+        int fullHeight,
+        int croppedWidth,
+        int croppedHeight,
+        out int rowStart,
+        out int columnStart)
+    {
+        var center = fullHeight / 2;
+        rowStart = center - ((croppedHeight / 2) - 1) - 1;
+        columnStart = (fullWidth / 2) - ((croppedWidth / 2) - 1) - 1;
+    }
+
     private static byte[] ExtractBlockWithZeroPadding(
         ReadOnlySpan<byte> image,
         int imageWidth,
@@ -551,6 +676,10 @@ internal readonly record struct Nfiq2AffineMatrix(
     double M12);
 
 internal sealed record Nfiq2RidgeValleyStructureResult(
-    IReadOnlyList<double> ColumnMeans,
-    IReadOnlyList<double> TrendLine,
-    IReadOnlyList<byte> RidgeValleyPattern);
+    double[] ColumnMeans,
+    double[] TrendLine,
+    byte[] RidgeValleyPattern);
+
+internal sealed record Nfiq2RidgeValleyFeatureContext(
+    Nfiq2BlockGeometry Geometry,
+    IReadOnlyList<Nfiq2BlockOrigin> ValidOrigins);

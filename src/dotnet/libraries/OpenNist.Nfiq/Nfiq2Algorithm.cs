@@ -1,8 +1,7 @@
 namespace OpenNist.Nfiq;
 
-using System.Collections.Frozen;
-using OpenNist.Nfiq.Internal;
 using JetBrains.Annotations;
+using OpenNist.Nfiq.Internal;
 
 /// <summary>
 /// Default NFIQ 2 implementation backed by the managed OpenNist port and official model files.
@@ -10,16 +9,13 @@ using JetBrains.Annotations;
 [PublicAPI]
 public sealed class Nfiq2Algorithm : INfiq2Algorithm
 {
-    private const string InMemoryFileName = "fingerprint.pgm";
+    private const string s_inMemoryFileName = "fingerprint.pgm";
     private static readonly Nfiq2AnalysisOptions s_defaultOptions = new(
         IncludeMappedQualityMeasures: true,
         Force: true,
         ThreadCount: null);
 
-    private static readonly FrozenDictionary<string, double?> s_emptyMeasures =
-        new Dictionary<string, double?>(StringComparer.Ordinal).ToFrozenDictionary(StringComparer.Ordinal);
-
-    private readonly Nfiq2ManagedAssessmentEngine assessmentEngine;
+    private readonly Nfiq2ManagedAssessmentEngine _assessmentEngine;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Nfiq2Algorithm"/> class using the default installation.
@@ -36,13 +32,13 @@ public sealed class Nfiq2Algorithm : INfiq2Algorithm
     public Nfiq2Algorithm(Nfiq2Installation installation)
     {
         ArgumentNullException.ThrowIfNull(installation);
-        assessmentEngine = new(new(Nfiq2ModelInfo.FromFile(installation.ModelInfoPath)));
+        _assessmentEngine = new(new(Nfiq2ModelInfo.FromFile(installation.ModelInfoPath)));
     }
 
     private Nfiq2Algorithm(Nfiq2ManagedModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
-        assessmentEngine = new(model);
+        _assessmentEngine = new(model);
     }
 
     /// <inheritdoc />
@@ -80,7 +76,7 @@ public sealed class Nfiq2Algorithm : INfiq2Algorithm
         ValidateRawImage(rawPixels, rawImage);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var result = AnalyzeCore(rawPixels, rawImage, InMemoryFileName, options, cancellationToken);
+        var result = AnalyzeCore(rawPixels, rawImage, s_inMemoryFileName, options, cancellationToken);
         return ValueTask.FromResult(result);
     }
 
@@ -139,16 +135,15 @@ public sealed class Nfiq2Algorithm : INfiq2Algorithm
             ppi: checked((ushort)rawImage.PixelsPerInch));
 
         var croppedImage = fingerprintImage.CopyRemovingNearWhiteFrame();
-        var minutiae = Nfiq2FingerJetManagedExtractor.Extract(fingerprintImage);
+        var minutiae = Nfiq2FingerJetManagedExtractor.ExtractFromCroppedImage(croppedImage);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var result = assessmentEngine.Analyze(croppedImage, minutiae, filename, fingerprintImage.FingerCode);
-        if (options.IncludeMappedQualityMeasures)
-        {
-            return result;
-        }
-
-        return result with { MappedQualityMeasures = s_emptyMeasures };
+        return _assessmentEngine.Analyze(
+            croppedImage,
+            minutiae,
+            filename,
+            options.IncludeMappedQualityMeasures,
+            fingerprintImage.FingerCode);
     }
 
     private static void ValidateRawImage(ReadOnlyMemory<byte> rawPixels, Nfiq2RawImageDescription rawImage)
@@ -186,7 +181,7 @@ public sealed class Nfiq2Algorithm : INfiq2Algorithm
 
     private static void ValidateOptions(Nfiq2AnalysisOptions options)
     {
-        if (options.ThreadCount is int threadCount && threadCount <= 0)
+        if (options.ThreadCount is { } threadCount and <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(options), threadCount, "Thread count must be positive.");
         }

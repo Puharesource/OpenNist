@@ -9,7 +9,7 @@ using OpenNist.Tests.Nfiq.TestSupport;
 [Category("Integration: NFIQ2 - Managed OCLHistogram Module")]
 internal sealed class Nfiq2OclHistogramModuleTests
 {
-    private const double NativeFloatingPointTolerance = 0.02;
+    private const double s_nativeFloatingPointTolerance = 0.02;
     private static readonly string[] s_featureNames =
     [
         "OCL_Bin10_0",
@@ -57,7 +57,7 @@ internal sealed class Nfiq2OclHistogramModuleTests
         const int height = 32;
         var pixels = Enumerable.Repeat((byte)127, width * height).ToArray();
 
-        var result = Nfiq2OclHistogramModule.Compute(new Nfiq2FingerprintImage(pixels, width, height));
+        var result = Nfiq2OclHistogramModule.Compute(new(pixels, width, height));
 
         await Assert.That(result.Values.Count).IsEqualTo(0);
         await Assert.That(result.Features["OCL_Bin10_0"]).IsEqualTo(0.0);
@@ -72,7 +72,7 @@ internal sealed class Nfiq2OclHistogramModuleTests
             throw new InvalidOperationException($"{context} was NA in the official NFIQ 2 result.");
         }
 
-        if (Math.Abs(expectedValue.Value - actualValue) > NativeFloatingPointTolerance)
+        if (Math.Abs(expectedValue.Value - actualValue) > s_nativeFloatingPointTolerance)
         {
             throw new InvalidOperationException(
                 $"{context} diverged from the official NFIQ 2 value. "

@@ -7,8 +7,6 @@
     <Project Path="src/dotnet/interop/OpenNist.Wasm/OpenNist.Wasm.csproj" />
   </Folder>
   <Folder Name="/src/dotnet/libraries/">
-    <Project Path="src/dotnet/libraries/OpenNist.Core/OpenNist.Core.csproj" />
-    <Project Path="src/dotnet/libraries/OpenNist.Jp2000/OpenNist.Jp2000.csproj" />
     <Project Path="src/dotnet/libraries/OpenNist.Nfiq/OpenNist.Nfiq.csproj" />
     <Project Path="src/dotnet/libraries/OpenNist.Nist/OpenNist.Nist.csproj" />
     <Project Path="src/dotnet/libraries/OpenNist.Wsq/OpenNist.Wsq.csproj" />
@@ -17,5 +15,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/OpenNist.Tests/OpenNist.Tests.csproj" />
   </Folder>
-  <Folder Name="/tools/" />
+  <Folder Name="/tools/">
+    <Project Path="tools/OpenNist.Benchmarks/OpenNist.Benchmarks.csproj" />
+  </Folder>
 </Solution>

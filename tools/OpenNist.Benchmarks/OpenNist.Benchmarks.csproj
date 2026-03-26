@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);CA2007;1591;CA1515;CA1822</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\dotnet\libraries\OpenNist.Nfiq\OpenNist.Nfiq.csproj" />
+    <ProjectReference Include="..\..\src\dotnet\libraries\OpenNist.Nist\OpenNist.Nist.csproj" />
+    <ProjectReference Include="..\..\src\dotnet\libraries\OpenNist.Wsq\OpenNist.Wsq.csproj" />
+  </ItemGroup>
+</Project>

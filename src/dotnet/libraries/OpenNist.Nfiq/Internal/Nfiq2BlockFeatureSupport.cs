@@ -15,7 +15,7 @@ internal static class Nfiq2BlockFeatureSupport
         }
 
         var normalized = NormalizeImage(fingerprintImage.Pixels.Span);
-        var stdDevImage = new double[normalized.Length];
+        var mask = new byte[normalized.Length];
 
         for (var row = 0; row < fingerprintImage.Height; row += blockSize)
         {
@@ -32,24 +32,19 @@ internal static class Nfiq2BlockFeatureSupport
                     blockHeight,
                     out _,
                     out var stdDev);
+                var maskValue = stdDev > threshold
+                    ? byte.MaxValue
+                    : byte.MinValue;
 
                 for (var y = 0; y < blockHeight; y++)
                 {
                     var rowOffset = (row + y) * fingerprintImage.Width;
                     for (var x = 0; x < blockWidth; x++)
                     {
-                        stdDevImage[rowOffset + column + x] = stdDev;
+                        mask[rowOffset + column + x] = maskValue;
                     }
                 }
             }
-        }
-
-        var mask = new byte[stdDevImage.Length];
-        for (var index = 0; index < stdDevImage.Length; index++)
-        {
-            mask[index] = stdDevImage[index] > threshold
-                ? byte.MaxValue
-                : byte.MinValue;
         }
 
         return mask;
@@ -86,21 +81,16 @@ internal static class Nfiq2BlockFeatureSupport
         int blockWidth,
         int blockHeight)
     {
-        var gradientX = Nfiq2FeatureMath.ComputeNumericalGradientX(image, imageWidth, row, column, blockWidth, blockHeight);
-        var gradientY = Nfiq2FeatureMath.ComputeNumericalGradientY(image, imageWidth, row, column, blockWidth, blockHeight);
-
-        double a = 0.0;
-        double b = 0.0;
-        double c = 0.0;
-
-        for (var index = 0; index < gradientX.Length; index++)
-        {
-            var gx = gradientX[index];
-            var gy = gradientY[index];
-            a += gx * gx;
-            b += gy * gy;
-            c += gx * gy;
-        }
+        Nfiq2FeatureMath.AccumulateGradientProducts(
+            image,
+            imageWidth,
+            row,
+            column,
+            blockWidth,
+            blockHeight,
+            out var a,
+            out var b,
+            out var c);
 
         var pixelCount = blockWidth * blockHeight;
         a /= pixelCount;
@@ -116,7 +106,7 @@ internal static class Nfiq2BlockFeatureSupport
 
     private static double[] NormalizeImage(ReadOnlySpan<byte> pixels)
     {
-        double sum = 0.0;
+        var sum = 0.0;
         foreach (var pixel in pixels)
         {
             sum += pixel;
@@ -124,7 +114,7 @@ internal static class Nfiq2BlockFeatureSupport
 
         var mean = sum / pixels.Length;
 
-        double varianceSum = 0.0;
+        var varianceSum = 0.0;
         foreach (var pixel in pixels)
         {
             var delta = pixel - mean;
@@ -156,7 +146,7 @@ internal static class Nfiq2BlockFeatureSupport
         out double mean,
         out double stdDev)
     {
-        double sum = 0.0;
+        var sum = 0.0;
         var count = blockWidth * blockHeight;
         for (var y = 0; y < blockHeight; y++)
         {
@@ -169,7 +159,7 @@ internal static class Nfiq2BlockFeatureSupport
 
         mean = sum / count;
 
-        double varianceSum = 0.0;
+        var varianceSum = 0.0;
         for (var y = 0; y < blockHeight; y++)
         {
             var rowOffset = (row + y) * imageWidth;

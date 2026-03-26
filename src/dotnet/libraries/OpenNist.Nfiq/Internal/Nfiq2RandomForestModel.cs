@@ -7,17 +7,17 @@ using System.Text.RegularExpressions;
 
 internal sealed class Nfiq2RandomForestModel
 {
-    private const string ModelRoot = "my_random_trees:";
-    private const string TreeCollection = "trees:";
-    private const string TreeNodes = "nodes:";
+    private const string s_modelRoot = "my_random_trees:";
+    private const string s_treeCollection = "trees:";
+    private const string s_treeNodes = "nodes:";
     private static readonly Regex s_integerValuePattern = new(@":\s*(?<value>-?\d+)", RegexOptions.Compiled);
-    private readonly Nfiq2RandomForestTree[] trees;
+    private readonly Nfiq2RandomForestTree[] _trees;
 
     private Nfiq2RandomForestModel(int treeCount, string parameterHash, Nfiq2RandomForestTree[] trees)
     {
         TreeCount = treeCount;
         ParameterHash = parameterHash;
-        this.trees = trees;
+        _trees = trees;
     }
 
     public int TreeCount { get; }
@@ -74,7 +74,7 @@ internal sealed class Nfiq2RandomForestModel
 
             if (!inModelRoot)
             {
-                if (trimmed == ModelRoot)
+                if (trimmed == s_modelRoot)
                 {
                     inModelRoot = true;
                 }
@@ -88,7 +88,7 @@ internal sealed class Nfiq2RandomForestModel
                 continue;
             }
 
-            if (trimmed == TreeCollection)
+            if (trimmed == s_treeCollection)
             {
                 inTreeCollection = true;
                 continue;
@@ -107,7 +107,7 @@ internal sealed class Nfiq2RandomForestModel
                 continue;
             }
 
-            if (trimmed == TreeNodes)
+            if (trimmed == s_treeNodes)
             {
                 continue;
             }
@@ -157,7 +157,7 @@ internal sealed class Nfiq2RandomForestModel
                 }
                 else
                 {
-                    currentSplitBuilder = new StringBuilder(trimmed);
+                    currentSplitBuilder = new(trimmed);
                 }
             }
         }
@@ -209,7 +209,41 @@ internal sealed class Nfiq2RandomForestModel
         }
 
         var rawPrediction = 0;
-        foreach (var tree in trees)
+        foreach (var tree in _trees)
+        {
+            rawPrediction += tree.Evaluate(features);
+        }
+
+        var scaledPrediction = (rawPrediction / (double)TreeCount) * 100.0;
+        var qualityScore = checked((int)Math.Floor(scaledPrediction + 0.5));
+        if (qualityScore is < 0 or > 100)
+        {
+            throw new Nfiq2Exception(
+                $"The managed NFIQ 2 scoring model computed an out-of-range quality score of {qualityScore.ToString(CultureInfo.InvariantCulture)}.");
+        }
+
+        return qualityScore;
+    }
+
+    public int Evaluate(IReadOnlyDictionary<string, double> nativeQualityMeasures)
+    {
+        ArgumentNullException.ThrowIfNull(nativeQualityMeasures);
+
+        Span<float> features = stackalloc float[Nfiq2RandomForestFeatureOrder.NativeMeasureOrder.Length];
+        for (var index = 0; index < Nfiq2RandomForestFeatureOrder.NativeMeasureOrder.Length; index++)
+        {
+            var featureName = Nfiq2RandomForestFeatureOrder.NativeMeasureOrder[index];
+            if (!nativeQualityMeasures.TryGetValue(featureName, out var value))
+            {
+                throw new Nfiq2Exception(
+                    $"The managed NFIQ 2 scoring model requires native feature '{featureName}', but it was missing.");
+            }
+
+            features[index] = checked((float)value);
+        }
+
+        var rawPrediction = 0;
+        foreach (var tree in _trees)
         {
             rawPrediction += tree.Evaluate(features);
         }

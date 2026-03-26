@@ -23,7 +23,7 @@ internal sealed class Nfiq2ManagedAssessmentEngineTests
         var croppedImage = new Nfiq2FingerprintImage(pixels, width, height).CopyRemovingNearWhiteFrame();
 
         var native = await s_algorithm.AnalyzeFileAsync(exampleCase.ImagePath).ConfigureAwait(false);
-        var managed = s_engine.Analyze(croppedImage, minutiae, native.Filename, native.FingerCode);
+        var managed = s_engine.Analyze(croppedImage, minutiae, native.Filename, includeMappedQualityMeasures: true, native.FingerCode);
 
         if (managed.Filename != native.Filename
             || managed.FingerCode != native.FingerCode

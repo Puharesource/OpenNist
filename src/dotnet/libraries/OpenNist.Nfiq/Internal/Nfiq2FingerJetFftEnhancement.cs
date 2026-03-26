@@ -2,11 +2,11 @@ namespace OpenNist.Nfiq.Internal;
 
 internal static class Nfiq2FingerJetFftEnhancement
 {
-    private const int BlockBits = 5;
-    private const int BlockDim = 1 << BlockBits;
-    private const int BlockSize = 1 << (BlockBits * 2);
-    private const int Spacing = 17;
-    private const int SinBits = 5;
+    private const int s_blockBits = 5;
+    private const int s_blockDim = 1 << s_blockBits;
+    private const int s_blockSize = 1 << (s_blockBits * 2);
+    private const int s_spacing = 17;
+    private const int s_sinBits = 5;
 
     private static ReadOnlySpan<short> SinTable =>
     [
@@ -20,22 +20,22 @@ internal static class Nfiq2FingerJetFftEnhancement
 
         var width = preparedImage.Width;
         var size = preparedImage.Pixels.Length;
-        var bandHeight = BlockDim * width;
-        var buffer = new byte[size + bandHeight];
+        var bandHeight = s_blockDim * width;
+        var buffer = GC.AllocateUninitializedArray<byte>(size + bandHeight);
         preparedImage.Pixels.Span.CopyTo(buffer.AsSpan(bandHeight, size));
 
         var input = new FftImage(buffer, bandHeight, width, size, invertOnRead: true);
         var output = new FftImage(buffer, 0, width, size, invertOnRead: false);
         Initialize(output, 0, width, 0, bandHeight);
+        var block = new int[s_blockSize];
 
-        var ySpacing = width * Spacing;
+        var ySpacing = width * s_spacing;
         for (var yw = ySpacing - bandHeight; yw < size; yw += ySpacing)
         {
-            var yEnvelope = new Envelope(BlockDim, Spacing, left: false, right: false);
-            for (var x = Spacing - BlockDim; x < width; x += Spacing)
+            var yEnvelope = new Envelope(s_blockDim, s_spacing, left: false, right: false);
+            for (var x = s_spacing - s_blockDim; x < width; x += s_spacing)
             {
-                var xEnvelope = new Envelope(BlockDim, Spacing, left: false, right: false);
-                var block = new int[BlockSize];
+                var xEnvelope = new Envelope(s_blockDim, s_spacing, left: false, right: false);
                 Copy(input, x, yw, block);
                 EnhanceBlock(block, xEnvelope, yEnvelope);
                 Add(output, x, yw, block);
@@ -62,9 +62,9 @@ internal static class Nfiq2FingerJetFftEnhancement
     private static void Copy(FftImage image, int x0, int y0, int[] block)
     {
         var index = 0;
-        for (var y = y0; y < y0 + (BlockDim * image.Width); y += image.Width)
+        for (var y = y0; y < y0 + (s_blockDim * image.Width); y += image.Width)
         {
-            for (var x = x0; x < x0 + BlockDim; x++)
+            for (var x = x0; x < x0 + s_blockDim; x++)
             {
                 block[index++] = image.Read(x, y);
             }
@@ -74,9 +74,9 @@ internal static class Nfiq2FingerJetFftEnhancement
     private static void Add(FftImage image, int x0, int y0, int[] block)
     {
         var index = 0;
-        for (var y = y0; y < y0 + (BlockDim * image.Width); y += image.Width)
+        for (var y = y0; y < y0 + (s_blockDim * image.Width); y += image.Width)
         {
-            for (var x = x0; x < x0 + BlockDim; x++)
+            for (var x = x0; x < x0 + s_blockDim; x++)
             {
                 image.AddValue(x, y, unchecked((byte)block[index++]));
             }
@@ -88,7 +88,7 @@ internal static class Nfiq2FingerJetFftEnhancement
         Fft2(real: true, inverse: false, data);
         EnhanceArray(data);
         Fft2(real: true, inverse: true, data);
-        ReduceArray(data, BlockBits * 2);
+        ReduceArray(data, s_blockBits * 2);
         Normalize(data, xEnvelope, yEnvelope);
     }
 
@@ -102,11 +102,11 @@ internal static class Nfiq2FingerJetFftEnhancement
 
     private static void EnhanceArray(int[] data)
     {
-        var halfSize = BlockDim >> 1;
+        var halfSize = s_blockDim >> 1;
         var index = 0;
-        for (var y = 0; y < BlockDim; y++)
+        for (var y = 0; y < s_blockDim; y++)
         {
-            var adjustedY = y - (y < halfSize ? 0 : BlockDim);
+            var adjustedY = y - (y < halfSize ? 0 : s_blockDim);
             for (var x = 0; x < halfSize; x++, index += 2)
             {
                 var value = new Complex32(data[index], data[index + 1]);
@@ -132,8 +132,14 @@ internal static class Nfiq2FingerJetFftEnhancement
 
     private static void Normalize(int[] data, Envelope xEnvelope, Envelope yEnvelope)
     {
-        var minValue = data.Min();
-        var maxValue = data.Max();
+        var minValue = int.MaxValue;
+        var maxValue = int.MinValue;
+        foreach (var value in data)
+        {
+            minValue = Math.Min(minValue, value);
+            maxValue = Math.Max(maxValue, value);
+        }
+
         var range = maxValue - minValue;
         var divisor = range;
         const int threshold = 16;
@@ -145,10 +151,10 @@ internal static class Nfiq2FingerJetFftEnhancement
 
         divisor *= xEnvelope.Norm * yEnvelope.Norm;
         var index = 0;
-        for (var y = 0; y < BlockDim; y++)
+        for (var y = 0; y < s_blockDim; y++)
         {
             var yWeight = yEnvelope[y];
-            for (var x = 0; x < BlockDim; x++, index++)
+            for (var x = 0; x < s_blockDim; x++, index++)
             {
                 data[index] = DivideRounded((data[index] - minValue) * 251 * xEnvelope[x] * yWeight, divisor);
             }
@@ -157,7 +163,7 @@ internal static class Nfiq2FingerJetFftEnhancement
 
     private static void Fft2(bool real, bool inverse, int[] data)
     {
-        var rowLength = 1 << BlockBits;
+        var rowLength = 1 << s_blockBits;
         if (!inverse)
         {
             for (var offset = 0; offset < data.Length; offset += rowLength)
@@ -168,7 +174,7 @@ internal static class Nfiq2FingerJetFftEnhancement
 
         for (var x = 0; x < rowLength; x += 2)
         {
-            Fft(inverse, data, x, sizeBits: BlockBits * 2, strideBits: BlockBits);
+            Fft(inverse, data, x, sizeBits: s_blockBits * 2, strideBits: s_blockBits);
         }
 
         if (inverse)
@@ -184,15 +190,15 @@ internal static class Nfiq2FingerJetFftEnhancement
     {
         if (!inverse)
         {
-            Fft(inverse, data, offset, sizeBits: BlockBits, strideBits: 1);
+            Fft(inverse, data, offset, sizeBits: s_blockBits, strideBits: 1);
         }
 
         if (real)
         {
-            var size = 1 << BlockBits;
+            var size = 1 << s_blockBits;
             var stride = 2;
-            var dt = (inverse ? 1 : -1) * (1 << (SinBits - BlockBits));
-            var angle = dt + (inverse ? (1 << (SinBits - 1)) : 0);
+            var dt = (inverse ? 1 : -1) * (1 << (s_sinBits - s_blockBits));
+            var angle = dt + (inverse ? (1 << (s_sinBits - 1)) : 0);
             for (var i = stride; i <= size / 2; i += stride, angle += dt)
             {
                 var w = new Complex32(Cos(angle), Sin(angle));
@@ -216,7 +222,7 @@ internal static class Nfiq2FingerJetFftEnhancement
 
         if (inverse)
         {
-            Fft(inverse, data, offset, sizeBits: BlockBits, strideBits: 1);
+            Fft(inverse, data, offset, sizeBits: s_blockBits, strideBits: 1);
         }
     }
 
@@ -225,7 +231,7 @@ internal static class Nfiq2FingerJetFftEnhancement
         Shuffle(data, offset, sizeBits, strideBits);
         var sampleCount = 1 << sizeBits;
         var stride = 1 << strideBits;
-        var delta = (inverse ? 1 : -1) * (1 << SinBits);
+        var delta = (inverse ? 1 : -1) * (1 << s_sinBits);
         for (var level = strideBits; level < sizeBits; level++)
         {
             var blockSize = 1 << level;
@@ -278,14 +284,14 @@ internal static class Nfiq2FingerJetFftEnhancement
 
     private static int Sin(int angle)
     {
-        var normalized = angle & ((1 << SinBits) - 1);
-        var magnitude = SinTable[normalized & ((1 << (SinBits - 1)) - 1)];
-        return ((normalized & (1 << (SinBits - 1))) != 0) ? -magnitude : magnitude;
+        var normalized = angle & ((1 << s_sinBits) - 1);
+        var magnitude = SinTable[normalized & ((1 << (s_sinBits - 1)) - 1)];
+        return ((normalized & (1 << (s_sinBits - 1))) != 0) ? -magnitude : magnitude;
     }
 
     private static int Cos(int angle)
     {
-        return Sin(angle + (1 << (SinBits - 2)));
+        return Sin(angle + (1 << (s_sinBits - 2)));
     }
 
     private static int Reduce(int value, int shift)
@@ -368,12 +374,12 @@ internal static class Nfiq2FingerJetFftEnhancement
 
     private sealed class Envelope(int size, int spacing, bool left, bool right)
     {
-        private readonly int floor = Math.Min(size + 1 - spacing, spacing);
+        private readonly int _floor = Math.Min(size + 1 - spacing, spacing);
 
         public int this[int index] =>
             Math.Min(
-                Math.Min(left ? floor : index + 1, right ? floor : size - index),
-                floor);
+                Math.Min(left ? _floor : index + 1, right ? _floor : size - index),
+                _floor);
 
         public int Norm => size + 1 - spacing;
     }

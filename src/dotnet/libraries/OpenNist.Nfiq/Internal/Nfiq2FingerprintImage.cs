@@ -2,9 +2,9 @@ namespace OpenNist.Nfiq.Internal;
 
 internal sealed class Nfiq2FingerprintImage
 {
-    private const double NearWhiteThreshold = 250.0;
-    private const int FingerJetMaxWidth = 800;
-    private const int FingerJetMaxHeight = 1000;
+    private const double s_nearWhiteThreshold = 250.0;
+    private const int s_fingerJetMaxWidth = 800;
+    private const int s_fingerJetMaxHeight = 1000;
 
     public Nfiq2FingerprintImage(ReadOnlyMemory<byte> pixels, int width, int height, byte fingerCode = 0, ushort ppi = Resolution500Ppi)
     {
@@ -48,7 +48,7 @@ internal sealed class Nfiq2FingerprintImage
         var bottomRowIndex = Height - 1;
         for (; topRowIndex < Height; topRowIndex++)
         {
-            if (ComputeMeanFromRow(topRowIndex) <= NearWhiteThreshold)
+            if (ComputeMeanFromRow(topRowIndex) <= s_nearWhiteThreshold)
             {
                 break;
             }
@@ -61,7 +61,7 @@ internal sealed class Nfiq2FingerprintImage
 
         for (; bottomRowIndex >= topRowIndex; bottomRowIndex--)
         {
-            if (ComputeMeanFromRow(bottomRowIndex) <= NearWhiteThreshold)
+            if (ComputeMeanFromRow(bottomRowIndex) <= s_nearWhiteThreshold)
             {
                 break;
             }
@@ -76,7 +76,7 @@ internal sealed class Nfiq2FingerprintImage
         var rightColumnIndex = Width - 1;
         for (; leftColumnIndex < Width; leftColumnIndex++)
         {
-            if (ComputeMeanFromColumn(leftColumnIndex) <= NearWhiteThreshold)
+            if (ComputeMeanFromColumn(leftColumnIndex) <= s_nearWhiteThreshold)
             {
                 break;
             }
@@ -89,7 +89,7 @@ internal sealed class Nfiq2FingerprintImage
 
         for (; rightColumnIndex >= leftColumnIndex; rightColumnIndex--)
         {
-            if (ComputeMeanFromColumn(rightColumnIndex) <= NearWhiteThreshold)
+            if (ComputeMeanFromColumn(rightColumnIndex) <= s_nearWhiteThreshold)
             {
                 break;
             }
@@ -108,16 +108,16 @@ internal sealed class Nfiq2FingerprintImage
 
         var croppedWidth = rightColumnIndex - leftColumnIndex + 1;
         var croppedHeight = bottomRowIndex - topRowIndex + 1;
-        if (croppedWidth > FingerJetMaxWidth)
+        if (croppedWidth > s_fingerJetMaxWidth)
         {
             throw new Nfiq2Exception(
-                $"Width is too large after trimming whitespace. WxH: {croppedWidth}x{croppedHeight}, but maximum width is {FingerJetMaxWidth}.");
+                $"Width is too large after trimming whitespace. WxH: {croppedWidth}x{croppedHeight}, but maximum width is {s_fingerJetMaxWidth}.");
         }
 
-        if (croppedHeight > FingerJetMaxHeight)
+        if (croppedHeight > s_fingerJetMaxHeight)
         {
             throw new Nfiq2Exception(
-                $"Height is too large after trimming whitespace. WxH: {croppedWidth}x{croppedHeight}, but maximum height is {FingerJetMaxHeight}.");
+                $"Height is too large after trimming whitespace. WxH: {croppedWidth}x{croppedHeight}, but maximum height is {s_fingerJetMaxHeight}.");
         }
 
         var croppedPixels = new byte[croppedWidth * croppedHeight];

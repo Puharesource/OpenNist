@@ -5,16 +5,16 @@ using OpenNist.Tests.Wsq.TestFixtures;
 
 internal static class WsqTestCaseDefinitions
 {
-    internal const double LowBitRate = 0.75;
-    internal const double HighBitRate = 2.25;
-    internal const string Nbis500Version = "NBIS Release 5.0.0";
+    internal const double s_lowBitRate = 0.75;
+    internal const double s_highBitRate = 2.25;
+    internal const string s_nbis500Version = "NBIS Release 5.0.0";
 
     internal static IEnumerable<WsqEncodingReferenceCase> EnumerateAllEncodeReferenceCases()
     {
         foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures)
         {
-            yield return CreateReferenceCase(fixture, LowBitRate);
-            yield return CreateReferenceCase(fixture, HighBitRate);
+            yield return CreateReferenceCase(fixture, s_lowBitRate);
+            yield return CreateReferenceCase(fixture, s_highBitRate);
         }
     }
 
@@ -47,8 +47,8 @@ internal static class WsqTestCaseDefinitions
     {
         return bitRate switch
         {
-            LowBitRate => fixture.ReferenceBitRate075Path,
-            HighBitRate => fixture.ReferenceBitRate225Path,
+            s_lowBitRate => fixture.ReferenceBitRate075Path,
+            s_highBitRate => fixture.ReferenceBitRate225Path,
             _ => throw new ArgumentOutOfRangeException(nameof(bitRate), bitRate, "Unsupported WSQ test bitrate."),
         };
     }

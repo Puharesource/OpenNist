@@ -40,11 +40,13 @@
 }
 
 :root {
+  --color-on-surface-variant: color-mix(in srgb, var(--color-on-surface) 68%, #5e6b78 32%);
+  --effect-ghost-border: color-mix(in srgb, var(--color-outline-variant) 42%, transparent);
   --background: var(--color-surface);
   --foreground: var(--color-on-surface);
   --card: var(--color-surface-container-lowest);
   --card-foreground: var(--color-on-surface);
-  --popover: rgba(255, 255, 255, 0.82);
+  --popover: rgba(255, 255, 255, 0.94);
   --popover-foreground: var(--color-on-surface);
   --primary: var(--color-primary);
   --primary-foreground: var(--on-primary);
@@ -55,10 +57,22 @@
   --accent: var(--color-surface-container-high);
   --accent-foreground: var(--color-primary);
   --destructive: #b9473f;
-  --border: color-mix(in srgb, var(--color-outline-variant) 15%, transparent);
-  --input: color-mix(in srgb, var(--color-outline-variant) 15%, transparent);
+  --border: color-mix(in srgb, var(--color-outline-variant) 28%, transparent);
+  --input: color-mix(in srgb, var(--color-outline-variant) 28%, transparent);
   --ring: var(--color-primary-fixed);
   --radius: var(--radius-lg);
+}
+
+@property --hero-scan-offset {
+  syntax: "<length-percentage>";
+  inherits: true;
+  initial-value: 0%;
+}
+
+@property --hero-scan-alpha {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
 }
 
 @layer base {
@@ -89,6 +103,14 @@
   textarea,
   select {
     font: inherit;
+  }
+
+  a,
+  button,
+  input,
+  select,
+  textarea {
+    @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)];
   }
 
   #root {
@@ -132,6 +154,76 @@
 }
 
 @layer utilities {
+  .hero-scan-surface {
+    --hero-scan-band-size: 4rem;
+    --hero-scan-soft-edge: 0.9rem;
+    animation: hero-scan-sync 7.2s ease-in-out infinite;
+  }
+
+  .hero-scan-line {
+    height: var(--hero-scan-band-size);
+    background: linear-gradient(
+      180deg,
+      rgba(125, 191, 255, 0) 0%,
+      rgba(125, 191, 255, 0.6) 48%,
+      rgba(125, 191, 255, 0) 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      rgba(0, 0, 0, 0.2) 4%,
+      rgba(0, 0, 0, 0.96) 12%,
+      rgba(0, 0, 0, 1) 88%,
+      rgba(0, 0, 0, 0.2) 96%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      rgba(0, 0, 0, 0.2) 4%,
+      rgba(0, 0, 0, 0.96) 12%,
+      rgba(0, 0, 0, 1) 88%,
+      rgba(0, 0, 0, 0.2) 96%,
+      transparent 100%
+    );
+    top: var(--hero-scan-offset);
+    opacity: var(--hero-scan-alpha);
+  }
+
+  .hero-fingerprint-highlight {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    opacity: var(--hero-scan-alpha);
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      transparent 0,
+      transparent calc(var(--hero-scan-offset) - var(--hero-scan-soft-edge)),
+      rgba(0, 0, 0, 0.28) calc(var(--hero-scan-offset) + var(--hero-scan-soft-edge) * 0.2),
+      rgba(0, 0, 0, 0.9) calc(var(--hero-scan-offset) + var(--hero-scan-soft-edge)),
+      rgba(0, 0, 0, 1) calc(var(--hero-scan-offset) + var(--hero-scan-band-size) - var(--hero-scan-soft-edge)),
+      rgba(0, 0, 0, 0.3) calc(var(--hero-scan-offset) + var(--hero-scan-band-size) - var(--hero-scan-soft-edge) * 0.2),
+      transparent calc(var(--hero-scan-offset) + var(--hero-scan-band-size) + var(--hero-scan-soft-edge)),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      180deg,
+      transparent 0,
+      transparent calc(var(--hero-scan-offset) - var(--hero-scan-soft-edge)),
+      rgba(0, 0, 0, 0.28) calc(var(--hero-scan-offset) + var(--hero-scan-soft-edge) * 0.2),
+      rgba(0, 0, 0, 0.9) calc(var(--hero-scan-offset) + var(--hero-scan-soft-edge)),
+      rgba(0, 0, 0, 1) calc(var(--hero-scan-offset) + var(--hero-scan-band-size) - var(--hero-scan-soft-edge)),
+      rgba(0, 0, 0, 0.3) calc(var(--hero-scan-offset) + var(--hero-scan-band-size) - var(--hero-scan-soft-edge) * 0.2),
+      transparent calc(var(--hero-scan-offset) + var(--hero-scan-band-size) + var(--hero-scan-soft-edge)),
+      transparent 100%
+    );
+  }
+
+  .hero-fingerprint-highlight-icon {
+    position: absolute;
+    inset: 0;
+  }
+
   .custom-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: var(--color-outline-variant) transparent;
@@ -149,5 +241,72 @@
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background: color-mix(in srgb, var(--color-outline-variant) 80%, transparent);
     border-radius: 999px;
+  }
+}
+
+@keyframes hero-scan-sync {
+  0% {
+    --hero-scan-offset: calc(-1 * var(--hero-scan-band-size));
+    --hero-scan-alpha: 0;
+  }
+
+  10% {
+    --hero-scan-alpha: 0.15;
+  }
+
+  18% {
+    --hero-scan-offset: 0%;
+    --hero-scan-alpha: 1;
+  }
+
+  78% {
+    --hero-scan-offset: calc(100% - var(--hero-scan-band-size));
+    --hero-scan-alpha: 1;
+  }
+
+  92% {
+    --hero-scan-alpha: 0.12;
+  }
+
+  100% {
+    --hero-scan-offset: 100%;
+    --hero-scan-alpha: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-scan-surface {
+    animation: none;
+    --hero-scan-offset: 50%;
+    --hero-scan-alpha: 0.45;
+  }
+
+  .hero-scan-line {
+    top: 50%;
+  }
+
+  .hero-fingerprint-highlight {
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      transparent 0,
+      transparent calc(50% - var(--hero-scan-soft-edge)),
+      rgba(0, 0, 0, 0.28) calc(50% + var(--hero-scan-soft-edge) * 0.2),
+      rgba(0, 0, 0, 0.9) calc(50% + var(--hero-scan-soft-edge)),
+      rgba(0, 0, 0, 1) calc(50% + var(--hero-scan-band-size) - var(--hero-scan-soft-edge)),
+      rgba(0, 0, 0, 0.3) calc(50% + var(--hero-scan-band-size) - var(--hero-scan-soft-edge) * 0.2),
+      transparent calc(50% + var(--hero-scan-band-size) + var(--hero-scan-soft-edge)),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      180deg,
+      transparent 0,
+      transparent calc(50% - var(--hero-scan-soft-edge)),
+      rgba(0, 0, 0, 0.28) calc(50% + var(--hero-scan-soft-edge) * 0.2),
+      rgba(0, 0, 0, 0.9) calc(50% + var(--hero-scan-soft-edge)),
+      rgba(0, 0, 0, 1) calc(50% + var(--hero-scan-band-size) - var(--hero-scan-soft-edge)),
+      rgba(0, 0, 0, 0.3) calc(50% + var(--hero-scan-band-size) - var(--hero-scan-soft-edge) * 0.2),
+      transparent calc(50% + var(--hero-scan-band-size) + var(--hero-scan-soft-edge)),
+      transparent 100%
+    );
   }
 }

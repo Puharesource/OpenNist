@@ -9,7 +9,7 @@ using OpenNist.Tests.Wsq.TestFixtures;
 internal sealed class WsqNbisLowRateMismatchPartTests
 {
     private static readonly Dictionary<string, WsqLowRateMismatchProfile> s_expectedProfiles =
-        new Dictionary<string, WsqLowRateMismatchProfile>(StringComparer.Ordinal)
+        new(StringComparer.Ordinal)
         {
             ["cmp00005.raw"] = new(37142, 17, 42, 14, -1, -2),
             ["cmp00011.raw"] = new(18090, 13, 19, 24, -4, -3),

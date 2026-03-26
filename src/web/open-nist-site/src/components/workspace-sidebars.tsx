@@ -1,89 +1,89 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { PanelLeft, PanelLeftClose, PanelRight, PanelRightClose } from "lucide-react";
+import { PanelLeft, PanelLeftClose, PanelRight, PanelRightClose } from "lucide-react"
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 
 type WorkspaceSidebarsContextValue = {
-  leftDocked: boolean;
-  rightDocked: boolean;
-  leftInlineVisible: boolean;
-  rightInlineVisible: boolean;
-  leftOverlayVisible: boolean;
-  rightOverlayVisible: boolean;
-  toggleLeftSidebar(): void;
-  toggleRightSidebar(): void;
-  closeOverlaySidebars(): void;
-  closeRightSidebar(): void;
-};
+  leftDocked: boolean
+  rightDocked: boolean
+  leftInlineVisible: boolean
+  rightInlineVisible: boolean
+  leftOverlayVisible: boolean
+  rightOverlayVisible: boolean
+  toggleLeftSidebar(): void
+  toggleRightSidebar(): void
+  closeOverlaySidebars(): void
+  closeRightSidebar(): void
+}
 
-const WorkspaceSidebarsContext = createContext<WorkspaceSidebarsContextValue | null>(null);
+const WorkspaceSidebarsContext = createContext<WorkspaceSidebarsContextValue | null>(null)
 
 function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() =>
-    typeof window !== "undefined" ? window.matchMedia(query).matches : false,
-  );
+    typeof window !== "undefined" ? window.matchMedia(query).matches : false
+  )
 
   useEffect(() => {
     if (typeof window === "undefined") {
-      return;
+      return
     }
 
-    const mediaQuery = window.matchMedia(query);
+    const mediaQuery = window.matchMedia(query)
     const onChange = (event: MediaQueryListEvent) => {
-      setMatches(event.matches);
-    };
+      setMatches(event.matches)
+    }
 
-    setMatches(mediaQuery.matches);
-    mediaQuery.addEventListener("change", onChange);
+    setMatches(mediaQuery.matches)
+    mediaQuery.addEventListener("change", onChange)
     return () => {
-      mediaQuery.removeEventListener("change", onChange);
-    };
-  }, [query]);
+      mediaQuery.removeEventListener("change", onChange)
+    }
+  }, [query])
 
-  return matches;
+  return matches
 }
 
 export function WorkspaceSidebarsProvider({ children }: { children: ReactNode }) {
-  const leftDocked = useMediaQuery("(min-width: 1024px)");
-  const rightDocked = useMediaQuery("(min-width: 1280px)");
-  const [leftDesktopOpen, setLeftDesktopOpen] = useState(true);
-  const [rightDesktopOpen, setRightDesktopOpen] = useState(true);
-  const [leftOverlayOpen, setLeftOverlayOpen] = useState(false);
-  const [rightOverlayOpen, setRightOverlayOpen] = useState(false);
+  const leftDocked = useMediaQuery("(min-width: 1024px)")
+  const rightDocked = useMediaQuery("(min-width: 1280px)")
+  const [leftDesktopOpen, setLeftDesktopOpen] = useState(true)
+  const [rightDesktopOpen, setRightDesktopOpen] = useState(true)
+  const [leftOverlayOpen, setLeftOverlayOpen] = useState(false)
+  const [rightOverlayOpen, setRightOverlayOpen] = useState(false)
 
   useEffect(() => {
     if (leftDocked) {
-      setLeftOverlayOpen(false);
+      setLeftOverlayOpen(false)
     }
-  }, [leftDocked]);
+  }, [leftDocked])
 
   useEffect(() => {
     if (rightDocked) {
-      setRightOverlayOpen(false);
+      setRightOverlayOpen(false)
     }
-  }, [rightDocked]);
+  }, [rightDocked])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") {
-        return;
+        return
       }
 
-      setLeftOverlayOpen(false);
-      setRightOverlayOpen(false);
-    };
+      setLeftOverlayOpen(false)
+      setRightOverlayOpen(false)
+    }
 
-    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown)
     return () => {
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, []);
+      window.removeEventListener("keydown", onKeyDown)
+    }
+  }, [])
 
   const value = useMemo<WorkspaceSidebarsContextValue>(() => {
-    const leftInlineVisible = leftDocked && leftDesktopOpen;
-    const rightInlineVisible = rightDocked && rightDesktopOpen;
-    const leftOverlayVisible = !leftDocked && leftOverlayOpen;
-    const rightOverlayVisible = !rightDocked && rightOverlayOpen;
+    const leftInlineVisible = leftDocked && leftDesktopOpen
+    const rightInlineVisible = rightDocked && rightDesktopOpen
+    const leftOverlayVisible = !leftDocked && leftOverlayOpen
+    const rightOverlayVisible = !rightDocked && rightOverlayOpen
 
     return {
       leftDocked,
@@ -94,64 +94,64 @@ export function WorkspaceSidebarsProvider({ children }: { children: ReactNode })
       rightOverlayVisible,
       toggleLeftSidebar() {
         if (leftDocked) {
-          setLeftDesktopOpen((current) => !current);
-          return;
+          setLeftDesktopOpen((current) => !current)
+          return
         }
 
         setLeftOverlayOpen((current) => {
-          const next = !current;
+          const next = !current
           if (next) {
-            setRightOverlayOpen(false);
+            setRightOverlayOpen(false)
           }
 
-          return next;
-        });
+          return next
+        })
       },
       toggleRightSidebar() {
         if (rightDocked) {
-          setRightDesktopOpen((current) => !current);
-          return;
+          setRightDesktopOpen((current) => !current)
+          return
         }
 
         setRightOverlayOpen((current) => {
-          const next = !current;
+          const next = !current
           if (next) {
-            setLeftOverlayOpen(false);
+            setLeftOverlayOpen(false)
           }
 
-          return next;
-        });
+          return next
+        })
       },
       closeOverlaySidebars() {
-        setLeftOverlayOpen(false);
-        setRightOverlayOpen(false);
+        setLeftOverlayOpen(false)
+        setRightOverlayOpen(false)
       },
       closeRightSidebar() {
         if (rightDocked) {
-          setRightDesktopOpen(false);
-          return;
+          setRightDesktopOpen(false)
+          return
         }
 
-        setRightOverlayOpen(false);
-      },
-    };
-  }, [leftDesktopOpen, leftDocked, leftOverlayOpen, rightDesktopOpen, rightDocked, rightOverlayOpen]);
+        setRightOverlayOpen(false)
+      }
+    }
+  }, [leftDesktopOpen, leftDocked, leftOverlayOpen, rightDesktopOpen, rightDocked, rightOverlayOpen])
 
-  return <WorkspaceSidebarsContext.Provider value={value}>{children}</WorkspaceSidebarsContext.Provider>;
+  return <WorkspaceSidebarsContext.Provider value={value}>{children}</WorkspaceSidebarsContext.Provider>
 }
 
 export function useWorkspaceSidebars(): WorkspaceSidebarsContextValue {
-  const context = useContext(WorkspaceSidebarsContext);
+  const context = useContext(WorkspaceSidebarsContext)
   if (!context) {
-    throw new Error("useWorkspaceSidebars must be used within a WorkspaceSidebarsProvider.");
+    throw new Error("useWorkspaceSidebars must be used within a WorkspaceSidebarsProvider.")
   }
 
-  return context;
+  return context
 }
 
 export function WorkspaceSidebarBackdrop() {
-  const { leftOverlayVisible, rightOverlayVisible, closeOverlaySidebars } = useWorkspaceSidebars();
-  const isVisible = leftOverlayVisible || rightOverlayVisible;
+  const { leftOverlayVisible, rightOverlayVisible, closeOverlaySidebars } = useWorkspaceSidebars()
+  const isVisible = leftOverlayVisible || rightOverlayVisible
 
   return (
     <button
@@ -162,15 +162,15 @@ export function WorkspaceSidebarBackdrop() {
       }`}
       onClick={closeOverlaySidebars}
     />
-  );
+  )
 }
 
 export function WorkspaceSidebarToggleGroup({
   children,
-  showRightToggle = true,
+  showRightToggle = true
 }: {
-  children?: ReactNode;
-  showRightToggle?: boolean;
+  children?: ReactNode
+  showRightToggle?: boolean
 }) {
   const {
     leftInlineVisible,
@@ -178,11 +178,11 @@ export function WorkspaceSidebarToggleGroup({
     rightInlineVisible,
     rightOverlayVisible,
     toggleLeftSidebar,
-    toggleRightSidebar,
-  } = useWorkspaceSidebars();
+    toggleRightSidebar
+  } = useWorkspaceSidebars()
 
-  const isLeftOpen = leftInlineVisible || leftOverlayVisible;
-  const isRightOpen = rightInlineVisible || rightOverlayVisible;
+  const isLeftOpen = leftInlineVisible || leftOverlayVisible
+  const isRightOpen = rightInlineVisible || rightOverlayVisible
 
   return (
     <div className="flex items-center gap-2">
@@ -214,5 +214,5 @@ export function WorkspaceSidebarToggleGroup({
         </Button>
       ) : null}
     </div>
-  );
+  )
 }

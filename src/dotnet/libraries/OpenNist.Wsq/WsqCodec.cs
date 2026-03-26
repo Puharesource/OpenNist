@@ -1,8 +1,8 @@
 namespace OpenNist.Wsq;
 
 using OpenNist.Wsq.Internal;
-using OpenNist.Wsq.Internal.Encoding;
 using OpenNist.Wsq.Internal.Decoding;
+using OpenNist.Wsq.Internal.Encoding;
 
 /// <summary>
 /// Default WSQ codec entry point.
@@ -83,36 +83,6 @@ public sealed class WsqCodec : IWsqCodec
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(wsqStream);
-
-        var container = await WsqContainerReader.ReadAsync(wsqStream, cancellationToken).ConfigureAwait(false);
-        return CreateFileInfo(container);
-    }
-
-    private static WsqFileInfo CreateFileInfo(WsqContainer container)
-    {
-        var comments = container.Comments
-            .Select(static comment => new WsqCommentInfo(comment.Text, comment.Fields))
-            .ToArray();
-
-        return new(
-            Width: container.FrameHeader.Width,
-            Height: container.FrameHeader.Height,
-            BitsPerPixel: 8,
-            PixelsPerInch: container.PixelsPerInch ?? 500,
-            Black: container.FrameHeader.Black,
-            White: container.FrameHeader.White,
-            Shift: container.FrameHeader.Shift,
-            Scale: container.FrameHeader.Scale,
-            WsqEncoder: container.FrameHeader.WsqEncoder,
-            SoftwareImplementationNumber: container.FrameHeader.SoftwareImplementationNumber,
-            HighPassFilterLength: container.TransformTable.HighPassFilterLength,
-            LowPassFilterLength: container.TransformTable.LowPassFilterLength,
-            QuantizationBinCenter: container.QuantizationTable.BinCenter,
-            HuffmanTableIds: container.HuffmanTables.Select(static table => table.TableId).ToArray(),
-            BlockCount: container.Blocks.Count,
-            EncodedBlockByteCount: container.Blocks.Sum(static block => block.EncodedByteCount),
-            CommentCount: container.Comments.Count,
-            NistCommentCount: container.Comments.Count(static comment => comment.IsNistComment),
-            Comments: comments);
+        return await WsqFileInfoReader.ReadAsync(wsqStream, cancellationToken).ConfigureAwait(false);
     }
 }

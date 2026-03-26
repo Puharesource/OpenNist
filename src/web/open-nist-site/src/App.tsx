@@ -1,9 +1,17 @@
-import { RouterProvider } from "@tanstack/react-router";
+import { RouterProvider } from "@tanstack/react-router"
+import { useEffect } from "react"
 
-import { router } from "@/router";
+import { warmOpenNistWorker } from "@/lib/opennist-wasm"
+import { router } from "@/router"
 
 function App() {
-  return <RouterProvider router={router} />;
+  useEffect(() => {
+    void warmOpenNistWorker().catch(() => {
+      // Let the first explicit worker request surface the failure to the UI.
+    })
+  }, [])
+
+  return <RouterProvider router={router} />
 }
 
-export default App;
+export default App

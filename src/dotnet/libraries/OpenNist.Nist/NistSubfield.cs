@@ -18,6 +18,11 @@ public sealed class NistSubfield
         Items = items.Select(static item => item ?? string.Empty).ToArray();
     }
 
+    internal NistSubfield(string[] items, bool takeOwnership)
+    {
+        Items = takeOwnership ? items : [.. items];
+    }
+
     /// <summary>
     /// Gets the item values contained inside the subfield.
     /// </summary>

@@ -1,20 +1,17 @@
-import { useSyncExternalStore } from "react";
-import type {
-  CodecsWorkspaceDocument,
-  NfiqWorkspaceDocument,
-  NistWorkspaceDocument,
-} from "@/lib/codecs-document";
+import { useSyncExternalStore } from "react"
+
+import type { CodecsWorkspaceDocument, NfiqWorkspaceDocument, NistWorkspaceDocument } from "@/lib/codecs-document"
 
 type WorkspaceSessionState = {
-  activeFile: File | null;
-  activeFileFingerprint: string | null;
-  codecsDocument: CodecsWorkspaceDocument | null;
-  codecsDocumentFingerprint: string | null;
-  nfiqDocument: NfiqWorkspaceDocument | null;
-  nfiqDocumentFingerprint: string | null;
-  nistDocument: NistWorkspaceDocument | null;
-  nistDocumentFingerprint: string | null;
-};
+  activeFile: File | null
+  activeFileFingerprint: string | null
+  codecsDocument: CodecsWorkspaceDocument | null
+  codecsDocumentFingerprint: string | null
+  nfiqDocument: NfiqWorkspaceDocument | null
+  nfiqDocumentFingerprint: string | null
+  nistDocument: NistWorkspaceDocument | null
+  nistDocumentFingerprint: string | null
+}
 
 let state: WorkspaceSessionState = {
   activeFile: null,
@@ -24,14 +21,14 @@ let state: WorkspaceSessionState = {
   nfiqDocument: null,
   nfiqDocumentFingerprint: null,
   nistDocument: null,
-  nistDocumentFingerprint: null,
-};
+  nistDocumentFingerprint: null
+}
 
-const listeners = new Set<() => void>();
+const listeners = new Set<() => void>()
 
 function emit() {
   for (const listener of listeners) {
-    listener();
+    listener()
   }
 }
 
@@ -39,72 +36,69 @@ export function setWorkspaceActiveFile(file: File | null, fingerprint: string | 
   state = {
     ...state,
     activeFile: file,
-    activeFileFingerprint: fingerprint,
-  };
+    activeFileFingerprint: fingerprint
+  }
 
-  emit();
+  emit()
 }
 
-export function setWorkspaceCodecsDocument(
-  document: CodecsWorkspaceDocument | null,
-  fingerprint: string | null,
-) {
-  const previousPreviewUrl = state.codecsDocument?.previewUrl;
-  const nextPreviewUrl = document?.previewUrl;
+export function setWorkspaceCodecsDocument(document: CodecsWorkspaceDocument | null, fingerprint: string | null) {
+  const previousPreviewUrl = state.codecsDocument?.previewUrl
+  const nextPreviewUrl = document?.previewUrl
 
   if (previousPreviewUrl && previousPreviewUrl !== nextPreviewUrl) {
-    URL.revokeObjectURL(previousPreviewUrl);
+    URL.revokeObjectURL(previousPreviewUrl)
   }
 
   state = {
     ...state,
     codecsDocument: document,
-    codecsDocumentFingerprint: fingerprint,
-  };
+    codecsDocumentFingerprint: fingerprint
+  }
 
-  emit();
+  emit()
 }
 
 export function setWorkspaceNfiqDocument(document: NfiqWorkspaceDocument | null, fingerprint: string | null) {
-  const previousPreviewUrl = state.nfiqDocument?.previewUrl;
-  const nextPreviewUrl = document?.previewUrl;
+  const previousPreviewUrl = state.nfiqDocument?.previewUrl
+  const nextPreviewUrl = document?.previewUrl
 
   if (previousPreviewUrl && previousPreviewUrl !== nextPreviewUrl) {
-    URL.revokeObjectURL(previousPreviewUrl);
+    URL.revokeObjectURL(previousPreviewUrl)
   }
 
   state = {
     ...state,
     nfiqDocument: document,
-    nfiqDocumentFingerprint: fingerprint,
-  };
+    nfiqDocumentFingerprint: fingerprint
+  }
 
-  emit();
+  emit()
 }
 
 export function setWorkspaceNistDocument(document: NistWorkspaceDocument | null, fingerprint: string | null) {
   state = {
     ...state,
     nistDocument: document,
-    nistDocumentFingerprint: fingerprint,
-  };
+    nistDocumentFingerprint: fingerprint
+  }
 
-  emit();
+  emit()
 }
 
 export function getWorkspaceSessionSnapshot(): WorkspaceSessionState {
-  return state;
+  return state
 }
 
 export function useWorkspaceSession() {
   return useSyncExternalStore(
     (listener) => {
-      listeners.add(listener);
+      listeners.add(listener)
       return () => {
-        listeners.delete(listener);
-      };
+        listeners.delete(listener)
+      }
     },
     getWorkspaceSessionSnapshot,
-    getWorkspaceSessionSnapshot,
-  );
+    getWorkspaceSessionSnapshot
+  )
 }

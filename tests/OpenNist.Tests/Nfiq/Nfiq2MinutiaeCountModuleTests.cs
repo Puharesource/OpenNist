@@ -9,7 +9,7 @@ using OpenNist.Tests.Nfiq.TestSupport;
 [Category("Integration: NFIQ2 - Managed Minutiae Count Module")]
 internal sealed class Nfiq2MinutiaeCountModuleTests
 {
-    private const double NativeFloatingPointTolerance = 0.01;
+    private const double s_nativeFloatingPointTolerance = 0.01;
     private static readonly string[] s_featureNames =
     [
         "FingerJetFX_MinutiaeCount",
@@ -42,7 +42,7 @@ internal sealed class Nfiq2MinutiaeCountModuleTests
             throw new InvalidOperationException($"{context} was NA in the official NFIQ 2 result.");
         }
 
-        if (Math.Abs(expectedValue.Value - actualValue) > NativeFloatingPointTolerance)
+        if (Math.Abs(expectedValue.Value - actualValue) > s_nativeFloatingPointTolerance)
         {
             throw new InvalidOperationException(
                 $"{context} diverged from the official NFIQ 2 value. "

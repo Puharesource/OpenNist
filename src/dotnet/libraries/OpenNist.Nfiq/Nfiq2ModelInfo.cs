@@ -20,12 +20,12 @@ public sealed record Nfiq2ModelInfo(
     string ModelPath,
     string ModelHash)
 {
-    private const string KeyName = "Name";
-    private const string KeyTrainer = "Trainer";
-    private const string KeyDescription = "Description";
-    private const string KeyVersion = "Version";
-    private const string KeyPath = "Path";
-    private const string KeyHash = "Hash";
+    private const string s_keyName = "Name";
+    private const string s_keyTrainer = "Trainer";
+    private const string s_keyDescription = "Description";
+    private const string s_keyVersion = "Version";
+    private const string s_keyPath = "Path";
+    private const string s_keyHash = "Hash";
 
     /// <summary>
     /// Reads and parses an official NFIQ 2 model-info file.
@@ -76,22 +76,22 @@ public sealed record Nfiq2ModelInfo(
 
             switch (key)
             {
-                case KeyName:
+                case s_keyName:
                     name = value;
                     break;
-                case KeyTrainer:
+                case s_keyTrainer:
                     trainer = value;
                     break;
-                case KeyDescription:
+                case s_keyDescription:
                     description = value;
                     break;
-                case KeyVersion:
+                case s_keyVersion:
                     version = value;
                     break;
-                case KeyPath:
+                case s_keyPath:
                     modelPath = ResolveModelPath(modelInfoPath, value);
                     break;
-                case KeyHash:
+                case s_keyHash:
                     modelHash = value;
                     break;
             }
@@ -99,12 +99,12 @@ public sealed record Nfiq2ModelInfo(
 
         if (string.IsNullOrWhiteSpace(modelPath))
         {
-            throw new Nfiq2Exception($"The required model information '{KeyPath}' was not found.");
+            throw new Nfiq2Exception($"The required model information '{s_keyPath}' was not found.");
         }
 
         if (string.IsNullOrWhiteSpace(modelHash))
         {
-            throw new Nfiq2Exception($"The required model information '{KeyHash}' was not found.");
+            throw new Nfiq2Exception($"The required model information '{s_keyHash}' was not found.");
         }
 
         return new(name, trainer, description, version, modelPath, modelHash);

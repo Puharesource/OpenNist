@@ -2,8 +2,8 @@ namespace OpenNist.Nfiq.Internal;
 
 internal static class Nfiq2OclHistogramModule
 {
-    private const int LocalRegionSquare = 32;
-    private const string FeaturePrefix = "OCL_Bin10_";
+    private const int s_localRegionSquare = 32;
+    private const string s_featurePrefix = "OCL_Bin10_";
     private static ReadOnlySpan<double> HistogramBoundaries => [0.337, 0.479, 0.579, 0.655, 0.716, 0.766, 0.81, 0.852, 0.898];
 
     public static Nfiq2OclHistogramResult Compute(Nfiq2FingerprintImage fingerprintImage)
@@ -18,13 +18,13 @@ internal static class Nfiq2OclHistogramModule
         var source = fingerprintImage.Pixels.Span;
         var values = new List<double>();
 
-        for (var row = 0; row < fingerprintImage.Height; row += LocalRegionSquare)
+        for (var row = 0; row < fingerprintImage.Height; row += s_localRegionSquare)
         {
-            for (var column = 0; column < fingerprintImage.Width; column += LocalRegionSquare)
+            for (var column = 0; column < fingerprintImage.Width; column += s_localRegionSquare)
             {
-                var actualWidth = Math.Min(LocalRegionSquare, fingerprintImage.Width - column);
-                var actualHeight = Math.Min(LocalRegionSquare, fingerprintImage.Height - row);
-                if (actualWidth != LocalRegionSquare || actualHeight != LocalRegionSquare)
+                var actualWidth = Math.Min(s_localRegionSquare, fingerprintImage.Width - column);
+                var actualHeight = Math.Min(s_localRegionSquare, fingerprintImage.Height - row);
+                if (actualWidth != s_localRegionSquare || actualHeight != s_localRegionSquare)
                 {
                     continue;
                 }
@@ -34,7 +34,7 @@ internal static class Nfiq2OclHistogramModule
                     fingerprintImage.Width,
                     row,
                     column,
-                    LocalRegionSquare,
+                    s_localRegionSquare,
                     out var orientationCertainty))
                 {
                     continue;
@@ -44,8 +44,9 @@ internal static class Nfiq2OclHistogramModule
             }
         }
 
-        var features = Nfiq2FeatureMath.CreateHistogramFeatures(FeaturePrefix, HistogramBoundaries, values.ToArray(), 10);
-        return new(values.ToArray(), features);
+        var valueArray = values.ToArray();
+        var features = Nfiq2FeatureMath.CreateHistogramFeatures(s_featurePrefix, HistogramBoundaries, valueArray, 10);
+        return new(valueArray, features);
     }
 
     internal static bool TryGetBlockOrientationCertainty(
@@ -56,20 +57,24 @@ internal static class Nfiq2OclHistogramModule
         int blockSize,
         out double orientationCertainty)
     {
-        var gradientX = Nfiq2FeatureMath.ComputeNumericalGradientX(image, imageWidth, row, column, blockSize, blockSize);
-        var gradientY = Nfiq2FeatureMath.ComputeNumericalGradientY(image, imageWidth, row, column, blockSize, blockSize);
+        var a = 0.0;
+        var b = 0.0;
+        var c = 0.0;
 
-        double a = 0.0;
-        double b = 0.0;
-        double c = 0.0;
-
-        for (var index = 0; index < gradientX.Length; index++)
+        for (var y = 0; y < blockSize; y++)
         {
-            var gx = gradientX[index];
-            var gy = gradientY[index];
-            a += gx * gx;
-            b += gy * gy;
-            c += gx * gy;
+            var imageRow = row + y;
+            var imageRowOffset = imageRow * imageWidth;
+
+            for (var x = 0; x < blockSize; x++)
+            {
+                var imageColumn = column + x;
+                var gx = Nfiq2FeatureMath.ComputeGradientXAt(image, imageRowOffset, imageColumn, x, blockSize);
+                var gy = Nfiq2FeatureMath.ComputeGradientYAt(image, imageWidth, imageRow, imageColumn, y, blockSize);
+                a += gx * gx;
+                b += gy * gy;
+                c += gx * gy;
+            }
         }
 
         var pixelCount = blockSize * blockSize;

@@ -5,8 +5,39 @@ using System.Globalization;
 
 internal static class Nfiq2FeatureMath
 {
-    private const string MeanSuffix = "Mean";
-    private const string StdDevSuffix = "StdDev";
+    private const string s_meanSuffix = "Mean";
+    private const string s_stdDevSuffix = "StdDev";
+
+    public static void AccumulateGradientProducts(
+        ReadOnlySpan<byte> image,
+        int imageWidth,
+        int row,
+        int column,
+        int blockWidth,
+        int blockHeight,
+        out double sumGradientXSquared,
+        out double sumGradientYSquared,
+        out double sumGradientXY)
+    {
+        sumGradientXSquared = 0.0;
+        sumGradientYSquared = 0.0;
+        sumGradientXY = 0.0;
+
+        for (var y = 0; y < blockHeight; y++)
+        {
+            var imageRow = row + y;
+            var imageRowOffset = imageRow * imageWidth;
+            for (var x = 0; x < blockWidth; x++)
+            {
+                var imageColumn = column + x;
+                var gradientX = ComputeGradientXAt(image, imageRowOffset, imageColumn, x, blockWidth);
+                var gradientY = ComputeGradientYAt(image, imageWidth, imageRow, imageColumn, y, blockHeight);
+                sumGradientXSquared += gradientX * gradientX;
+                sumGradientYSquared += gradientY * gradientY;
+                sumGradientXY += gradientX * gradientY;
+            }
+        }
+    }
 
     public static double[] ComputeNumericalGradientX(
         ReadOnlySpan<byte> image,
@@ -125,8 +156,8 @@ internal static class Nfiq2FeatureMath
         }
 
         ComputeMeanAndStdDev(sortedValues, out var mean, out var stdDev);
-        features[featurePrefix + MeanSuffix] = mean;
-        features[featurePrefix + StdDevSuffix] = stdDev;
+        features[featurePrefix + s_meanSuffix] = mean;
+        features[featurePrefix + s_stdDevSuffix] = stdDev;
 
         return features.ToFrozenDictionary(StringComparer.Ordinal);
     }
@@ -140,7 +171,7 @@ internal static class Nfiq2FeatureMath
             return;
         }
 
-        double sum = 0.0;
+        var sum = 0.0;
         foreach (var value in values)
         {
             sum += value;
@@ -148,7 +179,7 @@ internal static class Nfiq2FeatureMath
 
         mean = sum / values.Length;
 
-        double varianceSum = 0.0;
+        var varianceSum = 0.0;
         foreach (var value in values)
         {
             var delta = value - mean;
@@ -156,5 +187,56 @@ internal static class Nfiq2FeatureMath
         }
 
         stdDev = Math.Sqrt(varianceSum / values.Length);
+    }
+
+    internal static double ComputeGradientXAt(
+        ReadOnlySpan<byte> image,
+        int imageRowOffset,
+        int imageColumn,
+        int blockColumn,
+        int blockWidth)
+    {
+        if (blockWidth <= 1)
+        {
+            return 0.0;
+        }
+
+        if (blockColumn == 0)
+        {
+            return image[imageRowOffset + imageColumn + 1] - image[imageRowOffset + imageColumn];
+        }
+
+        if (blockColumn == blockWidth - 1)
+        {
+            return image[imageRowOffset + imageColumn] - image[imageRowOffset + imageColumn - 1];
+        }
+
+        return (image[imageRowOffset + imageColumn + 1] - image[imageRowOffset + imageColumn - 1]) / 2.0;
+    }
+
+    internal static double ComputeGradientYAt(
+        ReadOnlySpan<byte> image,
+        int imageWidth,
+        int imageRow,
+        int imageColumn,
+        int blockRow,
+        int blockHeight)
+    {
+        if (blockHeight <= 1)
+        {
+            return 0.0;
+        }
+
+        if (blockRow == 0)
+        {
+            return image[((imageRow + 1) * imageWidth) + imageColumn] - image[(imageRow * imageWidth) + imageColumn];
+        }
+
+        if (blockRow == blockHeight - 1)
+        {
+            return image[(imageRow * imageWidth) + imageColumn] - image[((imageRow - 1) * imageWidth) + imageColumn];
+        }
+
+        return (image[((imageRow + 1) * imageWidth) + imageColumn] - image[((imageRow - 1) * imageWidth) + imageColumn]) / 2.0;
     }
 }

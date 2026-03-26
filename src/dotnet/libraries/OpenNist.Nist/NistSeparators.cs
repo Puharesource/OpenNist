@@ -28,8 +28,8 @@ public static class NistSeparators
     /// </summary>
     public const char UnitSeparator = (char)0x1F;
 
-    internal const byte FileSeparatorByte = 0x1C;
-    internal const byte GroupSeparatorByte = 0x1D;
-    internal const byte RecordSeparatorByte = 0x1E;
-    internal const byte UnitSeparatorByte = 0x1F;
+    internal const byte s_fileSeparatorByte = 0x1C;
+    internal const byte s_groupSeparatorByte = 0x1D;
+    internal const byte s_recordSeparatorByte = 0x1E;
+    internal const byte s_unitSeparatorByte = 0x1F;
 }

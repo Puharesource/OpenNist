@@ -9,7 +9,7 @@ using OpenNist.Wsq;
 [Category("Contract: WSQ - NBIS Reference Encoding")]
 internal sealed class WsqNbisEncodingContractTests
 {
-    private const int RequiredExactCodestreamParityFloor = 80;
+    private const int s_requiredExactCodestreamParityFloor = 80;
 
     [Test]
     [DisplayName("Should preserve the current exact NBIS 5.0.0 codestream-parity floor across the public encoder corpus")]
@@ -39,10 +39,10 @@ internal sealed class WsqNbisEncodingContractTests
             mismatchCases.Add($"{formattedCase} (managed={managedBytes.Length}, nbis={nbisBytes.Length})");
         }
 
-        if (exactCases.Count < RequiredExactCodestreamParityFloor)
+        if (exactCases.Count < s_requiredExactCodestreamParityFloor)
         {
             throw new InvalidOperationException(
-                $"The managed encoder only matches {exactCases.Count} NBIS 5.0.0 codestream cases exactly, below the required floor of {RequiredExactCodestreamParityFloor}. "
+                $"The managed encoder only matches {exactCases.Count} NBIS 5.0.0 codestream cases exactly, below the required floor of {s_requiredExactCodestreamParityFloor}. "
                 + $"Exact cases: {string.Join(", ", exactCases)}. "
                 + $"Mismatches: {string.Join("; ", mismatchCases)}.");
         }

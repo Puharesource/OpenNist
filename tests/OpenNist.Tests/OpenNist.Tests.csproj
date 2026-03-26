@@ -20,8 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\dotnet\libraries\OpenNist.Core\OpenNist.Core.csproj" />
-    <ProjectReference Include="..\..\src\dotnet\libraries\OpenNist.Jp2000\OpenNist.Jp2000.csproj" />
     <ProjectReference Include="..\..\src\dotnet\libraries\OpenNist.Nfiq\OpenNist.Nfiq.csproj" />
     <ProjectReference Include="..\..\src\dotnet\libraries\OpenNist.Nist\OpenNist.Nist.csproj" />
     <ProjectReference Include="..\..\src\dotnet\libraries\OpenNist.Wsq\OpenNist.Wsq.csproj" />

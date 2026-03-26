@@ -71,7 +71,7 @@ internal static class WsqCoefficientQuantizer
         ReadOnlySpan<float> quantizationBins,
         ReadOnlySpan<float> zeroBins)
     {
-        var quantizedCoefficients = new short[waveletData.Length];
+        var quantizedCoefficients = new short[GetQuantizedCoefficientCount(quantizationTree, quantizationBins)];
         var coefficientIndex = 0;
 
         for (var subband = 0; subband < WsqConstants.NumberOfSubbands; subband++)
@@ -112,7 +112,6 @@ internal static class WsqCoefficientQuantizer
             }
         }
 
-        Array.Resize(ref quantizedCoefficients, coefficientIndex);
         return quantizedCoefficients;
     }
 
@@ -123,7 +122,7 @@ internal static class WsqCoefficientQuantizer
         ReadOnlySpan<double> quantizationBins,
         ReadOnlySpan<double> zeroBins)
     {
-        var quantizedCoefficients = new short[waveletData.Length];
+        var quantizedCoefficients = new short[GetQuantizedCoefficientCount(quantizationTree, quantizationBins)];
         var coefficientIndex = 0;
 
         for (var subband = 0; subband < WsqConstants.NumberOfSubbands; subband++)
@@ -165,7 +164,6 @@ internal static class WsqCoefficientQuantizer
             }
         }
 
-        Array.Resize(ref quantizedCoefficients, coefficientIndex);
         return quantizedCoefficients;
     }
 
@@ -176,7 +174,7 @@ internal static class WsqCoefficientQuantizer
         ReadOnlySpan<float> quantizationBins,
         ReadOnlySpan<float> zeroBins)
     {
-        var quantizedCoefficients = new short[waveletData.Length];
+        var quantizedCoefficients = new short[GetQuantizedCoefficientCount(quantizationTree, quantizationBins)];
         var coefficientIndex = 0;
 
         for (var subband = 0; subband < WsqConstants.NumberOfSubbands; subband++)
@@ -217,7 +215,46 @@ internal static class WsqCoefficientQuantizer
             }
         }
 
-        Array.Resize(ref quantizedCoefficients, coefficientIndex);
         return quantizedCoefficients;
+    }
+
+    private static int GetQuantizedCoefficientCount(
+        ReadOnlySpan<WsqQuantizationNode> quantizationTree,
+        ReadOnlySpan<float> quantizationBins)
+    {
+        var coefficientCount = 0;
+
+        for (var subband = 0; subband < WsqConstants.NumberOfSubbands; subband++)
+        {
+            if (quantizationBins[subband] == 0.0f)
+            {
+                continue;
+            }
+
+            var node = quantizationTree[subband];
+            coefficientCount += node.Width * node.Height;
+        }
+
+        return coefficientCount;
+    }
+
+    private static int GetQuantizedCoefficientCount(
+        ReadOnlySpan<WsqQuantizationNode> quantizationTree,
+        ReadOnlySpan<double> quantizationBins)
+    {
+        var coefficientCount = 0;
+
+        for (var subband = 0; subband < WsqConstants.NumberOfSubbands; subband++)
+        {
+            if (quantizationBins[subband].CompareTo(0.0) == 0)
+            {
+                continue;
+            }
+
+            var node = quantizationTree[subband];
+            coefficientCount += node.Width * node.Height;
+        }
+
+        return coefficientCount;
     }
 }

@@ -8,7 +8,7 @@ using OpenNist.Wsq.Internal;
 
 internal static class WsqNbisOracleReader
 {
-    private const string SolutionFileName = "OpenNist.slnx";
+    private const string s_solutionFileName = "OpenNist.slnx";
 
     private static string RepositoryRoot { get; } = FindRepositoryRoot();
 
@@ -22,7 +22,7 @@ internal static class WsqNbisOracleReader
 
     private static string EncoderToolPath { get; } = "/tmp/nbis_v5_0_0/Rel_5.0.0/imgtools/bin/cwsq";
 
-    private static string ExpectedOracleVersion { get; } = WsqTestCaseDefinitions.Nbis500Version;
+    private static string ExpectedOracleVersion { get; } = WsqTestCaseDefinitions.s_nbis500Version;
 
     private static bool VersionValidated { get; set; }
 
@@ -344,7 +344,7 @@ internal static class WsqNbisOracleReader
         var currentDirectory = new DirectoryInfo(AppContext.BaseDirectory);
         while (currentDirectory is not null)
         {
-            if (File.Exists(Path.Combine(currentDirectory.FullName, SolutionFileName)))
+            if (File.Exists(Path.Combine(currentDirectory.FullName, s_solutionFileName)))
             {
                 return currentDirectory.FullName;
             }
@@ -352,7 +352,7 @@ internal static class WsqNbisOracleReader
             currentDirectory = currentDirectory.Parent;
         }
 
-        throw new InvalidOperationException($"Unable to locate repository root containing {SolutionFileName}.");
+        throw new InvalidOperationException($"Unable to locate repository root containing {s_solutionFileName}.");
     }
 
     private static bool ValidateVersion()

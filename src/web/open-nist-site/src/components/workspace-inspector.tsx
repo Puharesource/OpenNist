@@ -1,11 +1,11 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { Info } from "lucide-react";
+import { Info } from "lucide-react"
+import { useEffect, useId, useRef, useState, type ReactNode } from "react"
 
 type InspectorItem = {
-  label: string;
-  value: string;
-  description?: string;
-};
+  label: string
+  value: string
+  description?: string
+}
 
 export function InspectorPanel({
   title,
@@ -13,14 +13,14 @@ export function InspectorPanel({
   headerActions,
   rightDocked,
   rightOverlayVisible,
-  children,
+  children
 }: {
-  title: string;
-  summary?: ReactNode;
-  headerActions?: ReactNode;
-  rightDocked: boolean;
-  rightOverlayVisible: boolean;
-  children: ReactNode;
+  title: string
+  summary?: ReactNode
+  headerActions?: ReactNode
+  rightDocked: boolean
+  rightOverlayVisible: boolean
+  children: ReactNode
 }) {
   return (
     <aside
@@ -50,19 +50,19 @@ export function InspectorPanel({
         <div className="flex-1 space-y-7 px-7 py-7">{children}</div>
       </div>
     </aside>
-  );
+  )
 }
 
 export function InspectorMetric({
   eyebrow,
   value,
   meta,
-  description,
+  description
 }: {
-  eyebrow: string;
-  value: string;
-  meta?: string;
-  description?: string;
+  eyebrow: string
+  value: string
+  meta?: string
+  description?: string
 }) {
   return (
     <div className="rounded-[var(--radius-xl)] border border-[color:var(--effect-ghost-border)] bg-[var(--color-surface-container-low)] p-5">
@@ -81,39 +81,37 @@ export function InspectorMetric({
         ) : null}
       </div>
     </div>
-  );
+  )
 }
 
 export function InspectorNotice({
   title,
   message,
-  tone = "warning",
+  tone = "warning"
 }: {
-  title: string;
-  message: string;
-  tone?: "warning" | "error";
+  title: string
+  message: string
+  tone?: "warning" | "error"
 }) {
   const toneClasses =
-    tone === "error"
-      ? "border-red-300/60 bg-red-50 text-red-900"
-      : "border-amber-300/60 bg-amber-50 text-amber-900";
+    tone === "error" ? "border-red-300/60 bg-red-50 text-red-900" : "border-amber-300/60 bg-amber-50 text-amber-900"
 
   return (
     <div className={`rounded-[var(--radius-lg)] border px-4 py-3 ${toneClasses}`}>
       <p className="font-mono text-[0.62rem] uppercase tracking-[0.18em]">{title}</p>
       <p className="mt-2 text-sm leading-6">{message}</p>
     </div>
-  );
+  )
 }
 
 export function InspectorSection({
   title,
   description,
-  items,
+  items
 }: {
-  title: string;
-  description?: string;
-  items: InspectorItem[];
+  title: string
+  description?: string
+  items: InspectorItem[]
 }) {
   return (
     <div className="space-y-3">
@@ -121,20 +119,19 @@ export function InspectorSection({
         <p className="font-mono text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-on-surface-variant)]">
           {title}
         </p>
-        {description ? (
-          <p className="text-sm leading-6 text-[var(--color-on-surface-variant)]">{description}</p>
-        ) : null}
+        {description ? <p className="text-sm leading-6 text-[var(--color-on-surface-variant)]">{description}</p> : null}
       </div>
       <div className="space-y-3">
         {items.map((item) => (
-          <div key={item.label} className="rounded-[var(--radius-lg)] border border-[color:var(--effect-ghost-border)] bg-white p-4 shadow-[var(--effect-subtle-shadow)]">
+          <div
+            key={item.label}
+            className="rounded-[var(--radius-lg)] border border-[color:var(--effect-ghost-border)] bg-white p-4 shadow-[var(--effect-subtle-shadow)]"
+          >
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium text-[var(--color-on-surface)]">{item.label}</p>
-                  {item.description ? (
-                    <InspectorInfoButton label={item.label} description={item.description} />
-                  ) : null}
+                  {item.description ? <InspectorInfoButton label={item.label} description={item.description} /> : null}
                 </div>
               </div>
               <p className="max-w-[48%] text-right font-mono text-xs uppercase tracking-[0.16em] text-[var(--color-secondary)]">
@@ -145,136 +142,127 @@ export function InspectorSection({
         ))}
       </div>
     </div>
-  );
+  )
 }
 
-export function InspectorInfoButton({
-  label,
-  description,
-}: {
-  label: string;
-  description: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const [pinned, setPinned] = useState(false);
-  const wrapperRef = useRef<HTMLSpanElement | null>(null);
-  const panelRef = useRef<HTMLDivElement | null>(null);
-  const closeTimeoutRef = useRef<number | null>(null);
-  const panelId = useId();
+export function InspectorInfoButton({ label, description }: { label: string; description: string }) {
+  const [open, setOpen] = useState(false)
+  const [pinned, setPinned] = useState(false)
+  const wrapperRef = useRef<HTMLSpanElement | null>(null)
+  const panelRef = useRef<HTMLDivElement | null>(null)
+  const closeTimeoutRef = useRef<number | null>(null)
+  const panelId = useId()
 
   useEffect(() => {
     if (!open) {
-      return;
+      return
     }
 
     const positionPanel = () => {
-      const wrapper = wrapperRef.current;
-      const panel = panelRef.current;
+      const wrapper = wrapperRef.current
+      const panel = panelRef.current
 
       if (!wrapper || !panel) {
-        return;
+        return
       }
 
-      const gutter = 16;
-      const preferredWidth = 288;
-      const availableWidth = Math.max(220, window.innerWidth - (gutter * 2));
-      const width = Math.min(preferredWidth, availableWidth);
-      const wrapperRect = wrapper.getBoundingClientRect();
+      const gutter = 16
+      const preferredWidth = 288
+      const availableWidth = Math.max(220, window.innerWidth - gutter * 2)
+      const width = Math.min(preferredWidth, availableWidth)
+      const wrapperRect = wrapper.getBoundingClientRect()
 
-      panel.style.position = "fixed";
-      panel.style.width = `${width}px`;
+      panel.style.position = "fixed"
+      panel.style.width = `${width}px`
 
-      const panelHeight = panel.offsetHeight;
-      const centeredLeft = wrapperRect.left + (wrapperRect.width / 2) - (width / 2);
-      const left = Math.min(
-        Math.max(gutter, centeredLeft),
-        Math.max(gutter, window.innerWidth - width - gutter),
-      );
+      const panelHeight = panel.offsetHeight
+      const centeredLeft = wrapperRect.left + wrapperRect.width / 2 - width / 2
+      const left = Math.min(Math.max(gutter, centeredLeft), Math.max(gutter, window.innerWidth - width - gutter))
 
-      const belowTop = wrapperRect.bottom + 8;
-      const aboveTop = wrapperRect.top - panelHeight - 8;
+      const belowTop = wrapperRect.bottom + 8
+      const aboveTop = wrapperRect.top - panelHeight - 8
       const top =
         belowTop + panelHeight <= window.innerHeight - gutter || aboveTop < gutter
           ? Math.min(belowTop, Math.max(gutter, window.innerHeight - panelHeight - gutter))
-          : aboveTop;
+          : aboveTop
 
-      panel.style.left = `${left}px`;
-      panel.style.top = `${top}px`;
-    };
+      panel.style.left = `${left}px`
+      panel.style.top = `${top}px`
+    }
 
-    const rafId = window.requestAnimationFrame(positionPanel);
-    window.addEventListener("resize", positionPanel);
-    window.addEventListener("scroll", positionPanel, true);
+    const rafId = window.requestAnimationFrame(positionPanel)
+    window.addEventListener("resize", positionPanel)
+    window.addEventListener("scroll", positionPanel, true)
 
     return () => {
-      window.cancelAnimationFrame(rafId);
-      window.removeEventListener("resize", positionPanel);
-      window.removeEventListener("scroll", positionPanel, true);
-    };
-  }, [open]);
+      window.cancelAnimationFrame(rafId)
+      window.removeEventListener("resize", positionPanel)
+      window.removeEventListener("scroll", positionPanel, true)
+    }
+  }, [open])
 
   useEffect(() => {
     if (!open) {
-      return;
+      return
     }
 
     const onPointerDown = (event: PointerEvent) => {
       if (!wrapperRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-        setPinned(false);
+        setOpen(false)
+        setPinned(false)
       }
-    };
+    }
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setOpen(false);
-        setPinned(false);
+        setOpen(false)
+        setPinned(false)
       }
-    };
+    }
 
-    window.addEventListener("pointerdown", onPointerDown);
-    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("pointerdown", onPointerDown)
+    window.addEventListener("keydown", onKeyDown)
     return () => {
-      window.removeEventListener("pointerdown", onPointerDown);
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
+      window.removeEventListener("pointerdown", onPointerDown)
+      window.removeEventListener("keydown", onKeyDown)
+    }
+  }, [open])
 
   useEffect(() => {
     return () => {
       if (closeTimeoutRef.current !== null) {
-        window.clearTimeout(closeTimeoutRef.current);
+        window.clearTimeout(closeTimeoutRef.current)
       }
-    };
-  }, []);
+    }
+  }, [])
 
   const cancelClose = () => {
     if (closeTimeoutRef.current !== null) {
-      window.clearTimeout(closeTimeoutRef.current);
-      closeTimeoutRef.current = null;
+      window.clearTimeout(closeTimeoutRef.current)
+      closeTimeoutRef.current = null
     }
-  };
+  }
 
   const scheduleClose = () => {
-    cancelClose();
+    cancelClose()
 
     if (pinned) {
-      return;
+      return
     }
 
     closeTimeoutRef.current = window.setTimeout(() => {
-      setOpen(false);
-    }, 120);
-  };
+      setOpen(false)
+    }, 120)
+  }
 
   return (
     <span
       ref={wrapperRef}
       className="relative inline-flex"
       onMouseEnter={() => {
-        cancelClose();
+        cancelClose()
         if (!pinned) {
-          setOpen(true);
+          setOpen(true)
         }
       }}
       onMouseLeave={scheduleClose}
@@ -286,20 +274,20 @@ export function InspectorInfoButton({
         aria-controls={panelId}
         className="inline-flex size-5 items-center justify-center rounded-full border border-[color:var(--effect-ghost-border)] bg-[var(--color-surface-container-low)] text-[var(--color-secondary)] transition-colors hover:bg-[var(--color-primary-fixed)]/25 hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
         onClick={() => {
-          cancelClose();
+          cancelClose()
           setPinned((current) => {
-            const next = !current;
-            setOpen(next || !open);
-            return next;
-          });
+            const next = !current
+            setOpen(next || !open)
+            return next
+          })
         }}
         onFocus={() => {
-          cancelClose();
-          setOpen(true);
+          cancelClose()
+          setOpen(true)
         }}
         onBlur={() => {
           if (!pinned) {
-            scheduleClose();
+            scheduleClose()
           }
         }}
       >
@@ -320,5 +308,5 @@ export function InspectorInfoButton({
         {description}
       </div>
     </span>
-  );
+  )
 }

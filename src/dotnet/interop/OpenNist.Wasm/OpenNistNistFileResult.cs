@@ -41,7 +41,7 @@ internal sealed record OpenNistNistFileResult(
                 : logicalRecordLength ?? 0;
 
             records.Add(
-                new OpenNistNistRecordResult(
+                new(
                     record.Type,
                     record.Fields.Count,
                     logicalRecordLength,
@@ -86,7 +86,7 @@ internal sealed record OpenNistNistFileInput(List<OpenNistNistRecordInput> Recor
 {
     public NistFile ToFile()
     {
-        return new NistFile(
+        return new(
             Records.Select(
                 static record => new NistRecord(
                     record.Type,

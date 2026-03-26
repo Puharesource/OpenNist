@@ -13,7 +13,7 @@ internal static class NistTestData
             throw new ArgumentException("At least one transaction content descriptor is required.", nameof(descriptors));
         }
 
-        return NistField.Create(new NistTag(1, 3), descriptors);
+        return NistField.Create(new(1, 3), descriptors);
     }
 
     public static byte[] BuildFile(IReadOnlyList<IReadOnlyList<string>> records)
@@ -60,19 +60,19 @@ internal static class NistTestData
 
     public static NistFile CreateSampleFile()
     {
-        return new NistFile(
+        return new(
             [
-                new NistRecord(
+                new(
                     1,
                     [
-                        new NistField(new NistTag(1, 1), "999"),
-                        new NistField(new NistTag(1, 2), "0500"),
+                        new(new(1, 1), "999"),
+                        new(new(1, 2), "0500"),
                         CreateTransactionContentField(["1", "0"], ["2", "0"]),
                     ]),
-                new NistRecord(
+                new(
                     2,
                     [
-                        new NistField(new NistTag(2, 2), "ABC123"),
+                        new NistField(new(2, 2), "ABC123"),
                     ]),
             ]);
     }

@@ -16,5 +16,5 @@ public static class PackageInfo
 
 internal static class InternalVisibilityProbe
 {
-    internal const string PackageId = PackageInfo.PackageId;
+    internal const string s_packageId = PackageInfo.PackageId;
 }

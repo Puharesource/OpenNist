@@ -1,9 +1,0 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <Description>JPEG 2000-oriented scaffolding for the OpenNist package ecosystem.</Description>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\OpenNist.Core\OpenNist.Core.csproj" />
-  </ItemGroup>
-</Project>

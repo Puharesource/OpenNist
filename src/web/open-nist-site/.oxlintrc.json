@@ -3,9 +3,5 @@
     "builtin": true,
     "browser": true
   },
-  "ignorePatterns": [
-    "dist",
-    "node_modules",
-    "public/opennist-wasm"
-  ]
+  "ignorePatterns": ["dist", "node_modules", "public/opennist-wasm"]
 }

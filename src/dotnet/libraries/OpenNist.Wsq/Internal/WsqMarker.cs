@@ -15,9 +15,14 @@ internal enum WsqMarker : ushort
 
 internal static class WsqMarkerExtensions
 {
+    public static bool IsValid(this ushort markerValue)
+    {
+        return markerValue is >= (ushort)WsqMarker.StartOfImage and <= (ushort)WsqMarker.Comment;
+    }
+
     public static bool IsValid(this WsqMarker marker)
     {
-        return marker is >= WsqMarker.StartOfImage and <= WsqMarker.Comment;
+        return ((ushort)marker).IsValid();
     }
 
     public static bool IsTableOrCommentBeforeFrame(this WsqMarker marker)

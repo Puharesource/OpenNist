@@ -9,7 +9,7 @@ using OpenNist.Tests.Nfiq.TestSupport;
 [Category("Integration: NFIQ2 - Managed ImgProcROI Module")]
 internal sealed class Nfiq2ImgProcRoiModuleTests
 {
-    private const double NativeFloatingPointTolerance = 0.02;
+    private const double s_nativeFloatingPointTolerance = 0.02;
     private static readonly Nfiq2Algorithm s_algorithm = Nfiq2TestContext.Algorithm;
 
     [Test]
@@ -38,7 +38,7 @@ internal sealed class Nfiq2ImgProcRoiModuleTests
         const int height = 32;
         var pixels = Enumerable.Repeat((byte)255, width * height).ToArray();
 
-        var result = Nfiq2ImgProcRoiModule.Compute(new Nfiq2FingerprintImage(pixels, width, height));
+        var result = Nfiq2ImgProcRoiModule.Compute(new(pixels, width, height));
 
         await Assert.That(result.RoiPixels).IsEqualTo(0U);
         await Assert.That(result.MeanOfRoiPixels).IsEqualTo(255.0);
@@ -53,7 +53,7 @@ internal sealed class Nfiq2ImgProcRoiModuleTests
             throw new InvalidOperationException($"{context} was NA in the official NFIQ 2 result.");
         }
 
-        if (Math.Abs(expectedValue.Value - actualValue) > NativeFloatingPointTolerance)
+        if (Math.Abs(expectedValue.Value - actualValue) > s_nativeFloatingPointTolerance)
         {
             throw new InvalidOperationException(
                 $"{context} diverged from the official NFIQ 2 value. "

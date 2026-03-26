@@ -1,8 +1,8 @@
 namespace OpenNist.Wasm;
 
-using System.Text.Json;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
+using System.Text.Json;
 using OpenNist.Nfiq;
 using OpenNist.Nist;
 using OpenNist.Wsq;
@@ -10,8 +10,8 @@ using OpenNist.Wsq;
 [SupportedOSPlatform("browser")]
 internal static partial class OpenNistWasmExports
 {
-    private static readonly WsqCodec Codec = new();
-    private static readonly Nfiq2Algorithm Nfiq2 = new();
+    private static readonly WsqCodec s_codec = new();
+    private static readonly Nfiq2Algorithm s_nfiq2 = new();
 
     [JSExport]
     public static string GetVersion()
@@ -31,11 +31,11 @@ internal static partial class OpenNistWasmExports
         using var rawImageStream = new MemoryStream(rawPixels, writable: false);
         using var wsqStream = new MemoryStream();
 
-        Codec.EncodeAsync(
+        s_codec.EncodeAsync(
             rawImageStream,
             wsqStream,
-            new WsqRawImageDescription(width, height, BitsPerPixel: 8, PixelsPerInch: pixelsPerInch),
-            new WsqEncodeOptions(bitRate),
+            new(width, height, BitsPerPixel: 8, PixelsPerInch: pixelsPerInch),
+            new(bitRate),
             CancellationToken.None).AsTask().GetAwaiter().GetResult();
 
         return wsqStream.ToArray();
@@ -47,7 +47,7 @@ internal static partial class OpenNistWasmExports
         ArgumentNullException.ThrowIfNull(wsqBytes);
 
         using var metadataStream = new MemoryStream(wsqBytes, writable: false);
-        var fileInfo = Codec.InspectAsync(metadataStream, CancellationToken.None).AsTask().GetAwaiter().GetResult();
+        var fileInfo = s_codec.InspectAsync(metadataStream, CancellationToken.None).AsTask().GetAwaiter().GetResult();
 
         return JsonSerializer.Serialize(fileInfo, OpenNistWasmJsonContext.Default.WsqFileInfo);
     }
@@ -60,7 +60,7 @@ internal static partial class OpenNistWasmExports
         using var wsqStream = new MemoryStream(wsqBytes, writable: false);
         using var rawImageStream = new MemoryStream();
 
-        Codec.DecodeAsync(wsqStream, rawImageStream, CancellationToken.None).AsTask().GetAwaiter().GetResult();
+        s_codec.DecodeAsync(wsqStream, rawImageStream, CancellationToken.None).AsTask().GetAwaiter().GetResult();
 
         return rawImageStream.ToArray();
     }
@@ -74,9 +74,9 @@ internal static partial class OpenNistWasmExports
     {
         ArgumentNullException.ThrowIfNull(rawPixels);
 
-        var assessment = Nfiq2.AnalyzeAsync(
+        var assessment = s_nfiq2.AnalyzeAsync(
             rawPixels,
-            new Nfiq2RawImageDescription(width, height, BitsPerPixel: 8, PixelsPerInch: pixelsPerInch),
+            new(width, height, BitsPerPixel: 8, PixelsPerInch: pixelsPerInch),
             cancellationToken: CancellationToken.None).AsTask().GetAwaiter().GetResult();
 
         var browserAssessment = OpenNistNfiqAssessmentResult.FromAssessment(assessment);

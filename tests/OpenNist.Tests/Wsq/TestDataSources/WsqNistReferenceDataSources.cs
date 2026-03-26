@@ -130,14 +130,14 @@ internal static class WsqNistReferenceDataSources
     public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> Encode075CoefficientReferenceCases()
     {
         return CreateSingleBitRateRows(
-            WsqTestCaseDefinitions.LowBitRate,
+            WsqTestCaseDefinitions.s_lowBitRate,
             static fixture => $"should produce the exact NIST quantized coefficient bins for {fixture.FileName} at 0.75 bpp");
     }
 
     public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> Encode225CoefficientReferenceCases()
     {
         return CreateSingleBitRateRows(
-            WsqTestCaseDefinitions.HighBitRate,
+            WsqTestCaseDefinitions.s_highBitRate,
             static fixture => $"should produce the exact NIST quantized coefficient bins for {fixture.FileName} at 2.25 bpp");
     }
 
@@ -145,7 +145,7 @@ internal static class WsqNistReferenceDataSources
     {
         return CreateFileNameRows(
             s_activeExact225CoefficientFileNames,
-            WsqTestCaseDefinitions.HighBitRate,
+            WsqTestCaseDefinitions.s_highBitRate,
             static fixture => $"should produce the exact NIST quantized coefficient bins for active 2.25 bpp case {fixture.FileName}");
     }
 
@@ -159,7 +159,7 @@ internal static class WsqNistReferenceDataSources
     {
         return CreateFileNameRows(
             s_highPrecisionBlockerFileNames,
-            WsqTestCaseDefinitions.HighBitRate,
+            WsqTestCaseDefinitions.s_highBitRate,
             static fixture => $"should match the exact NIST quantized coefficient bins for blocker case {fixture.FileName} at 2.25 bpp via the high-precision encoder analysis path");
     }
 
@@ -167,7 +167,7 @@ internal static class WsqNistReferenceDataSources
     {
         return CreateFileNameRows(
             s_highPrecisionGuardFileNames,
-            WsqTestCaseDefinitions.HighBitRate,
+            WsqTestCaseDefinitions.s_highBitRate,
             static fixture => $"should keep the exact NIST 2.25 bpp guard case {fixture.FileName} green while diagnosing the remaining blocker cases");
     }
 
@@ -175,7 +175,7 @@ internal static class WsqNistReferenceDataSources
     {
         return CreateFileNameRows(
             s_highPrecisionProductPrecisionGuardFileNames,
-            WsqTestCaseDefinitions.HighBitRate,
+            WsqTestCaseDefinitions.s_highBitRate,
             static fixture => $"should keep exact 2.25 bpp guard case {fixture.FileName} out of the float-product high-rate path");
     }
 
@@ -183,7 +183,7 @@ internal static class WsqNistReferenceDataSources
     {
         return CreateFileNameRows(
             s_highPrecisionNbisAlignedBlockerFileNames,
-            WsqTestCaseDefinitions.HighBitRate,
+            WsqTestCaseDefinitions.s_highBitRate,
             static fixture => $"should isolate the NBIS-aligned qbin blocker class for {fixture.FileName} at 2.25 bpp");
     }
 
@@ -191,7 +191,7 @@ internal static class WsqNistReferenceDataSources
     {
         return CreateFileNameRows(
             s_highPrecisionRegionTwoFollowOnFileNames,
-            WsqTestCaseDefinitions.HighBitRate,
+            WsqTestCaseDefinitions.s_highBitRate,
             static fixture => $"should isolate the region-2 follow-on qbin drift for {fixture.FileName} at 2.25 bpp");
     }
 
@@ -205,7 +205,7 @@ internal static class WsqNistReferenceDataSources
     {
         return CreateFileNameRows(
             s_nbis225FocusedBlockerFileNames,
-            WsqTestCaseDefinitions.HighBitRate,
+            WsqTestCaseDefinitions.s_highBitRate,
             static fixture => $"should isolate the focused 2.25 bpp NBIS blocker case {fixture.FileName}");
     }
 
@@ -219,7 +219,7 @@ internal static class WsqNistReferenceDataSources
     public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> EncodeNbisActiveExactCodestreamReferenceCases()
     {
         return CreateAllBitRateRows(static (fixture, bitRate) =>
-            $"should match the exact local {WsqTestCaseDefinitions.Nbis500Version} codestream for active case {fixture.FileName} at {WsqTestCaseDefinitions.FormatBitRate(bitRate)} bpp");
+            $"should match the exact local {WsqTestCaseDefinitions.s_nbis500Version} codestream for active case {fixture.FileName} at {WsqTestCaseDefinitions.FormatBitRate(bitRate)} bpp");
     }
 
     public static IEnumerable<TestDataRow<WsqEncodingReferenceCase>> EncodeNbis075FocusedMismatchReferenceCases()
@@ -247,7 +247,7 @@ internal static class WsqNistReferenceDataSources
     {
         return CreateFileNameRows(
             s_highPrecisionSerializedBinSensitiveExactFileNames,
-            WsqTestCaseDefinitions.HighBitRate,
+            WsqTestCaseDefinitions.s_highBitRate,
             static fixture => $"should keep exact 2.25 bpp case {fixture.FileName} out of the serialized subband-0 blocker fix bucket");
     }
 
@@ -276,8 +276,8 @@ internal static class WsqNistReferenceDataSources
     {
         foreach (var fixture in WsqNistReferenceFixtureCatalog.EncodeFixtures)
         {
-            yield return CreateRow(fixture, WsqTestCaseDefinitions.LowBitRate, displayNameFactory(fixture, WsqTestCaseDefinitions.LowBitRate));
-            yield return CreateRow(fixture, WsqTestCaseDefinitions.HighBitRate, displayNameFactory(fixture, WsqTestCaseDefinitions.HighBitRate));
+            yield return CreateRow(fixture, WsqTestCaseDefinitions.s_lowBitRate, displayNameFactory(fixture, WsqTestCaseDefinitions.s_lowBitRate));
+            yield return CreateRow(fixture, WsqTestCaseDefinitions.s_highBitRate, displayNameFactory(fixture, WsqTestCaseDefinitions.s_highBitRate));
         }
     }
 
@@ -340,8 +340,8 @@ internal static class WsqNistReferenceDataSources
 
     private static IEnumerable<double> EnumerateSupportedBitRates()
     {
-        yield return WsqTestCaseDefinitions.LowBitRate;
-        yield return WsqTestCaseDefinitions.HighBitRate;
+        yield return WsqTestCaseDefinitions.s_lowBitRate;
+        yield return WsqTestCaseDefinitions.s_highBitRate;
     }
 
     private static TestDataRow<WsqEncodingReferenceCase> CreateRow(

@@ -8,26 +8,26 @@ using JetBrains.Annotations;
 [PublicAPI]
 public static class Nfiq2QualityBlockMapper
 {
-    private const double OrientationFlowAngleMinDegrees = 4.0;
-    private const string ImageMean = "Mu";
-    private const string MeanOfBlockMeans = "MMB";
-    private const string RegionOfInterestMean = "ImgProcROIArea_Mean";
-    private const string MinutiaeCount = "FingerJetFX_MinutiaeCount";
-    private const string MinutiaeCountCom = "FingerJetFX_MinCount_COMMinRect200x200";
-    private const string MinutiaePercentImageMean50 = "FJFXPos_Mu_MinutiaeQuality_2";
-    private const string MinutiaePercentOrientationCertainty80 = "FJFXPos_OCL_MinutiaeQuality_80";
-    private const string RegionOfInterestCoherenceMean = "OrientationMap_ROIFilter_CoherenceRel";
-    private const string RegionOfInterestCoherenceSum = "OrientationMap_ROIFilter_CoherenceSum";
-    private const string FrequencyDomainAnalysisMean = "FDA_Bin10_Mean";
-    private const string FrequencyDomainAnalysisStdDev = "FDA_Bin10_StdDev";
-    private const string LocalClarityMean = "LCS_Bin10_Mean";
-    private const string LocalClarityStdDev = "LCS_Bin10_StdDev";
-    private const string OrientationCertaintyMean = "OCL_Bin10_Mean";
-    private const string OrientationCertaintyStdDev = "OCL_Bin10_StdDev";
-    private const string OrientationFlowMean = "OF_Bin10_Mean";
-    private const string OrientationFlowStdDev = "OF_Bin10_StdDev";
-    private const string RidgeValleyUniformityMean = "RVUP_Bin10_Mean";
-    private const string RidgeValleyUniformityStdDev = "RVUP_Bin10_StdDev";
+    private const double s_orientationFlowAngleMinDegrees = 4.0;
+    private const string s_imageMean = "Mu";
+    private const string s_meanOfBlockMeans = "MMB";
+    private const string s_regionOfInterestMean = "ImgProcROIArea_Mean";
+    private const string s_minutiaeCount = "FingerJetFX_MinutiaeCount";
+    private const string s_minutiaeCountCom = "FingerJetFX_MinCount_COMMinRect200x200";
+    private const string s_minutiaePercentImageMean50 = "FJFXPos_Mu_MinutiaeQuality_2";
+    private const string s_minutiaePercentOrientationCertainty80 = "FJFXPos_OCL_MinutiaeQuality_80";
+    private const string s_regionOfInterestCoherenceMean = "OrientationMap_ROIFilter_CoherenceRel";
+    private const string s_regionOfInterestCoherenceSum = "OrientationMap_ROIFilter_CoherenceSum";
+    private const string s_frequencyDomainAnalysisMean = "FDA_Bin10_Mean";
+    private const string s_frequencyDomainAnalysisStdDev = "FDA_Bin10_StdDev";
+    private const string s_localClarityMean = "LCS_Bin10_Mean";
+    private const string s_localClarityStdDev = "LCS_Bin10_StdDev";
+    private const string s_orientationCertaintyMean = "OCL_Bin10_Mean";
+    private const string s_orientationCertaintyStdDev = "OCL_Bin10_StdDev";
+    private const string s_orientationFlowMean = "OF_Bin10_Mean";
+    private const string s_orientationFlowStdDev = "OF_Bin10_StdDev";
+    private const string s_ridgeValleyUniformityMean = "RVUP_Bin10_Mean";
+    private const string s_ridgeValleyUniformityStdDev = "RVUP_Bin10_StdDev";
 
     /// <summary>
     /// Maps all supplied native quality measures to quality-block values where supported.
@@ -39,10 +39,13 @@ public static class Nfiq2QualityBlockMapper
     {
         ArgumentNullException.ThrowIfNull(nativeQualityMeasures);
 
-        return nativeQualityMeasures.ToDictionary(
-            static pair => pair.Key,
-            static pair => GetQualityBlockValue(pair.Key, pair.Value),
-            StringComparer.Ordinal);
+        var mappedValues = new Dictionary<string, byte?>(nativeQualityMeasures.Count, StringComparer.Ordinal);
+        foreach (var pair in nativeQualityMeasures)
+        {
+            mappedValues[pair.Key] = GetQualityBlockValue(pair.Key, pair.Value);
+        }
+
+        return mappedValues;
     }
 
     /// <summary>
@@ -55,40 +58,40 @@ public static class Nfiq2QualityBlockMapper
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(featureIdentifier);
 
-        if (featureIdentifier is ImageMean or MeanOfBlockMeans or RegionOfInterestMean)
+        if (featureIdentifier is s_imageMean or s_meanOfBlockMeans or s_regionOfInterestMean)
         {
             return KnownRange(nativeQualityMeasureValue, 0.0, 255.0);
         }
 
-        if (featureIdentifier is MinutiaeCount or MinutiaeCountCom)
+        if (featureIdentifier is s_minutiaeCount or s_minutiaeCountCom)
         {
             return checked((byte)Math.Min(nativeQualityMeasureValue, 100.0));
         }
 
-        if (featureIdentifier is MinutiaePercentOrientationCertainty80 or RegionOfInterestCoherenceMean
-            or MinutiaePercentImageMean50 or FrequencyDomainAnalysisMean or LocalClarityMean
-            or OrientationCertaintyMean or FrequencyDomainAnalysisStdDev or LocalClarityStdDev
-            or OrientationCertaintyStdDev or OrientationFlowStdDev)
+        if (featureIdentifier is s_minutiaePercentOrientationCertainty80 or s_regionOfInterestCoherenceMean
+            or s_minutiaePercentImageMean50 or s_frequencyDomainAnalysisMean or s_localClarityMean
+            or s_orientationCertaintyMean or s_frequencyDomainAnalysisStdDev or s_localClarityStdDev
+            or s_orientationCertaintyStdDev or s_orientationFlowStdDev)
         {
             return KnownRange(nativeQualityMeasureValue, 0.0, 1.0);
         }
 
-        if (featureIdentifier == RegionOfInterestCoherenceSum)
+        if (featureIdentifier == s_regionOfInterestCoherenceSum)
         {
             return KnownRange(nativeQualityMeasureValue, 0.0, 3150.0);
         }
 
-        if (featureIdentifier == OrientationFlowMean)
+        if (featureIdentifier == s_orientationFlowMean)
         {
             const double degreesToRadians = Math.PI / 180.0;
-            var thetaMinRadians = OrientationFlowAngleMinDegrees * degreesToRadians;
+            var thetaMinRadians = s_orientationFlowAngleMinDegrees * degreesToRadians;
             var denominator = (90.0 * degreesToRadians) - thetaMinRadians;
             var minLocalValue = (0.0 - thetaMinRadians) / denominator;
             var maxLocalValue = ((180.0 * degreesToRadians) - thetaMinRadians) / denominator;
             return KnownRange(nativeQualityMeasureValue, minLocalValue, maxLocalValue);
         }
 
-        if (featureIdentifier is RidgeValleyUniformityMean or RidgeValleyUniformityStdDev)
+        if (featureIdentifier is s_ridgeValleyUniformityMean or s_ridgeValleyUniformityStdDev)
         {
             return checked((byte)Math.Floor((100.0 * Sigmoid(nativeQualityMeasureValue, 1.0, 0.5)) + 0.5));
         }

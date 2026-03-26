@@ -56,54 +56,60 @@ internal static class Nfiq2FingerJetOrientationSupport
     public static void BoxFilterByte(Span<byte> values, int width, int size, int boxSize, byte threshold)
     {
         var n2 = boxSize / 2;
-        var verticalAccumulators = new byte[width];
-        var verticalDelay = new RingDelay<byte>(boxSize * width);
-
-        for (var y = 0; y < size + (n2 * width); y += width)
+        var verticalAccumulatorBuffer = System.Buffers.ArrayPool<byte>.Shared.Rent(width);
+        var verticalDelayBuffer = System.Buffers.ArrayPool<byte>.Shared.Rent(boxSize * width);
+        var horizontalDelayBuffer = System.Buffers.ArrayPool<byte>.Shared.Rent(boxSize);
+        try
         {
-            var horizontalDelay = new RingDelay<byte>(boxSize);
-            byte horizontalAccumulator = 0;
-            for (var x = 0; x < width + n2; x++)
-            {
-                byte filtered = 0;
-                if (x < width)
-                {
-                    byte input = y < size ? values[y + x] : (byte)0;
-                    var accumulator = unchecked((byte)(verticalAccumulators[x] + input));
-                    accumulator = unchecked((byte)(accumulator - verticalDelay.Next(input)));
-                    verticalAccumulators[x] = accumulator;
-                    filtered = accumulator;
-                }
+            var verticalAccumulators = verticalAccumulatorBuffer.AsSpan(0, width);
+            verticalAccumulators.Clear();
+            var verticalDelay = verticalDelayBuffer.AsSpan(0, boxSize * width);
+            verticalDelay.Clear();
+            var verticalDelayIndex = 0;
 
-                if (y >= n2 * width)
+            for (var y = 0; y < size + (n2 * width); y += width)
+            {
+                var horizontalDelay = horizontalDelayBuffer.AsSpan(0, boxSize);
+                horizontalDelay.Clear();
+                var horizontalDelayIndex = 0;
+                byte horizontalAccumulator = 0;
+                for (var x = 0; x < width + n2; x++)
                 {
-                    horizontalAccumulator = unchecked((byte)(horizontalAccumulator + filtered));
-                    if (x < n2)
+                    byte filtered = 0;
+                    if (x < width)
                     {
-                        horizontalDelay.Next(filtered);
+                        var input = y < size ? values[y + x] : (byte)0;
+                        var accumulator = unchecked((byte)(verticalAccumulators[x] + input));
+                        accumulator = unchecked((byte)(accumulator - NextDelay(verticalDelay, ref verticalDelayIndex, input)));
+                        verticalAccumulators[x] = accumulator;
+                        filtered = accumulator;
                     }
-                    else
+
+                    if (y >= n2 * width)
                     {
-                        horizontalAccumulator = unchecked((byte)(horizontalAccumulator - horizontalDelay.Next(filtered)));
-                        filtered = horizontalAccumulator;
-                        values[y - ((width + 1) * n2) + x] = filtered > threshold ? (byte)1 : (byte)0;
+                        horizontalAccumulator = unchecked((byte)(horizontalAccumulator + filtered));
+                        if (x < n2)
+                        {
+                            NextDelay(horizontalDelay, ref horizontalDelayIndex, filtered);
+                        }
+                        else
+                        {
+                            horizontalAccumulator = unchecked((byte)(horizontalAccumulator - NextDelay(horizontalDelay, ref horizontalDelayIndex, filtered)));
+                            filtered = horizontalAccumulator;
+                            values[y - ((width + 1) * n2) + x] = filtered > threshold ? (byte)1 : (byte)0;
+                        }
                     }
                 }
             }
         }
-    }
-
-    private sealed class RingDelay<T>
-    {
-        private readonly T[] buffer;
-        private int index;
-
-        public RingDelay(int length)
+        finally
         {
-            buffer = new T[length];
+            System.Buffers.ArrayPool<byte>.Shared.Return(verticalAccumulatorBuffer, clearArray: false);
+            System.Buffers.ArrayPool<byte>.Shared.Return(verticalDelayBuffer, clearArray: false);
+            System.Buffers.ArrayPool<byte>.Shared.Return(horizontalDelayBuffer, clearArray: false);
         }
 
-        public T Next(T input)
+        static byte NextDelay(Span<byte> buffer, ref int index, byte input)
         {
             var output = buffer[index];
             buffer[index] = input;

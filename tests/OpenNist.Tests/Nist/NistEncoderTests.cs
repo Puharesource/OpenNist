@@ -51,11 +51,11 @@ internal sealed class NistEncoderTests
     {
         var file = new NistFile(
             [
-                new NistRecord(
+                new(
                     10,
                     [
-                        new NistField(new NistTag(10, 2), "HDR"),
-                        new NistField(new NistTag(10, 3), "VALUE"),
+                        new(new(10, 2), "HDR"),
+                        new NistField(new(10, 3), "VALUE"),
                     ]),
             ]);
 

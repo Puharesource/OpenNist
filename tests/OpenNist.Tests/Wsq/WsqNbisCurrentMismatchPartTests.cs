@@ -10,27 +10,27 @@ using OpenNist.Tests.Wsq.TestSupport;
 internal sealed class WsqNbisCurrentMismatchPartTests
 {
     private static readonly Dictionary<string, WsqNbisCurrentMismatchProfile> s_expectedProfiles =
-        new Dictionary<string, WsqNbisCurrentMismatchProfile>(StringComparer.Ordinal)
+        new(StringComparer.Ordinal)
         {
-            [WsqTestCaseDefinitions.CreateCaseKey("a002.raw", WsqTestCaseDefinitions.HighBitRate)] = new(201557, 38, 16, 41, 1, 2),
-            [WsqTestCaseDefinitions.CreateCaseKey("a018.raw", WsqTestCaseDefinitions.HighBitRate)] = new(465, 0, 9, 42, 270, 271),
-            [WsqTestCaseDefinitions.CreateCaseKey("a089.raw", WsqTestCaseDefinitions.HighBitRate)] = new(66271, 13, 43, 8, 6, 5),
-            [WsqTestCaseDefinitions.CreateCaseKey("a107.raw", WsqTestCaseDefinitions.HighBitRate)] = new(257586, 38, 28, 4, 3, 4),
-            [WsqTestCaseDefinitions.CreateCaseKey("b157.raw", WsqTestCaseDefinitions.HighBitRate)] = new(97598, 18, 53, 59, 1, 0),
-            [WsqTestCaseDefinitions.CreateCaseKey("b158.raw", WsqTestCaseDefinitions.HighBitRate)] = new(1270, 3, 8, 9, -1, 0),
-            [WsqTestCaseDefinitions.CreateCaseKey("cmp00001.raw", WsqTestCaseDefinitions.HighBitRate)] = new(12235, 11, 26, 25, -220, -221),
-            [WsqTestCaseDefinitions.CreateCaseKey("cmp00004.raw", WsqTestCaseDefinitions.HighBitRate)] = new(2057, 3, 9, 10, -54, -55),
-            [WsqTestCaseDefinitions.CreateCaseKey("cmp00005.raw", WsqTestCaseDefinitions.LowBitRate)] = new(37142, 17, 42, 14, -1, -2),
-            [WsqTestCaseDefinitions.CreateCaseKey("cmp00005.raw", WsqTestCaseDefinitions.HighBitRate)] = new(164, 0, 6, 8, -4463, -4464),
-            [WsqTestCaseDefinitions.CreateCaseKey("cmp00006.raw", WsqTestCaseDefinitions.HighBitRate)] = new(6649, 5, 31, 45, 39, 40),
-            [WsqTestCaseDefinitions.CreateCaseKey("cmp00007.raw", WsqTestCaseDefinitions.HighBitRate)] = new(15836, 14, 21, 2, 36, 37),
-            [WsqTestCaseDefinitions.CreateCaseKey("cmp00008.raw", WsqTestCaseDefinitions.HighBitRate)] = new(355488, 57, 90, 88, -2, -3),
-            [WsqTestCaseDefinitions.CreateCaseKey("cmp00011.raw", WsqTestCaseDefinitions.LowBitRate)] = new(18090, 13, 19, 24, -4, -3),
-            [WsqTestCaseDefinitions.CreateCaseKey("cmp00011.raw", WsqTestCaseDefinitions.HighBitRate)] = new(445, 0, 22, 5, 161, 160),
-            [WsqTestCaseDefinitions.CreateCaseKey("cmp00017.raw", WsqTestCaseDefinitions.HighBitRate)] = new(3791, 5, 30, 29, 78, 77),
-            [WsqTestCaseDefinitions.CreateCaseKey("sample_11.raw", WsqTestCaseDefinitions.HighBitRate)] = new(91038, 12, 65, 38, -39, -40),
-            [WsqTestCaseDefinitions.CreateCaseKey("sample_19.raw", WsqTestCaseDefinitions.LowBitRate)] = new(46463, 7, 88, 63, 7, 6),
-            [WsqTestCaseDefinitions.CreateCaseKey("sample_19.raw", WsqTestCaseDefinitions.HighBitRate)] = new(1770, 0, 35, 20, -1714, -1713),
+            [WsqTestCaseDefinitions.CreateCaseKey("a002.raw", WsqTestCaseDefinitions.s_highBitRate)] = new(201557, 38, 16, 41, 1, 2),
+            [WsqTestCaseDefinitions.CreateCaseKey("a018.raw", WsqTestCaseDefinitions.s_highBitRate)] = new(465, 0, 9, 42, 270, 271),
+            [WsqTestCaseDefinitions.CreateCaseKey("a089.raw", WsqTestCaseDefinitions.s_highBitRate)] = new(66271, 13, 43, 8, 6, 5),
+            [WsqTestCaseDefinitions.CreateCaseKey("a107.raw", WsqTestCaseDefinitions.s_highBitRate)] = new(257586, 38, 28, 4, 3, 4),
+            [WsqTestCaseDefinitions.CreateCaseKey("b157.raw", WsqTestCaseDefinitions.s_highBitRate)] = new(97598, 18, 53, 59, 1, 0),
+            [WsqTestCaseDefinitions.CreateCaseKey("b158.raw", WsqTestCaseDefinitions.s_highBitRate)] = new(1270, 3, 8, 9, -1, 0),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00001.raw", WsqTestCaseDefinitions.s_highBitRate)] = new(12235, 11, 26, 25, -220, -221),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00004.raw", WsqTestCaseDefinitions.s_highBitRate)] = new(2057, 3, 9, 10, -54, -55),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00005.raw", WsqTestCaseDefinitions.s_lowBitRate)] = new(37142, 17, 42, 14, -1, -2),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00005.raw", WsqTestCaseDefinitions.s_highBitRate)] = new(164, 0, 6, 8, -4463, -4464),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00006.raw", WsqTestCaseDefinitions.s_highBitRate)] = new(6649, 5, 31, 45, 39, 40),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00007.raw", WsqTestCaseDefinitions.s_highBitRate)] = new(15836, 14, 21, 2, 36, 37),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00008.raw", WsqTestCaseDefinitions.s_highBitRate)] = new(355488, 57, 90, 88, -2, -3),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00011.raw", WsqTestCaseDefinitions.s_lowBitRate)] = new(18090, 13, 19, 24, -4, -3),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00011.raw", WsqTestCaseDefinitions.s_highBitRate)] = new(445, 0, 22, 5, 161, 160),
+            [WsqTestCaseDefinitions.CreateCaseKey("cmp00017.raw", WsqTestCaseDefinitions.s_highBitRate)] = new(3791, 5, 30, 29, 78, 77),
+            [WsqTestCaseDefinitions.CreateCaseKey("sample_11.raw", WsqTestCaseDefinitions.s_highBitRate)] = new(91038, 12, 65, 38, -39, -40),
+            [WsqTestCaseDefinitions.CreateCaseKey("sample_19.raw", WsqTestCaseDefinitions.s_lowBitRate)] = new(46463, 7, 88, 63, 7, 6),
+            [WsqTestCaseDefinitions.CreateCaseKey("sample_19.raw", WsqTestCaseDefinitions.s_highBitRate)] = new(1770, 0, 35, 20, -1714, -1713),
         };
 
     [Test]

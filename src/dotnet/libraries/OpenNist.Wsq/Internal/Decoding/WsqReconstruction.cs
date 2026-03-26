@@ -1,5 +1,7 @@
 namespace OpenNist.Wsq.Internal.Decoding;
 
+using System.Buffers;
+
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Major Code Smell",
     "S1244:Floating point numbers should not be tested for equality",
@@ -36,38 +38,45 @@ internal static class WsqReconstruction
 
         var lowPassFilter = GetFilterSpan(transformTable.LowPassFilterCoefficients);
         var highPassFilter = GetFilterSpan(transformTable.HighPassFilterCoefficients);
-        var temporaryBuffer = new float[waveletData.Length];
-
-        for (var nodeIndex = waveletTree.Length - 1; nodeIndex >= 0; nodeIndex--)
+        var activeHighPassFilter = GetActiveHighPassFilter(highPassFilter, lowPassFilter.Length % 2 != 0);
+        var temporaryBuffer = ArrayPool<float>.Shared.Rent(waveletData.Length);
+        try
         {
-            var node = waveletTree[nodeIndex];
-            var baseOffset = node.Y * width + node.X;
+            for (var nodeIndex = waveletTree.Length - 1; nodeIndex >= 0; nodeIndex--)
+            {
+                var node = waveletTree[nodeIndex];
+                var baseOffset = node.Y * width + node.X;
 
-            JoinLets(
-                temporaryBuffer,
-                0,
-                waveletData,
-                baseOffset,
-                node.Width,
-                node.Height,
-                1,
-                width,
-                highPassFilter,
-                lowPassFilter,
-                node.InvertColumns);
+                JoinLets(
+                    temporaryBuffer.AsSpan(0, waveletData.Length),
+                    0,
+                    waveletData,
+                    baseOffset,
+                    node.Width,
+                    node.Height,
+                    1,
+                    width,
+                    activeHighPassFilter,
+                    lowPassFilter,
+                    node.InvertColumns);
 
-            JoinLets(
-                waveletData,
-                baseOffset,
-                temporaryBuffer,
-                0,
-                node.Height,
-                node.Width,
-                width,
-                1,
-                highPassFilter,
-                lowPassFilter,
-                node.InvertRows);
+                JoinLets(
+                    waveletData,
+                    baseOffset,
+                    temporaryBuffer.AsSpan(0, waveletData.Length),
+                    0,
+                    node.Height,
+                    node.Width,
+                    width,
+                    1,
+                    activeHighPassFilter,
+                    lowPassFilter,
+                    node.InvertRows);
+            }
+        }
+        finally
+        {
+            ArrayPool<float>.Shared.Return(temporaryBuffer);
         }
 
         return waveletData;
@@ -89,14 +98,29 @@ internal static class WsqReconstruction
         int lineLength,
         int linePitch,
         int sampleStride,
-        ReadOnlySpan<float> highPassFilter,
+        ReadOnlySpan<float> activeHighPassFilter,
         ReadOnlySpan<float> lowPassFilter,
         bool invertSubbands)
     {
         var destinationSamples = destination[destinationBaseOffset..];
         var sourceSamples = source[sourceBaseOffset..];
-        var configuration = CreateJoinConfiguration(lineLength, sampleStride, lowPassFilter.Length, highPassFilter.Length);
-        var activeHighPassFilter = GetActiveHighPassFilter(highPassFilter, configuration.LowPassFilterLengthIsOdd);
+        var configuration = CreateJoinConfiguration(lineLength, sampleStride, lowPassFilter.Length, activeHighPassFilter.Length);
+
+        if (!configuration.UsesAsymmetricExtension
+            && lowPassFilter.Length == 9
+            && activeHighPassFilter.Length == 7)
+        {
+            JoinLetsStandardOddFilters(
+                destinationSamples,
+                sourceSamples,
+                lineCount,
+                linePitch,
+                activeHighPassFilter,
+                lowPassFilter,
+                invertSubbands,
+                configuration);
+            return;
+        }
 
         for (var lineIndex = 0; lineIndex < lineCount; lineIndex++)
         {
@@ -140,6 +164,74 @@ internal static class WsqReconstruction
         }
     }
 
+    private static void JoinLetsStandardOddFilters(
+        Span<float> destinationSamples,
+        ReadOnlySpan<float> sourceSamples,
+        int lineCount,
+        int linePitch,
+        ReadOnlySpan<float> activeHighPassFilter,
+        ReadOnlySpan<float> lowPassFilter,
+        bool invertSubbands,
+        JoinConfiguration configuration)
+    {
+        for (var lineIndex = 0; lineIndex < lineCount; lineIndex++)
+        {
+            var writeIndex = lineIndex * linePitch;
+            InitializeLineOutput(destinationSamples, writeIndex, configuration.SampleStride);
+
+            var (lowPassBandOffset, highPassBandOffset) = GetBandOffsets(lineIndex, linePitch, invertSubbands, configuration);
+            var lowPassBandState = CreateLowPassBandState(writeIndex, lowPassBandOffset, configuration);
+            var highPassBandState = CreateHighPassBandState(writeIndex, highPassBandOffset, configuration);
+
+            for (var samplePairIndex = 0; samplePairIndex < configuration.HighPassSampleCount; samplePairIndex++)
+            {
+                for (var tapIndex = lowPassBandState.TapStartIndex; tapIndex >= 0; tapIndex--)
+                {
+                    destinationSamples[lowPassBandState.WriteIndex] =
+                        ComputeLowPassSample9(sourceSamples, lowPassFilter, tapIndex, lowPassBandState, configuration);
+                    lowPassBandState.WriteIndex += configuration.SampleStride;
+                }
+
+                AdvanceLowPassScanState(ref lowPassBandState, configuration);
+
+                for (var tapIndex = highPassBandState.TapStartIndex; tapIndex >= 0; tapIndex--)
+                {
+                    destinationSamples[highPassBandState.WriteIndex] = ComputeHighPassSample7(
+                        destinationSamples[highPassBandState.WriteIndex],
+                        sourceSamples,
+                        activeHighPassFilter,
+                        tapIndex,
+                        highPassBandState,
+                        configuration);
+                    highPassBandState.WriteIndex += configuration.SampleStride;
+                }
+
+                AdvanceHighPassScanState(ref highPassBandState, configuration);
+            }
+
+            lowPassBandState.TapStartIndex = GetTrailingLowPassTapStartIndex(configuration);
+            for (var tapIndex = 1; tapIndex >= lowPassBandState.TapStartIndex; tapIndex--)
+            {
+                destinationSamples[lowPassBandState.WriteIndex] =
+                    ComputeLowPassSample9(sourceSamples, lowPassFilter, tapIndex, lowPassBandState, configuration);
+                lowPassBandState.WriteIndex += configuration.SampleStride;
+            }
+
+            PrepareTrailingHighPassState(ref highPassBandState, activeHighPassFilter.Length, configuration);
+            for (var tapIndex = 1; tapIndex >= highPassBandState.TapStartIndex; tapIndex--)
+            {
+                destinationSamples[highPassBandState.WriteIndex] = ComputeHighPassSample7(
+                    destinationSamples[highPassBandState.WriteIndex],
+                    sourceSamples,
+                    activeHighPassFilter,
+                    tapIndex,
+                    highPassBandState,
+                    configuration);
+                highPassBandState.WriteIndex += configuration.SampleStride;
+            }
+        }
+    }
+
     private static JoinConfiguration CreateJoinConfiguration(
         int lineLength,
         int sampleStride,
@@ -161,7 +253,6 @@ internal static class WsqReconstruction
                 sampleStride,
                 -sampleStride,
                 isLineLengthOdd,
-                lowPassFilterLengthIsOdd,
                 false,
                 lowPassSampleCount,
                 highPassSampleCount,
@@ -199,7 +290,6 @@ internal static class WsqReconstruction
             sampleStride,
             -sampleStride,
             isLineLengthOdd,
-            lowPassFilterLengthIsOdd,
             true,
             lowPassSampleCount,
             highPassSampleCount,
@@ -395,6 +485,69 @@ internal static class WsqReconstruction
         return lowPassValue;
     }
 
+    private static float ComputeLowPassSample9(
+        ReadOnlySpan<float> sourceSamples,
+        ReadOnlySpan<float> lowPassFilter,
+        int tapIndex,
+        LowPassBandState bandState,
+        JoinConfiguration configuration)
+    {
+        var currentLeftEdgeState = bandState.NextLeftEdgeState;
+        var currentRightEdgeState = bandState.NextRightEdgeState;
+        var sourceIndex = bandState.ScanIndex;
+        var sourceStride = bandState.ScanStride;
+        var lowPassValue = sourceSamples[sourceIndex] * lowPassFilter[tapIndex];
+
+        AdvanceJoinSample(
+            ref sourceIndex,
+            ref sourceStride,
+            ref currentLeftEdgeState,
+            ref currentRightEdgeState,
+            bandState.StartIndex,
+            bandState.EndIndex,
+            configuration.SampleStride,
+            configuration.BackwardStride);
+        lowPassValue = MathF.FusedMultiplyAdd(sourceSamples[sourceIndex], lowPassFilter[tapIndex + 2], lowPassValue);
+
+        AdvanceJoinSample(
+            ref sourceIndex,
+            ref sourceStride,
+            ref currentLeftEdgeState,
+            ref currentRightEdgeState,
+            bandState.StartIndex,
+            bandState.EndIndex,
+            configuration.SampleStride,
+            configuration.BackwardStride);
+        lowPassValue = MathF.FusedMultiplyAdd(sourceSamples[sourceIndex], lowPassFilter[tapIndex + 4], lowPassValue);
+
+        AdvanceJoinSample(
+            ref sourceIndex,
+            ref sourceStride,
+            ref currentLeftEdgeState,
+            ref currentRightEdgeState,
+            bandState.StartIndex,
+            bandState.EndIndex,
+            configuration.SampleStride,
+            configuration.BackwardStride);
+        lowPassValue = MathF.FusedMultiplyAdd(sourceSamples[sourceIndex], lowPassFilter[tapIndex + 6], lowPassValue);
+
+        if (tapIndex == 0)
+        {
+            AdvanceJoinSample(
+                ref sourceIndex,
+                ref sourceStride,
+                ref currentLeftEdgeState,
+                ref currentRightEdgeState,
+                bandState.StartIndex,
+                bandState.EndIndex,
+                configuration.SampleStride,
+                configuration.BackwardStride);
+            lowPassValue = MathF.FusedMultiplyAdd(sourceSamples[sourceIndex], lowPassFilter[8], lowPassValue);
+        }
+
+        return lowPassValue;
+    }
+
     private static void AdvanceLowPassScanState(ref LowPassBandState bandState, JoinConfiguration configuration)
     {
         if (bandState.ScanIndex == bandState.StartIndex)
@@ -510,6 +663,112 @@ internal static class WsqReconstruction
         return currentValue;
     }
 
+    private static float ComputeHighPassSample7(
+        float currentValue,
+        ReadOnlySpan<float> sourceSamples,
+        ReadOnlySpan<float> highPassFilter,
+        int tapIndex,
+        HighPassBandState bandState,
+        JoinConfiguration configuration)
+    {
+        var currentLeftEdgeState = bandState.NextLeftEdgeState;
+        var currentRightEdgeState = bandState.NextRightEdgeState;
+        var sourceIndex = bandState.ScanIndex;
+        var sourceStride = bandState.ScanStride;
+        var sampleScaleFactor = bandState.CurrentOutputScaleFactor;
+
+        currentValue = MathF.FusedMultiplyAdd(
+            sourceSamples[sourceIndex] * highPassFilter[tapIndex],
+            sampleScaleFactor,
+            currentValue);
+
+        AdvanceJoinSample(
+            ref sourceIndex,
+            ref sourceStride,
+            ref currentLeftEdgeState,
+            ref currentRightEdgeState,
+            bandState.StartIndex,
+            bandState.EndIndex,
+            configuration.SampleStride,
+            configuration.BackwardStride);
+        currentValue = MathF.FusedMultiplyAdd(
+            sourceSamples[sourceIndex] * highPassFilter[tapIndex + 2],
+            1.0f,
+            currentValue);
+
+        AdvanceJoinSample(
+            ref sourceIndex,
+            ref sourceStride,
+            ref currentLeftEdgeState,
+            ref currentRightEdgeState,
+            bandState.StartIndex,
+            bandState.EndIndex,
+            configuration.SampleStride,
+            configuration.BackwardStride);
+        currentValue = MathF.FusedMultiplyAdd(
+            sourceSamples[sourceIndex] * highPassFilter[tapIndex + 4],
+            1.0f,
+            currentValue);
+
+        if (tapIndex == 0)
+        {
+            AdvanceJoinSample(
+                ref sourceIndex,
+                ref sourceStride,
+                ref currentLeftEdgeState,
+                ref currentRightEdgeState,
+                bandState.StartIndex,
+                bandState.EndIndex,
+                configuration.SampleStride,
+                configuration.BackwardStride);
+            currentValue = MathF.FusedMultiplyAdd(
+                sourceSamples[sourceIndex] * highPassFilter[6],
+                1.0f,
+                currentValue);
+        }
+
+        return currentValue;
+    }
+
+    private static void AdvanceJoinSample(
+        ref int sourceIndex,
+        ref int sourceStride,
+        ref int currentLeftEdgeState,
+        ref int currentRightEdgeState,
+        int startIndex,
+        int endIndex,
+        int sampleStride,
+        int backwardStride)
+    {
+        if (sourceIndex == startIndex)
+        {
+            if (currentLeftEdgeState != 0)
+            {
+                sourceStride = 0;
+                currentLeftEdgeState = 0;
+            }
+            else
+            {
+                sourceStride = sampleStride;
+            }
+        }
+
+        if (sourceIndex == endIndex)
+        {
+            if (currentRightEdgeState != 0)
+            {
+                sourceStride = 0;
+                currentRightEdgeState = 0;
+            }
+            else
+            {
+                sourceStride = backwardStride;
+            }
+        }
+
+        sourceIndex += sourceStride;
+    }
+
     private static void AdvanceHighPassScanState(ref HighPassBandState bandState, JoinConfiguration configuration)
     {
         if (bandState.ScanIndex == bandState.StartIndex)
@@ -562,24 +821,61 @@ internal static class WsqReconstruction
         return configuration.InitialHighPassRightEdgeFactor;
     }
 
-    private readonly record struct JoinConfiguration(
-        int SampleStride,
-        int BackwardStride,
-        bool IsLineLengthOdd,
-        bool LowPassFilterLengthIsOdd,
-        bool UsesAsymmetricExtension,
-        int LowPassSampleCount,
-        int HighPassSampleCount,
-        int LowPassCenterOffset,
-        int HighPassCenterOffset,
-        int LowPassInitialTapOffset,
-        int HighPassInitialTapOffset,
-        int InitialLowPassLeftEdgeState,
-        int InitialLowPassRightEdgeState,
-        int InitialHighPassLeftEdgeState,
-        int InitialHighPassRightEdgeState,
-        int InitialHighPassRightEdgeFactor,
-        float InitialScaleFactor);
+    private readonly struct JoinConfiguration
+    {
+        public JoinConfiguration(
+            int sampleStride,
+            int backwardStride,
+            bool isLineLengthOdd,
+            bool usesAsymmetricExtension,
+            int lowPassSampleCount,
+            int highPassSampleCount,
+            int lowPassCenterOffset,
+            int highPassCenterOffset,
+            int lowPassInitialTapOffset,
+            int highPassInitialTapOffset,
+            int initialLowPassLeftEdgeState,
+            int initialLowPassRightEdgeState,
+            int initialHighPassLeftEdgeState,
+            int initialHighPassRightEdgeState,
+            int initialHighPassRightEdgeFactor,
+            float initialScaleFactor)
+        {
+            SampleStride = sampleStride;
+            BackwardStride = backwardStride;
+            IsLineLengthOdd = isLineLengthOdd;
+            UsesAsymmetricExtension = usesAsymmetricExtension;
+            LowPassSampleCount = lowPassSampleCount;
+            HighPassSampleCount = highPassSampleCount;
+            LowPassCenterOffset = lowPassCenterOffset;
+            HighPassCenterOffset = highPassCenterOffset;
+            LowPassInitialTapOffset = lowPassInitialTapOffset;
+            HighPassInitialTapOffset = highPassInitialTapOffset;
+            InitialLowPassLeftEdgeState = initialLowPassLeftEdgeState;
+            InitialLowPassRightEdgeState = initialLowPassRightEdgeState;
+            InitialHighPassLeftEdgeState = initialHighPassLeftEdgeState;
+            InitialHighPassRightEdgeState = initialHighPassRightEdgeState;
+            InitialHighPassRightEdgeFactor = initialHighPassRightEdgeFactor;
+            InitialScaleFactor = initialScaleFactor;
+        }
+
+        public readonly int SampleStride;
+        public readonly int BackwardStride;
+        public readonly bool IsLineLengthOdd;
+        public readonly bool UsesAsymmetricExtension;
+        public readonly int LowPassSampleCount;
+        public readonly int HighPassSampleCount;
+        public readonly int LowPassCenterOffset;
+        public readonly int HighPassCenterOffset;
+        public readonly int LowPassInitialTapOffset;
+        public readonly int HighPassInitialTapOffset;
+        public readonly int InitialLowPassLeftEdgeState;
+        public readonly int InitialLowPassRightEdgeState;
+        public readonly int InitialHighPassLeftEdgeState;
+        public readonly int InitialHighPassRightEdgeState;
+        public readonly int InitialHighPassRightEdgeFactor;
+        public readonly float InitialScaleFactor;
+    }
 
     private struct LowPassBandState(
         int writeIndex,

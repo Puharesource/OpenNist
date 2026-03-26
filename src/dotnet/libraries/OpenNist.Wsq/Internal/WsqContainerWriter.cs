@@ -13,7 +13,7 @@ internal static class WsqContainerWriter
         ArgumentNullException.ThrowIfNull(wsqStream);
         ArgumentNullException.ThrowIfNull(container);
 
-        var buffer = new ArrayBufferWriter<byte>();
+        var buffer = new ArrayBufferWriter<byte>(GetEncodedSize(container));
         WriteMarker(buffer, WsqMarker.StartOfImage);
 
         foreach (var comment in container.Comments)
@@ -25,11 +25,12 @@ internal static class WsqContainerWriter
         WriteQuantizationTable(buffer, container.QuantizationTable);
         WriteFrameHeader(buffer, container.FrameHeader);
 
-        var writtenTableIds = new HashSet<byte>();
+        Span<bool> writtenTableIds = stackalloc bool[byte.MaxValue + 1];
         foreach (var block in container.Blocks)
         {
-            if (writtenTableIds.Add(block.HuffmanTableId))
+            if (!writtenTableIds[block.HuffmanTableId])
             {
+                writtenTableIds[block.HuffmanTableId] = true;
                 WriteHuffmanTable(buffer, block.HuffmanTable);
             }
 
@@ -42,72 +43,63 @@ internal static class WsqContainerWriter
 
     private static void WriteTransformTable(IBufferWriter<byte> writer, WsqTransformTable transformTable)
     {
-        var payload = new ArrayBufferWriter<byte>();
-        payload.WriteByte(transformTable.LowPassFilterLength);
-        payload.WriteByte(transformTable.HighPassFilterLength);
+        var lowPassFilter = GetValueSpan(transformTable.LowPassFilterCoefficients);
+        var highPassFilter = GetValueSpan(transformTable.HighPassFilterCoefficients);
+        var lowPassTailLength = (transformTable.LowPassFilterLength + 1) / 2;
+        var highPassTailLength = (transformTable.HighPassFilterLength + 1) / 2;
+        WriteMarker(writer, WsqMarker.DefineTransformTable);
+        writer.WriteUInt16BigEndian(checked((ushort)(2 + lowPassTailLength * 6 + highPassTailLength * 6 + sizeof(ushort))));
+        writer.WriteByte(transformTable.LowPassFilterLength);
+        writer.WriteByte(transformTable.HighPassFilterLength);
 
-        var storedLowPassTail = CollapseLowPassFilterToStoredHighPassTail(
-            GetValueSpan(transformTable.LowPassFilterCoefficients),
-            transformTable.LowPassFilterLength);
-        var storedHighPassTail = CollapseHighPassFilterToStoredLowPassTail(
-            GetValueSpan(transformTable.HighPassFilterCoefficients),
-            transformTable.HighPassFilterLength);
-
-        foreach (var coefficient in storedLowPassTail)
-        {
-            WriteScaledCoefficient(payload, coefficient);
-        }
-
-        foreach (var coefficient in storedHighPassTail)
-        {
-            WriteScaledCoefficient(payload, coefficient);
-        }
-
-        WriteSegment(writer, WsqMarker.DefineTransformTable, payload.WrittenSpan);
+        WriteCollapsedLowPassFilterTail(writer, lowPassFilter, transformTable.LowPassFilterLength);
+        WriteCollapsedHighPassFilterTail(writer, highPassFilter, transformTable.HighPassFilterLength);
     }
 
     private static void WriteQuantizationTable(IBufferWriter<byte> writer, WsqQuantizationTable quantizationTable)
     {
-        var payload = new ArrayBufferWriter<byte>();
-        payload.WriteByte(quantizationTable.SerializedBinCenter.Scale);
-        payload.WriteUInt16BigEndian(quantizationTable.SerializedBinCenter.RawValue);
+        WriteMarker(writer, WsqMarker.DefineQuantizationTable);
+        writer.WriteUInt16BigEndian(checked((ushort)(1 + sizeof(ushort) + 64 * 2 * 3 + sizeof(ushort))));
+        writer.WriteByte(quantizationTable.SerializedBinCenter.Scale);
+        writer.WriteUInt16BigEndian(quantizationTable.SerializedBinCenter.RawValue);
 
         for (var subbandIndex = 0; subbandIndex < quantizationTable.QuantizationBins.Count; subbandIndex++)
         {
-            WriteScaledUInt16(payload, quantizationTable.SerializedQuantizationBins[subbandIndex]);
-            WriteScaledUInt16(payload, quantizationTable.SerializedZeroBins[subbandIndex]);
+            WriteScaledUInt16(writer, quantizationTable.SerializedQuantizationBins[subbandIndex]);
+            WriteScaledUInt16(writer, quantizationTable.SerializedZeroBins[subbandIndex]);
         }
-
-        WriteSegment(writer, WsqMarker.DefineQuantizationTable, payload.WrittenSpan);
     }
 
     private static void WriteComment(IBufferWriter<byte> writer, WsqCommentSegment comment)
     {
-        var payload = System.Text.Encoding.ASCII.GetBytes(comment.Text);
-        WriteSegment(writer, WsqMarker.Comment, payload);
+        WriteMarker(writer, WsqMarker.Comment);
+        writer.WriteUInt16BigEndian(checked((ushort)(System.Text.Encoding.ASCII.GetByteCount(comment.Text) + sizeof(ushort))));
+        writer.WriteAscii(comment.Text);
     }
 
     private static void WriteFrameHeader(IBufferWriter<byte> writer, WsqFrameHeader frameHeader)
     {
-        var payload = new ArrayBufferWriter<byte>();
-        payload.WriteByte(frameHeader.Black);
-        payload.WriteByte(frameHeader.White);
-        payload.WriteUInt16BigEndian(frameHeader.Height);
-        payload.WriteUInt16BigEndian(frameHeader.Width);
-        WriteScaledUInt16(payload, frameHeader.Shift);
-        WriteScaledUInt16(payload, frameHeader.Scale);
-        payload.WriteByte(frameHeader.WsqEncoder);
-        payload.WriteUInt16BigEndian(frameHeader.SoftwareImplementationNumber);
-        WriteSegment(writer, WsqMarker.StartOfFrame, payload.WrittenSpan);
+        WriteMarker(writer, WsqMarker.StartOfFrame);
+        writer.WriteUInt16BigEndian(checked((ushort)(15 + sizeof(ushort))));
+        writer.WriteByte(frameHeader.Black);
+        writer.WriteByte(frameHeader.White);
+        writer.WriteUInt16BigEndian(frameHeader.Height);
+        writer.WriteUInt16BigEndian(frameHeader.Width);
+        WriteScaledUInt16(writer, frameHeader.Shift);
+        WriteScaledUInt16(writer, frameHeader.Scale);
+        writer.WriteByte(frameHeader.WsqEncoder);
+        writer.WriteUInt16BigEndian(frameHeader.SoftwareImplementationNumber);
     }
 
     private static void WriteHuffmanTable(IBufferWriter<byte> writer, WsqHuffmanTable huffmanTable)
     {
-        var payload = new ArrayBufferWriter<byte>();
-        payload.WriteByte(huffmanTable.TableId);
-        payload.WriteBytes(GetValueSpan(huffmanTable.CodeLengthCounts));
-        payload.WriteBytes(GetValueSpan(huffmanTable.Values));
-        WriteSegment(writer, WsqMarker.DefineHuffmanTable, payload.WrittenSpan);
+        var codeLengthCounts = GetValueSpan(huffmanTable.CodeLengthCounts);
+        var values = GetValueSpan(huffmanTable.Values);
+        WriteMarker(writer, WsqMarker.DefineHuffmanTable);
+        writer.WriteUInt16BigEndian(checked((ushort)(1 + codeLengthCounts.Length + values.Length + sizeof(ushort))));
+        writer.WriteByte(huffmanTable.TableId);
+        writer.WriteBytes(codeLengthCounts);
+        writer.WriteBytes(values);
     }
 
     private static void WriteBlock(IBufferWriter<byte> writer, WsqBlock block)
@@ -158,40 +150,83 @@ internal static class WsqContainerWriter
         WriteScaledUInt16(writer, WsqScaledValueCodec.ScaleToUInt16(value));
     }
 
-    private static float[] CollapseHighPassFilterToStoredLowPassTail(
-        ReadOnlySpan<float> highPassFilter,
-        int filterLength)
+    private static int GetEncodedSize(WsqContainer container)
     {
-        var storedTail = new float[(filterLength + 1) / 2];
-        var pivot = storedTail.Length - 1;
+        var totalSize = sizeof(ushort) + sizeof(ushort);
 
-        for (var index = 0; index < storedTail.Length; index++)
+        foreach (var comment in container.Comments)
         {
-            var rightIndex = (filterLength & 1) == 1
-                ? index + pivot
-                : index + pivot + 1;
-            storedTail[index] = highPassFilter[rightIndex];
+            totalSize += sizeof(ushort) + sizeof(ushort) + System.Text.Encoding.ASCII.GetByteCount(comment.Text);
         }
 
-        return storedTail;
+        totalSize += sizeof(ushort) + sizeof(ushort) + GetTransformPayloadSize(container.TransformTable);
+        totalSize += sizeof(ushort) + sizeof(ushort) + GetQuantizationPayloadSize();
+        totalSize += sizeof(ushort) + sizeof(ushort) + 15;
+
+        Span<bool> writtenTableIds = stackalloc bool[byte.MaxValue + 1];
+        foreach (var block in container.Blocks)
+        {
+            if (!writtenTableIds[block.HuffmanTableId])
+            {
+                writtenTableIds[block.HuffmanTableId] = true;
+                totalSize += sizeof(ushort) + sizeof(ushort) + GetHuffmanPayloadSize(block.HuffmanTable);
+            }
+
+            totalSize += sizeof(ushort) + sizeof(ushort) + 1 + block.EncodedData.Length;
+        }
+
+        return totalSize;
     }
 
-    private static float[] CollapseLowPassFilterToStoredHighPassTail(
+    private static int GetTransformPayloadSize(WsqTransformTable transformTable)
+    {
+        return 2
+            + ((transformTable.LowPassFilterLength + 1) / 2) * 6
+            + ((transformTable.HighPassFilterLength + 1) / 2) * 6;
+    }
+
+    private static int GetQuantizationPayloadSize()
+    {
+        return 1 + sizeof(ushort) + 64 * 2 * 3;
+    }
+
+    private static int GetHuffmanPayloadSize(WsqHuffmanTable huffmanTable)
+    {
+        return 1 + huffmanTable.CodeLengthCounts.Count + huffmanTable.Values.Count;
+    }
+
+    private static void WriteCollapsedLowPassFilterTail(
+        IBufferWriter<byte> writer,
         ReadOnlySpan<float> lowPassFilter,
         int filterLength)
     {
-        var storedTail = new float[(filterLength + 1) / 2];
-        var pivot = storedTail.Length - 1;
+        var tailLength = (filterLength + 1) / 2;
+        var pivot = tailLength - 1;
 
-        for (var index = 0; index < storedTail.Length; index++)
+        for (var index = 0; index < tailLength; index++)
         {
             var rightIndex = (filterLength & 1) == 1
                 ? index + pivot
                 : index + pivot + 1;
-            storedTail[index] = lowPassFilter[rightIndex];
+            WriteScaledCoefficient(writer, lowPassFilter[rightIndex]);
         }
+    }
 
-        return storedTail;
+    private static void WriteCollapsedHighPassFilterTail(
+        IBufferWriter<byte> writer,
+        ReadOnlySpan<float> highPassFilter,
+        int filterLength)
+    {
+        var tailLength = (filterLength + 1) / 2;
+        var pivot = tailLength - 1;
+
+        for (var index = 0; index < tailLength; index++)
+        {
+            var rightIndex = (filterLength & 1) == 1
+                ? index + pivot
+                : index + pivot + 1;
+            WriteScaledCoefficient(writer, highPassFilter[rightIndex]);
+        }
     }
 
     private static ReadOnlySpan<byte> GetValueSpan(IReadOnlyList<byte> values)
@@ -223,6 +258,16 @@ internal static class WsqBufferWriterExtensions
         var destination = writer.GetSpan(values.Length);
         values.CopyTo(destination);
         writer.Advance(values.Length);
+    }
+
+    public static void WriteAscii(this IBufferWriter<byte> writer, string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+
+        var byteCount = System.Text.Encoding.ASCII.GetByteCount(value);
+        var destination = writer.GetSpan(byteCount);
+        var bytesWritten = System.Text.Encoding.ASCII.GetBytes(value.AsSpan(), destination);
+        writer.Advance(bytesWritten);
     }
 
     public static void WriteUInt16BigEndian(this IBufferWriter<byte> writer, ushort value)

@@ -9,7 +9,7 @@ using OpenNist.Tests.Nfiq.TestSupport;
 [Category("Integration: NFIQ2 - Managed Minutiae Quality Module")]
 internal sealed class Nfiq2MinutiaeQualityModuleTests
 {
-    private const double NativeFloatingPointTolerance = 0.01;
+    private const double s_nativeFloatingPointTolerance = 0.01;
     private static readonly string[] s_featureNames =
     [
         "FJFXPos_Mu_MinutiaeQuality_2",
@@ -42,7 +42,7 @@ internal sealed class Nfiq2MinutiaeQualityModuleTests
             throw new InvalidOperationException($"{context} was NA in the official NFIQ 2 result.");
         }
 
-        if (Math.Abs(expectedValue.Value - actualValue) > NativeFloatingPointTolerance)
+        if (Math.Abs(expectedValue.Value - actualValue) > s_nativeFloatingPointTolerance)
         {
             throw new InvalidOperationException(
                 $"{context} diverged from the official NFIQ 2 value. "

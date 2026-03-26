@@ -1,0 +1,34 @@
+{
+  "id": "/app/nist",
+  "name": "OpenNist",
+  "short_name": "OpenNist",
+  "description": "Browser-based tooling for NIST transactions, WSQ and JPEG2000 codecs, and NFIQ 2 scoring.",
+  "start_url": "/app/nist",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "categories": ["developer", "utilities", "productivity"],
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "launch_handler": {
+    "client_mode": ["focus-existing", "auto"]
+  },
+  "file_handlers": [
+    {
+      "action": "/app",
+      "accept": {
+        "application/octet-stream": [".nist", ".nst", ".an2", ".eft"],
+        "application/x-wsq": [".wsq"],
+        "image/jp2": [".jp2"],
+        "image/j2k": [".j2k", ".j2c"]
+      }
+    }
+  ]
+}

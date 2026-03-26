@@ -9,8 +9,8 @@ using OpenNist.Wsq.Internal;
 [Category("Contract: WSQ - NIST Certification")]
 internal sealed class WsqReferenceCodestreamCertificationContractTests
 {
-    private const double FileSizeTolerancePercent = 0.4;
-    private const int ReferenceSoftwareImplementationNumber = 38100;
+    private const double s_fileSizeTolerancePercent = 0.4;
+    private const int s_referenceSoftwareImplementationNumber = 38100;
 
     [Test]
     [DisplayName("Should satisfy the published NIST WSQ file-size and frame-header checks for every encoder reference case")]
@@ -27,7 +27,7 @@ internal sealed class WsqReferenceCodestreamCertificationContractTests
             rawStream,
             encodedStream,
             testCase.RawImage,
-            new(testCase.BitRate, SoftwareImplementationNumber: ReferenceSoftwareImplementationNumber));
+            new(testCase.BitRate, SoftwareImplementationNumber: s_referenceSoftwareImplementationNumber));
 
         encodedStream.Position = 0;
         var encodedContainer = await WsqContainerReader.ReadAsync(encodedStream);
@@ -40,7 +40,7 @@ internal sealed class WsqReferenceCodestreamCertificationContractTests
             / (double)referenceSizeWithoutComments
             * 100.0;
 
-        if (sizeDeltaPercent > FileSizeTolerancePercent || !FrameHeadersMatch(encodedContainer.FrameHeader, referenceContainer.FrameHeader))
+        if (sizeDeltaPercent > s_fileSizeTolerancePercent || !FrameHeadersMatch(encodedContainer.FrameHeader, referenceContainer.FrameHeader))
         {
             throw new InvalidOperationException(
                 CreateMismatchMessage(
@@ -86,7 +86,7 @@ internal sealed class WsqReferenceCodestreamCertificationContractTests
     {
         return $"{testCase.FileName} at {testCase.BitRate:0.##} bpp failed the published NIST encoder file-size/frame-header checks. "
             + $"Size without comments: actual={actualSizeWithoutComments}, expected={expectedSizeWithoutComments}, delta={sizeDeltaPercent:F6}% "
-            + $"(limit {FileSizeTolerancePercent:F3}%). "
+            + $"(limit {s_fileSizeTolerancePercent:F3}%). "
             + $"Actual frame header: {DescribeFrameHeader(actualFrameHeader)}. "
             + $"Expected frame header: {DescribeFrameHeader(expectedFrameHeader)}.";
     }

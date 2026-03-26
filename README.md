@@ -10,10 +10,8 @@ OpenNist is licensed under the Apache License 2.0. See [`LICENSE`](LICENSE).
 
 ## Planned packages
 
-- `OpenNist.Core`: shared primitives, abstractions, and common helpers used across the suite.
 - `OpenNist.Nist`: support for ANSI/NIST and related interchange structures.
 - `OpenNist.Wsq`: WSQ-specific types and helpers.
-- `OpenNist.Jp2000`: JPEG 2000-related functionality needed by biometric workflows.
 - `OpenNist.Nfiq`: NFIQ-related integration points and utilities.
 
 ## Repository layout
@@ -25,10 +23,8 @@ OpenNist is licensed under the Apache License 2.0. See [`LICENSE`](LICENSE).
     /apps
     /interop
     /libraries
-      /OpenNist.Core
       /OpenNist.Nist
       /OpenNist.Wsq
-      /OpenNist.Jp2000
       /OpenNist.Nfiq
   /web
 /tests

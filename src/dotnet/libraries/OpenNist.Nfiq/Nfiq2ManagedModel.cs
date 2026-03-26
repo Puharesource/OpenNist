@@ -9,8 +9,11 @@ using OpenNist.Nfiq.Internal;
 [PublicAPI]
 public sealed class Nfiq2ManagedModel
 {
-    private readonly Nfiq2ModelInfo modelInfo;
-    private readonly Nfiq2RandomForestModel randomForestModel;
+    private static readonly Lazy<Nfiq2ManagedModel> s_defaultModel =
+        new(LoadDefaultCore, LazyThreadSafetyMode.ExecutionAndPublication);
+
+    private readonly Nfiq2ModelInfo _modelInfo;
+    private readonly Nfiq2RandomForestModel _randomForestModel;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Nfiq2ManagedModel"/> class from parsed model-info metadata.
@@ -23,30 +26,35 @@ public sealed class Nfiq2ManagedModel
 
     private Nfiq2ManagedModel(Nfiq2ModelInfo modelInfo, Nfiq2RandomForestModel randomForestModel)
     {
-        this.modelInfo = modelInfo ?? throw new ArgumentNullException(nameof(modelInfo));
-        this.randomForestModel = randomForestModel ?? throw new ArgumentNullException(nameof(randomForestModel));
+        _modelInfo = modelInfo ?? throw new ArgumentNullException(nameof(modelInfo));
+        _randomForestModel = randomForestModel ?? throw new ArgumentNullException(nameof(randomForestModel));
     }
 
     /// <summary>
     /// Gets the human-readable model name.
     /// </summary>
-    public string? Name => modelInfo.Name;
+    public string? Name => _modelInfo.Name;
 
     /// <summary>
     /// Gets the model version.
     /// </summary>
-    public string? Version => modelInfo.Version;
+    public string? Version => _modelInfo.Version;
 
     /// <summary>
     /// Gets the validated random forest parameter hash.
     /// </summary>
-    public string ParameterHash => randomForestModel.ParameterHash;
+    public string ParameterHash => _randomForestModel.ParameterHash;
 
     /// <summary>
     /// Loads the default installed NFIQ 2 model.
     /// </summary>
     /// <returns>The loaded managed model.</returns>
     public static Nfiq2ManagedModel LoadDefault()
+    {
+        return s_defaultModel.Value;
+    }
+
+    private static Nfiq2ManagedModel LoadDefaultCore()
     {
         if (Nfiq2BundledModelFiles.TryLoad(out var bundledModelInfo, out var bundledYaml))
         {
@@ -77,6 +85,17 @@ public sealed class Nfiq2ManagedModel
     public int ComputeUnifiedQualityScore(IReadOnlyDictionary<string, double?> nativeQualityMeasures)
     {
         ArgumentNullException.ThrowIfNull(nativeQualityMeasures);
-        return randomForestModel.Evaluate(nativeQualityMeasures);
+        return _randomForestModel.Evaluate(nativeQualityMeasures);
+    }
+
+    /// <summary>
+    /// Computes the unified NFIQ 2 quality score from non-null native quality measures.
+    /// </summary>
+    /// <param name="nativeQualityMeasures">The native quality measures required by the trained model.</param>
+    /// <returns>The unified NFIQ 2 quality score.</returns>
+    public int ComputeUnifiedQualityScore(IReadOnlyDictionary<string, double> nativeQualityMeasures)
+    {
+        ArgumentNullException.ThrowIfNull(nativeQualityMeasures);
+        return _randomForestModel.Evaluate(nativeQualityMeasures);
     }
 }

@@ -18,9 +18,15 @@ internal static class WsqHuffmanDecoder
         }
 
         var blockSizes = WsqQuantizationDecoder.ComputeBlockSizes(container.QuantizationTable, waveletTree, quantizationTree);
-        var quantizedCoefficients = new short[blockSizes.Sum()];
+        var totalCoefficientCount = 0;
+        for (var index = 0; index < blockSizes.Length; index++)
+        {
+            totalCoefficientCount += blockSizes[index];
+        }
+
+        var quantizedCoefficients = new short[totalCoefficientCount];
         var coefficientOffset = 0;
-        var decodingTables = new Dictionary<byte, WsqHuffmanDecodingTable>(container.HuffmanTables.Count);
+        var decodingTables = new WsqHuffmanDecodingTable?[byte.MaxValue + 1];
 
         for (var blockIndex = 0; blockIndex < container.Blocks.Count; blockIndex++)
         {
@@ -38,10 +44,11 @@ internal static class WsqHuffmanDecoder
                 continue;
             }
 
-            if (!decodingTables.TryGetValue(block.HuffmanTableId, out var decodingTable))
+            var decodingTable = decodingTables[block.HuffmanTableId];
+            if (decodingTable is null)
             {
                 decodingTable = WsqHuffmanDecodingTable.Create(block.HuffmanTable);
-                decodingTables.Add(block.HuffmanTableId, decodingTable);
+                decodingTables[block.HuffmanTableId] = decodingTable;
             }
 
             DecodeBlock(
@@ -107,9 +114,13 @@ internal static class WsqHuffmanDecoder
     private static int DecodeCategory(ref WsqBitReader bitReader, WsqHuffmanDecodingTable decodingTable)
     {
         var codeLength = 1;
-        var code = (int)bitReader.ReadBits(1);
+        var code = bitReader.ReadBit();
+        var maxCodes = decodingTable.MaxCodes;
+        var minCodes = decodingTable.MinCodes;
+        var valuePointers = decodingTable.ValuePointers;
+        var values = decodingTable.Values;
 
-        while (codeLength <= WsqConstants.MaxHuffmanBits && code > decodingTable.MaxCodes[codeLength])
+        while (codeLength <= WsqConstants.MaxHuffmanBits && code > maxCodes[codeLength])
         {
             codeLength++;
 
@@ -118,22 +129,22 @@ internal static class WsqHuffmanDecoder
                 throw new InvalidDataException("WSQ Huffman code exceeded the maximum supported code length.");
             }
 
-            code = (code << 1) | bitReader.ReadBits(1);
+            code = (code << 1) | bitReader.ReadBit();
         }
 
-        if (decodingTable.MaxCodes[codeLength] < 0)
+        if (maxCodes[codeLength] < 0)
         {
             throw new InvalidDataException($"WSQ Huffman code length {codeLength} does not map to a defined value.");
         }
 
-        var valueIndex = decodingTable.ValuePointers[codeLength] + code - decodingTable.MinCodes[codeLength];
+        var valueIndex = valuePointers[codeLength] + code - minCodes[codeLength];
 
-        if ((uint)valueIndex >= (uint)decodingTable.Values.Length)
+        if ((uint)valueIndex >= (uint)values.Length)
         {
             throw new InvalidDataException("WSQ Huffman code resolved to an out-of-range value index.");
         }
 
-        return decodingTable.Values[valueIndex];
+        return values[valueIndex];
     }
 
     private static void AppendZeroRun(Span<short> destination, ref int destinationIndex, int runLength)

@@ -4,7 +4,7 @@ using OpenNist.Nfiq;
 
 internal static class Nfiq2TestPaths
 {
-    private const string SolutionFileName = "OpenNist.slnx";
+    private const string s_solutionFileName = "OpenNist.slnx";
     private static readonly Nfiq2Installation s_installation = Nfiq2Installation.FindDefault();
     private static readonly string s_repositoryRootPath = FindRepositoryRoot();
 
@@ -47,7 +47,7 @@ internal static class Nfiq2TestPaths
         var currentDirectory = new DirectoryInfo(AppContext.BaseDirectory);
         while (currentDirectory is not null)
         {
-            if (File.Exists(Path.Combine(currentDirectory.FullName, SolutionFileName)))
+            if (File.Exists(Path.Combine(currentDirectory.FullName, s_solutionFileName)))
             {
                 return currentDirectory.FullName;
             }
@@ -55,6 +55,6 @@ internal static class Nfiq2TestPaths
             currentDirectory = currentDirectory.Parent;
         }
 
-        throw new InvalidOperationException($"Unable to locate repository root containing {SolutionFileName}.");
+        throw new InvalidOperationException($"Unable to locate repository root containing {s_solutionFileName}.");
     }
 }

@@ -12,7 +12,7 @@ using OpenNist.Wsq.Internal.Encoding;
 [Category("Contract: WSQ - NBIS Reference Quantization")]
 internal sealed class WsqNbisQuantizationContractTests
 {
-    private const int RequiredExactParityFloor = 80;
+    private const int s_requiredExactParityFloor = 80;
 
     [Test]
     [DisplayName("Should preserve the current exact NBIS encoder coefficient-parity floor across the public encoder corpus")]
@@ -40,10 +40,10 @@ internal sealed class WsqNbisQuantizationContractTests
             mismatchCases.Add($"{formattedCase} ({parity.MismatchSummary})");
         }
 
-        if (exactCases.Count < RequiredExactParityFloor)
+        if (exactCases.Count < s_requiredExactParityFloor)
         {
             throw new InvalidOperationException(
-                $"The managed encoder only matches {exactCases.Count} NBIS reference cases exactly, below the required floor of {RequiredExactParityFloor}. "
+                $"The managed encoder only matches {exactCases.Count} NBIS reference cases exactly, below the required floor of {s_requiredExactParityFloor}. "
                 + $"Exact cases: {string.Join(", ", exactCases)}. "
                 + $"Mismatches: {string.Join("; ", mismatchCases)}.");
         }

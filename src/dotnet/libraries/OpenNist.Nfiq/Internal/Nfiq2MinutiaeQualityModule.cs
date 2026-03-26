@@ -2,9 +2,9 @@ namespace OpenNist.Nfiq.Internal;
 
 internal static class Nfiq2MinutiaeQualityModule
 {
-    private const int LocalRegionSquare = 32;
-    private const string MuFeatureName = "FJFXPos_Mu_MinutiaeQuality_2";
-    private const string OclFeatureName = "FJFXPos_OCL_MinutiaeQuality_80";
+    private const int s_localRegionSquare = 32;
+    private const string s_muFeatureName = "FJFXPos_Mu_MinutiaeQuality_2";
+    private const string s_oclFeatureName = "FJFXPos_OCL_MinutiaeQuality_80";
 
     public static IReadOnlyDictionary<string, double> Compute(
         Nfiq2FingerprintImage fingerprintImage,
@@ -17,8 +17,8 @@ internal static class Nfiq2MinutiaeQualityModule
         {
             return new Dictionary<string, double>(StringComparer.Ordinal)
             {
-                [MuFeatureName] = 0,
-                [OclFeatureName] = 0,
+                [s_muFeatureName] = 0,
+                [s_oclFeatureName] = 0,
             };
         }
 
@@ -30,7 +30,7 @@ internal static class Nfiq2MinutiaeQualityModule
         {
             var minutia = minutiae[index];
             var muQuality = ComputeMuMinutiaQuality(fingerprintImage, minutia, imageMean, imageStdDev);
-            if (muQuality > 0.0 && muQuality <= 0.5)
+            if (muQuality is > 0.0 and <= 0.5)
             {
                 muRange2++;
             }
@@ -44,8 +44,8 @@ internal static class Nfiq2MinutiaeQualityModule
 
         return new Dictionary<string, double>(StringComparer.Ordinal)
         {
-            [MuFeatureName] = muRange2 / (double)minutiae.Count,
-            [OclFeatureName] = oclRange80 / (double)minutiae.Count,
+            [s_muFeatureName] = muRange2 / (double)minutiae.Count,
+            [s_oclFeatureName] = oclRange80 / (double)minutiae.Count,
         };
     }
 
@@ -55,25 +55,23 @@ internal static class Nfiq2MinutiaeQualityModule
         double imageMean,
         double imageStdDev)
     {
-        var leftX = Math.Max(0, minutia.X - (LocalRegionSquare / 2));
-        var topY = Math.Max(0, minutia.Y - (LocalRegionSquare / 2));
-        var takenWidth = Math.Min(LocalRegionSquare, fingerprintImage.Width - leftX);
-        var takenHeight = Math.Min(LocalRegionSquare, fingerprintImage.Height - topY);
-        var block = Nfiq2RidgeValleySupport.ExtractBlock(
-            fingerprintImage.Pixels.Span,
-            fingerprintImage.Width,
-            topY,
-            leftX,
-            takenWidth,
-            takenHeight);
-
-        double blockSum = 0.0;
-        for (var index = 0; index < block.Length; index++)
+        var leftX = Math.Max(0, minutia.X - (s_localRegionSquare / 2));
+        var topY = Math.Max(0, minutia.Y - (s_localRegionSquare / 2));
+        var takenWidth = Math.Min(s_localRegionSquare, fingerprintImage.Width - leftX);
+        var takenHeight = Math.Min(s_localRegionSquare, fingerprintImage.Height - topY);
+        var pixels = fingerprintImage.Pixels.Span;
+        var blockSum = 0.0;
+        for (var row = 0; row < takenHeight; row++)
         {
-            blockSum += block[index];
+            var rowStart = ((topY + row) * fingerprintImage.Width) + leftX;
+            var rowPixels = pixels.Slice(rowStart, takenWidth);
+            for (var column = 0; column < rowPixels.Length; column++)
+            {
+                blockSum += rowPixels[column];
+            }
         }
 
-        var blockMean = blockSum / block.Length;
+        var blockMean = blockSum / (takenWidth * takenHeight);
         return (imageMean - blockMean) / imageStdDev;
     }
 
@@ -81,16 +79,16 @@ internal static class Nfiq2MinutiaeQualityModule
         Nfiq2FingerprintImage fingerprintImage,
         Nfiq2Minutia minutia)
     {
-        var leftX = Math.Max(0, minutia.X - (LocalRegionSquare / 2));
-        var topY = Math.Max(0, minutia.Y - (LocalRegionSquare / 2));
-        if (leftX + LocalRegionSquare > fingerprintImage.Width)
+        var leftX = Math.Max(0, minutia.X - (s_localRegionSquare / 2));
+        var topY = Math.Max(0, minutia.Y - (s_localRegionSquare / 2));
+        if (leftX + s_localRegionSquare > fingerprintImage.Width)
         {
-            leftX = fingerprintImage.Width - LocalRegionSquare;
+            leftX = fingerprintImage.Width - s_localRegionSquare;
         }
 
-        if (topY + LocalRegionSquare > fingerprintImage.Height)
+        if (topY + s_localRegionSquare > fingerprintImage.Height)
         {
-            topY = fingerprintImage.Height - LocalRegionSquare;
+            topY = fingerprintImage.Height - s_localRegionSquare;
         }
 
         var hasValue = Nfiq2OclHistogramModule.TryGetBlockOrientationCertainty(
@@ -98,7 +96,7 @@ internal static class Nfiq2MinutiaeQualityModule
             fingerprintImage.Width,
             topY,
             leftX,
-            LocalRegionSquare,
+            s_localRegionSquare,
             out var ocl);
         if (!hasValue)
         {
@@ -110,7 +108,7 @@ internal static class Nfiq2MinutiaeQualityModule
 
     private static void ComputeGlobalMeanAndStdDev(ReadOnlySpan<byte> pixels, out double mean, out double stdDev)
     {
-        double sum = 0.0;
+        var sum = 0.0;
         for (var index = 0; index < pixels.Length; index++)
         {
             sum += pixels[index];
@@ -118,7 +116,7 @@ internal static class Nfiq2MinutiaeQualityModule
 
         mean = sum / pixels.Length;
 
-        double variance = 0.0;
+        var variance = 0.0;
         for (var index = 0; index < pixels.Length; index++)
         {
             var delta = pixels[index] - mean;

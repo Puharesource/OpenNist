@@ -4,9 +4,9 @@ using System.Collections.Frozen;
 
 internal static class Nfiq2MuModule
 {
-    private const int LocalRegionSquare = 32;
-    private const string ImageMean = "Mu";
-    private const string MeanOfBlockMeans = "MMB";
+    private const int s_localRegionSquare = 32;
+    private const string s_imageMean = "Mu";
+    private const string s_meanOfBlockMeans = "MMB";
 
     public static Nfiq2MuModuleResult Compute(Nfiq2FingerprintImage fingerprintImage)
     {
@@ -25,23 +25,23 @@ internal static class Nfiq2MuModule
             sigma,
             new Dictionary<string, double>(2, StringComparer.Ordinal)
             {
-                [MeanOfBlockMeans] = meanOfBlockMeans,
-                [ImageMean] = imageMean,
+                [s_meanOfBlockMeans] = meanOfBlockMeans,
+                [s_imageMean] = imageMean,
             }.ToFrozenDictionary(StringComparer.Ordinal));
     }
 
     private static double ComputeMeanOfBlockMeans(Nfiq2FingerprintImage fingerprintImage)
     {
-        double sumOfBlockMeans = 0.0;
+        var sumOfBlockMeans = 0.0;
         var blockCount = 0;
         var pixels = fingerprintImage.Pixels.Span;
 
-        for (var row = 0; row < fingerprintImage.Height; row += LocalRegionSquare)
+        for (var row = 0; row < fingerprintImage.Height; row += s_localRegionSquare)
         {
-            for (var column = 0; column < fingerprintImage.Width; column += LocalRegionSquare)
+            for (var column = 0; column < fingerprintImage.Width; column += s_localRegionSquare)
             {
-                var takenWidth = Math.Min(LocalRegionSquare, fingerprintImage.Width - column);
-                var takenHeight = Math.Min(LocalRegionSquare, fingerprintImage.Height - row);
+                var takenWidth = Math.Min(s_localRegionSquare, fingerprintImage.Width - column);
+                var takenHeight = Math.Min(s_localRegionSquare, fingerprintImage.Height - row);
 
                 long blockSum = 0;
                 for (var y = 0; y < takenHeight; y++)
