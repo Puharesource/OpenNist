@@ -70,7 +70,7 @@ internal sealed class Nfiq2RidgeValleySupportTests
             origin.Row,
             origin.Column,
             32,
-            32) + (Math.PI / 2.0);
+            32) + Math.PI / 2.0;
 
         var rotated = Nfiq2RidgeValleySupport.GetRotatedBlock(
             fingerprintImage.Pixels.Span,

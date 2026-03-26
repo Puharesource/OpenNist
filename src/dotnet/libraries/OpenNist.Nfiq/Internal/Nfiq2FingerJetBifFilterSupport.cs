@@ -83,17 +83,17 @@ internal static class Nfiq2FingerJetBifFilterSupport
             return s_phasemapFiller;
         }
 
-        var index = x0 + (y0 * width);
+        var index = x0 + y0 * width;
         if ((uint)(index + width + 1) >= (uint)image.Length)
         {
             return s_phasemapFiller;
         }
 
         var value =
-            (image[index] * wx0 * wy0) +
-            (image[index + 1] * wx1 * wy0) +
-            (image[index + width] * wx0 * wy1) +
-            (image[index + width + 1] * wx1 * wy1);
+            image[index] * wx0 * wy0 +
+            image[index + 1] * wx1 * wy0 +
+            image[index + width] * wx0 * wy1 +
+            image[index + width + 1] * wx1 * wy1;
         return (byte)Reduce(value, s_imageFractionBits * 2);
     }
 
@@ -135,8 +135,8 @@ internal static class Nfiq2FingerJetBifFilterSupport
 
         for (var row = 0; row < s_patchWidth; row++)
         {
-            var rowX = fx - (row * s);
-            var rowY = fy + (row * c);
+            var rowX = fx - row * s;
+            var rowY = fy + row * c;
             var sampleX = rowX;
             var sampleY = rowY;
             var patchRowIndex = row * s_patchWidth;
@@ -162,7 +162,7 @@ internal static class Nfiq2FingerJetBifFilterSupport
         {
             for (var column = 0; column < s_patchWidth; column++, intermediateIndex++)
             {
-                intermediate[intermediateIndex] = ConvolveVertical(patch, column + (rowOffset * s_patchWidth), verticalKernel);
+                intermediate[intermediateIndex] = ConvolveVertical(patch, column + rowOffset * s_patchWidth, verticalKernel);
             }
         }
 
@@ -246,20 +246,20 @@ internal static class Nfiq2FingerJetBifFilterSupport
 
         var confidence = Reduce(bestConfidence, 17);
         var mirrored = Reduce(mirroredConfidence, 17);
-        if (confidence < threshold || (confidence * ratio) < (256 * mirrored))
+        if (confidence < threshold || confidence * ratio < 256 * mirrored)
         {
             return new(false, false, false, 0, 0, 0, confidence);
         }
 
         var rotate180 = bestIndex >= s_responseCount;
         var localIndex = bestIndex % s_responseCount;
-        var dy = (localIndex / (s_responseGridSize * s_scaleCount)) - 1;
+        var dy = localIndex / (s_responseGridSize * s_scaleCount) - 1;
         localIndex %= s_responseGridSize * s_scaleCount;
-        var dx = (localIndex / s_scaleCount) - 1;
-        var period = (localIndex % s_scaleCount) + 5;
+        var dx = localIndex / s_scaleCount - 1;
+        var period = localIndex % s_scaleCount + 5;
         var type = bestValue > 0;
-        var xOffset = (dx * c) - (dy * s);
-        var yOffset = (dx * s) + (dy * c);
+        var xOffset = dx * c - dy * s;
+        var yOffset = dx * s + dy * c;
         return new(true, type, rotate180, xOffset, yOffset, period, confidence);
     }
 

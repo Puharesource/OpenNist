@@ -55,15 +55,15 @@ internal static class Nfiq2MinutiaeQualityModule
         double imageMean,
         double imageStdDev)
     {
-        var leftX = Math.Max(0, minutia.X - (s_localRegionSquare / 2));
-        var topY = Math.Max(0, minutia.Y - (s_localRegionSquare / 2));
+        var leftX = Math.Max(0, minutia.X - s_localRegionSquare / 2);
+        var topY = Math.Max(0, minutia.Y - s_localRegionSquare / 2);
         var takenWidth = Math.Min(s_localRegionSquare, fingerprintImage.Width - leftX);
         var takenHeight = Math.Min(s_localRegionSquare, fingerprintImage.Height - topY);
         var pixels = fingerprintImage.Pixels.Span;
         var blockSum = 0.0;
         for (var row = 0; row < takenHeight; row++)
         {
-            var rowStart = ((topY + row) * fingerprintImage.Width) + leftX;
+            var rowStart = (topY + row) * fingerprintImage.Width + leftX;
             var rowPixels = pixels.Slice(rowStart, takenWidth);
             for (var column = 0; column < rowPixels.Length; column++)
             {
@@ -79,8 +79,8 @@ internal static class Nfiq2MinutiaeQualityModule
         Nfiq2FingerprintImage fingerprintImage,
         Nfiq2Minutia minutia)
     {
-        var leftX = Math.Max(0, minutia.X - (s_localRegionSquare / 2));
-        var topY = Math.Max(0, minutia.Y - (s_localRegionSquare / 2));
+        var leftX = Math.Max(0, minutia.X - s_localRegionSquare / 2);
+        var topY = Math.Max(0, minutia.Y - s_localRegionSquare / 2);
         if (leftX + s_localRegionSquare > fingerprintImage.Width)
         {
             leftX = fingerprintImage.Width - s_localRegionSquare;
@@ -103,7 +103,7 @@ internal static class Nfiq2MinutiaeQualityModule
             return 0;
         }
 
-        return (int)((ocl * 100.0) + 0.5);
+        return (int)(ocl * 100.0 + 0.5);
     }
 
     private static void ComputeGlobalMeanAndStdDev(ReadOnlySpan<byte> pixels, out double mean, out double stdDev)

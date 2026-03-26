@@ -82,16 +82,16 @@ internal static class Nfiq2OclHistogramModule
         b /= pixelCount;
         c /= pixelCount;
 
-        var eigenTerm = Math.Sqrt(((a - b) * (a - b)) + (4.0 * c * c));
-        var eigenValueMax = ((a + b) + eigenTerm) / 2.0;
+        var eigenTerm = Math.Sqrt((a - b) * (a - b) + 4.0 * c * c);
+        var eigenValueMax = (a + b + eigenTerm) / 2.0;
         if (Math.Abs(eigenValueMax) < double.Epsilon)
         {
             orientationCertainty = 0.0;
             return false;
         }
 
-        var eigenValueMin = ((a + b) - eigenTerm) / 2.0;
-        orientationCertainty = 1.0 - (eigenValueMin / eigenValueMax);
+        var eigenValueMin = (a + b - eigenTerm) / 2.0;
+        orientationCertainty = 1.0 - eigenValueMin / eigenValueMax;
         return true;
     }
 }

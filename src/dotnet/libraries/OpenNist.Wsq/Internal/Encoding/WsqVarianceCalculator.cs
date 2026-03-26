@@ -62,12 +62,12 @@ internal static class WsqVarianceCalculator
         if (useCroppedRegion)
         {
             startX += node.Width / 8;
-            startY += (9 * node.Height) / 32;
-            regionWidth = (3 * node.Width) / 4;
-            regionHeight = (7 * node.Height) / 16;
+            startY += 9 * node.Height / 32;
+            regionWidth = 3 * node.Width / 4;
+            regionHeight = 7 * node.Height / 16;
         }
 
-        var fp = (startY * width) + startX;
+        var fp = startY * width + startX;
         var ssq = 0.0f;
         var sumPix = 0.0f;
 
@@ -83,7 +83,7 @@ internal static class WsqVarianceCalculator
         }
 
         var sampleCount = regionWidth * regionHeight;
-        var sum2 = (sumPix * sumPix) / sampleCount;
+        var sum2 = sumPix * sumPix / sampleCount;
         return (float)((ssq - sum2) / (sampleCount - 1.0));
     }
 }

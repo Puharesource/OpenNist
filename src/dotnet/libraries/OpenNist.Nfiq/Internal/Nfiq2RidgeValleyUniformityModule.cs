@@ -126,7 +126,7 @@ internal static class Nfiq2RidgeValleyUniformityModule
         for (var index = 0; index < changeComplete2Count - 1; index++)
         {
             var ratio = changeComplete2[index] / (double)changeComplete2[index + 1];
-            if (index >= beginsWithRidge && ((index - beginsWithRidge) % 2) == 0)
+            if (index >= beginsWithRidge && (index - beginsWithRidge) % 2 == 0)
             {
                 ratio = 1.0 / ratio;
             }

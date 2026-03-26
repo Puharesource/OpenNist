@@ -21,10 +21,10 @@ internal static class Nfiq2FingerJetPhasemap
         var width = preparedImage.Width;
         var size = preparedImage.Pixels.Length;
         var orientationWidth = width / s_orientationScale;
-        var computedLength = size - (width * s_filterHalfSize * 2);
+        var computedLength = size - width * s_filterHalfSize * 2;
         var output = GC.AllocateUninitializedArray<byte>(size);
         output.AsSpan(computedLength).Fill(s_phasemapFiller);
-        var inputLength = size + (orientation.Count * 2);
+        var inputLength = size + orientation.Count * 2;
         var pixelsBuffer = System.Buffers.ArrayPool<byte>.Shared.Rent(inputLength);
         CreateNativeInputLayout(preparedImage.Pixels.Span, orientation, pixelsBuffer.AsSpan(0, inputLength));
 
@@ -41,7 +41,7 @@ internal static class Nfiq2FingerJetPhasemap
 
             var pointerIndex = (width + 1) * s_filterHalfSize;
             var outputIndex = 0;
-            for (var orientationRow = orientationWidth; orientationRow < (size / (s_orientationScale * s_orientationScale)) - orientationWidth; orientationRow += orientationWidth)
+            for (var orientationRow = orientationWidth; orientationRow < size / (s_orientationScale * s_orientationScale) - orientationWidth; orientationRow += orientationWidth)
             {
                 for (var i = 0; i < s_orientationScale; i++)
                 {
@@ -109,7 +109,7 @@ internal static class Nfiq2FingerJetPhasemap
         imagePixels.CopyTo(destination);
         for (var index = 0; index < orientation.Count; index++)
         {
-            var offset = imagePixels.Length + (index * 2);
+            var offset = imagePixels.Length + index * 2;
             destination[offset] = unchecked((byte)(sbyte)orientation[index].Real);
             destination[offset + 1] = unchecked((byte)(sbyte)orientation[index].Imaginary);
         }
@@ -129,10 +129,10 @@ internal static class Nfiq2FingerJetPhasemap
         public int ComputeVertical(ReadOnlySpan<byte> pixels, int width, int offset)
         {
             var v1 = Combine(pixels[offset + width], pixels[offset - width]);
-            var v2 = Combine(pixels[offset + (width * 2)], pixels[offset - (width * 2)]);
-            var v3 = Combine(pixels[offset + (width * 3)], pixels[offset - (width * 3)]);
-            var v4 = Combine(pixels[offset + (width * 4)], pixels[offset - (width * 4)]);
-            return (pixels[offset] * t0) + (v1 * t1) + (v2 * t2) + (v3 * t3) + (v4 * t4);
+            var v2 = Combine(pixels[offset + width * 2], pixels[offset - width * 2]);
+            var v3 = Combine(pixels[offset + width * 3], pixels[offset - width * 3]);
+            var v4 = Combine(pixels[offset + width * 4], pixels[offset - width * 4]);
+            return pixels[offset] * t0 + v1 * t1 + v2 * t2 + v3 * t3 + v4 * t4;
         }
 
         public int Next(int value)
@@ -141,7 +141,7 @@ internal static class Nfiq2FingerJetPhasemap
             var v3 = Combine(Get(7), Get(1));
             var v2 = Combine(Get(6), Get(2));
             var v1 = Combine(Get(5), Get(3));
-            var output = (Get(4) * t0) + (v1 * t1) + (v2 * t2) + (v3 * t3) + (v4 * t4);
+            var output = Get(4) * t0 + v1 * t1 + v2 * t2 + v3 * t3 + v4 * t4;
             _buffer[_index] = value;
             _index++;
             if (_index >= _buffer.Length)

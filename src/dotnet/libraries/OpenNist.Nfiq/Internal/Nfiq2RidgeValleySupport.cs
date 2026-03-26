@@ -18,7 +18,7 @@ internal static class Nfiq2RidgeValleySupport
         int slantedBlockWidth,
         int slantedBlockHeight)
     {
-        var sumSquare = (slantedBlockWidth * slantedBlockWidth) + (slantedBlockHeight * slantedBlockHeight);
+        var sumSquare = slantedBlockWidth * slantedBlockWidth + slantedBlockHeight * slantedBlockHeight;
         var extractedBlockSize = (int)Math.Ceiling(Math.Sqrt(sumSquare));
         var overlapDifference = extractedBlockSize - blockSize;
         var blockOffset = (int)Math.Ceiling(overlapDifference / 2.0);
@@ -85,7 +85,7 @@ internal static class Nfiq2RidgeValleySupport
         var block = new byte[blockWidth * blockHeight];
         for (var y = 0; y < blockHeight; y++)
         {
-            var sourceOffset = ((row + y) * imageWidth) + column;
+            var sourceOffset = (row + y) * imageWidth + column;
             image.Slice(sourceOffset, blockWidth).CopyTo(block.AsSpan(y * blockWidth, blockWidth));
         }
 
@@ -106,13 +106,13 @@ internal static class Nfiq2RidgeValleySupport
             return RotateBlock(block, blockWidth, blockHeight, blockWidth, blockHeight, orientation);
         }
 
-        var paddedWidth = blockWidth + (s_rotationPaddingBorder * 2);
-        var paddedHeight = blockHeight + (s_rotationPaddingBorder * 2);
+        var paddedWidth = blockWidth + s_rotationPaddingBorder * 2;
+        var paddedHeight = blockHeight + s_rotationPaddingBorder * 2;
         var paddedBlock = new byte[paddedWidth * paddedHeight];
 
         for (var y = 0; y < blockHeight; y++)
         {
-            var destinationOffset = ((y + s_rotationPaddingBorder) * paddedWidth) + s_rotationPaddingBorder;
+            var destinationOffset = (y + s_rotationPaddingBorder) * paddedWidth + s_rotationPaddingBorder;
             block.Slice(y * blockWidth, blockWidth).CopyTo(paddedBlock.AsSpan(destinationOffset, blockWidth));
         }
 
@@ -211,8 +211,8 @@ internal static class Nfiq2RidgeValleySupport
         var roundDelta = s_affineScale / 2;
         for (var y = 0; y < destinationHeight; y++)
         {
-            var x0 = CvRound(((inverseMatrix.M01 * y) + inverseMatrix.M02) * s_affineScale) + roundDelta;
-            var y0 = CvRound(((inverseMatrix.M11 * y) + inverseMatrix.M12) * s_affineScale) + roundDelta;
+            var x0 = CvRound((inverseMatrix.M01 * y + inverseMatrix.M02) * s_affineScale) + roundDelta;
+            var y0 = CvRound((inverseMatrix.M11 * y + inverseMatrix.M12) * s_affineScale) + roundDelta;
             var destinationOffset = y * destinationWidth;
 
             for (var x = 0; x < destinationWidth; x++)
@@ -221,7 +221,7 @@ internal static class Nfiq2RidgeValleySupport
                 var sourceY = (y0 + bdelta[x]) >> s_affineBits;
                 if ((uint)sourceX < (uint)sourceWidth && (uint)sourceY < (uint)sourceHeight)
                 {
-                    rotatedBlock[destinationOffset + x] = sourceBlock[(sourceY * sourceWidth) + sourceX];
+                    rotatedBlock[destinationOffset + x] = sourceBlock[sourceY * sourceWidth + sourceX];
                 }
             }
         }
@@ -263,8 +263,8 @@ internal static class Nfiq2RidgeValleySupport
         for (var y = 0; y < croppedHeight; y++)
         {
             var fullDestinationY = y + rowStart;
-            var x0 = CvRound(((inverseMatrix.M01 * fullDestinationY) + inverseMatrix.M02) * s_affineScale) + roundDelta;
-            var y0 = CvRound(((inverseMatrix.M11 * fullDestinationY) + inverseMatrix.M12) * s_affineScale) + roundDelta;
+            var x0 = CvRound((inverseMatrix.M01 * fullDestinationY + inverseMatrix.M02) * s_affineScale) + roundDelta;
+            var y0 = CvRound((inverseMatrix.M11 * fullDestinationY + inverseMatrix.M12) * s_affineScale) + roundDelta;
             var destinationOffset = y * croppedWidth;
 
             for (var x = 0; x < croppedWidth; x++)
@@ -273,7 +273,7 @@ internal static class Nfiq2RidgeValleySupport
                 var sourceY = (y0 + bdelta[x]) >> s_affineBits;
                 if ((uint)sourceX < (uint)sourceWidth && (uint)sourceY < (uint)sourceHeight)
                 {
-                    croppedBlock[destinationOffset + x] = sourceBlock[(sourceY * sourceWidth) + sourceX];
+                    croppedBlock[destinationOffset + x] = sourceBlock[sourceY * sourceWidth + sourceX];
                 }
             }
         }
@@ -320,7 +320,7 @@ internal static class Nfiq2RidgeValleySupport
             var sum = 0.0;
             for (var row = 0; row < height; row++)
             {
-                sum += blockCropped[(row * width) + column];
+                sum += blockCropped[row * width + column];
             }
 
             columnMeans[column] = sum / height;
@@ -328,7 +328,7 @@ internal static class Nfiq2RidgeValleySupport
 
         var sampleCount = (double)width;
         var sumX = sampleCount * (sampleCount + 1.0) / 2.0;
-        var sumXx = sampleCount * (sampleCount + 1.0) * ((2.0 * sampleCount) + 1.0) / 6.0;
+        var sumXx = sampleCount * (sampleCount + 1.0) * (2.0 * sampleCount + 1.0) / 6.0;
 
         var sumY = 0.0;
         var sumXy = 0.0;
@@ -340,11 +340,11 @@ internal static class Nfiq2RidgeValleySupport
             sumXy += x * y;
         }
 
-        var denominator = (sampleCount * sumXx) - (sumX * sumX);
+        var denominator = sampleCount * sumXx - sumX * sumX;
         var slope = Math.Abs(denominator) <= double.Epsilon
             ? 0.0
-            : ((sampleCount * sumXy) - (sumX * sumY)) / denominator;
-        var intercept = (sumY - (slope * sumX)) / sampleCount;
+            : (sampleCount * sumXy - sumX * sumY) / denominator;
+        var intercept = (sumY - slope * sumX) / sampleCount;
 
         slope = RoundToTenDecimalPlacesAwayFromZero(slope);
         intercept = RoundToTenDecimalPlacesAwayFromZero(intercept);
@@ -353,7 +353,7 @@ internal static class Nfiq2RidgeValleySupport
         var ridgeValleyPattern = new byte[columnMeans.Length];
         for (var index = 0; index < trendLine.Length; index++)
         {
-            var expected = ((index + 1.0) * slope) + intercept;
+            var expected = (index + 1.0) * slope + intercept;
             trendLine[index] = expected;
             ridgeValleyPattern[index] = columnMeans[index] < expected ? (byte)1 : (byte)0;
         }
@@ -450,8 +450,8 @@ internal static class Nfiq2RidgeValleySupport
         var beginsWithRidge = ridgeValleyPattern[0] == 1;
         var ridgeWidths = new List<double>();
         var valleyWidths = new List<double>();
-        var ridgeScale = (scannerResolution / s_scannerNormalizationBase) * s_ridgeWidthMaxAt125Ppi;
-        var valleyScale = (scannerResolution / s_scannerNormalizationBase) * s_valleyWidthMaxAt125Ppi;
+        var ridgeScale = scannerResolution / s_scannerNormalizationBase * s_ridgeWidthMaxAt125Ppi;
+        var valleyScale = scannerResolution / s_scannerNormalizationBase * s_valleyWidthMaxAt125Ppi;
 
         if (beginsWithRidge)
         {
@@ -503,7 +503,7 @@ internal static class Nfiq2RidgeValleySupport
             {
                 for (var row = 0; row < height; row++)
                 {
-                    if (blockCropped[(row * width) + column] >= threshold)
+                    if (blockCropped[row * width + column] >= threshold)
                     {
                         ridgeGood++;
                     }
@@ -515,7 +515,7 @@ internal static class Nfiq2RidgeValleySupport
             {
                 for (var row = 0; row < height; row++)
                 {
-                    if (blockCropped[(row * width) + column] < threshold)
+                    if (blockCropped[row * width + column] < threshold)
                     {
                         valleyGood++;
                     }
@@ -532,7 +532,7 @@ internal static class Nfiq2RidgeValleySupport
 
         var alpha = valleyGood / (double)valleyPixelCount;
         var beta = ridgeGood / (double)ridgePixelCount;
-        return 1.0 - ((alpha + beta) / 2.0);
+        return 1.0 - (alpha + beta) / 2.0;
     }
 
     private static Nfiq2AffineMatrix CreateInverseAffineMatrix(
@@ -555,19 +555,19 @@ internal static class Nfiq2RidgeValleySupport
         // then internally inverts it for warpAffine when WARP_INVERSE_MAP is not set.
         var m00 = alpha;
         var m01 = beta;
-        var m02 = ((1.0 - alpha) * sourceCenterX) - (beta * sourceCenterY);
+        var m02 = (1.0 - alpha) * sourceCenterX - beta * sourceCenterY;
         var m10 = -beta;
         var m11 = alpha;
-        var m12 = (beta * sourceCenterX) + ((1.0 - alpha) * sourceCenterY);
+        var m12 = beta * sourceCenterX + (1.0 - alpha) * sourceCenterY;
 
-        var determinant = (m00 * m11) - (m01 * m10);
+        var determinant = m00 * m11 - m01 * m10;
         var inverseDeterminant = Math.Abs(determinant) > double.Epsilon ? 1.0 / determinant : 0.0;
         var inverse00 = m11 * inverseDeterminant;
         var inverse11 = m00 * inverseDeterminant;
         var inverse01 = m01 * -inverseDeterminant;
         var inverse10 = m10 * -inverseDeterminant;
-        var inverse02 = (-inverse00 * m02) - (inverse01 * m12);
-        var inverse12 = (-inverse10 * m02) - (inverse11 * m12);
+        var inverse02 = -inverse00 * m02 - inverse01 * m12;
+        var inverse12 = -inverse10 * m02 - inverse11 * m12;
 
         return new(inverse00, inverse01, inverse02, inverse10, inverse11, inverse12);
     }
@@ -595,8 +595,8 @@ internal static class Nfiq2RidgeValleySupport
         out int columnStart)
     {
         var center = fullHeight / 2;
-        rowStart = center - ((croppedHeight / 2) - 1) - 1;
-        columnStart = (fullWidth / 2) - ((croppedWidth / 2) - 1) - 1;
+        rowStart = center - (croppedHeight / 2 - 1) - 1;
+        columnStart = fullWidth / 2 - (croppedWidth / 2 - 1) - 1;
     }
 
     private static byte[] ExtractBlockWithZeroPadding(
@@ -625,8 +625,8 @@ internal static class Nfiq2RidgeValleySupport
                 continue;
             }
 
-            var sourceOffset = (sourceRow * imageWidth) + sourceColumn;
-            image.Slice(sourceOffset, copyLength).CopyTo(block.AsSpan((y * blockWidth) + destinationColumn, copyLength));
+            var sourceOffset = sourceRow * imageWidth + sourceColumn;
+            image.Slice(sourceOffset, copyLength).CopyTo(block.AsSpan(y * blockWidth + destinationColumn, copyLength));
         }
 
         return block;

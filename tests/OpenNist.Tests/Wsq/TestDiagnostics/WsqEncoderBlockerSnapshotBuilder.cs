@@ -285,10 +285,10 @@ internal static class WsqEncoderBlockerSnapshotBuilder
 
         if (coefficient > 0.0)
         {
-            return ((coefficient - halfZeroBin) / quantizationBin) + 1.0;
+            return (coefficient - halfZeroBin) / quantizationBin + 1.0;
         }
 
-        return ((coefficient + halfZeroBin) / quantizationBin) - 1.0;
+        return (coefficient + halfZeroBin) / quantizationBin - 1.0;
     }
 
     private static short ComputeQuantizedCoefficient(
@@ -316,10 +316,10 @@ internal static class WsqEncoderBlockerSnapshotBuilder
 
         if (floatCoefficient > 0.0f)
         {
-            return ((floatCoefficient - floatHalfZeroBin) / floatQuantizationBin) + 1.0f;
+            return (floatCoefficient - floatHalfZeroBin) / floatQuantizationBin + 1.0f;
         }
 
-        return ((floatCoefficient + floatHalfZeroBin) / floatQuantizationBin) - 1.0f;
+        return (floatCoefficient + floatHalfZeroBin) / floatQuantizationBin - 1.0f;
     }
 
     private static double ComputeThresholdQuantizationBinForBucket(
@@ -372,7 +372,7 @@ internal static class WsqEncoderBlockerSnapshotBuilder
         }
 
         var location = mismatchSnapshot.MismatchLocation.Value;
-        var waveletValueIndex = (location.ImageY * width) + location.ImageX;
+        var waveletValueIndex = location.ImageY * width + location.ImageX;
         var halfZeroBin = variantZeroBins[location.SubbandIndex] / 2.0;
         var nbisHalfZeroBin = nbisAnalysis.ZeroBins[location.SubbandIndex] / 2.0;
         var referenceHalfZeroBin = referenceCoefficients.QuantizationTable.ZeroBins[location.SubbandIndex] / 2.0;

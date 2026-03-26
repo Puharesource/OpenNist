@@ -68,7 +68,7 @@ internal static class Nfiq2FrequencyDomainSupport
             denominator += amplitudes[index];
         }
 
-        return (maxValue + (s_neighborContributionWeight * (amplitudes[maxIndex - 1] + amplitudes[maxIndex + 1]))) / denominator;
+        return (maxValue + s_neighborContributionWeight * (amplitudes[maxIndex - 1] + amplitudes[maxIndex + 1])) / denominator;
     }
 
     private static double[] ComputeMagnitudeSpectrum(double[] samples)
@@ -79,7 +79,7 @@ internal static class Nfiq2FrequencyDomainSupport
             var sum = Complex.Zero;
             for (var sampleIndex = 0; sampleIndex < samples.Length; sampleIndex++)
             {
-                var angle = (-2.0 * Math.PI * frequency * sampleIndex) / samples.Length;
+                var angle = -2.0 * Math.PI * frequency * sampleIndex / samples.Length;
                 sum += samples[sampleIndex] * Complex.FromPolarCoordinates(1.0, angle);
             }
 

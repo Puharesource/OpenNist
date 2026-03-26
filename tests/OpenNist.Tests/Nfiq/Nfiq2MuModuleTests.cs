@@ -41,7 +41,7 @@ internal sealed class Nfiq2MuModuleTests
         {
             for (var column = 3; column < width - 3; column++)
             {
-                pixels[(row * width) + column] = checked((byte)(40 + ((row + column) % 120)));
+                pixels[row * width + column] = checked((byte)(40 + (row + column) % 120));
             }
         }
 

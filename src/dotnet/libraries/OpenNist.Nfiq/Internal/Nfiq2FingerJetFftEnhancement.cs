@@ -62,7 +62,7 @@ internal static class Nfiq2FingerJetFftEnhancement
     private static void Copy(FftImage image, int x0, int y0, int[] block)
     {
         var index = 0;
-        for (var y = y0; y < y0 + (s_blockDim * image.Width); y += image.Width)
+        for (var y = y0; y < y0 + s_blockDim * image.Width; y += image.Width)
         {
             for (var x = x0; x < x0 + s_blockDim; x++)
             {
@@ -74,7 +74,7 @@ internal static class Nfiq2FingerJetFftEnhancement
     private static void Add(FftImage image, int x0, int y0, int[] block)
     {
         var index = 0;
-        for (var y = y0; y < y0 + (s_blockDim * image.Width); y += image.Width)
+        for (var y = y0; y < y0 + s_blockDim * image.Width; y += image.Width)
         {
             for (var x = x0; x < x0 + s_blockDim; x++)
             {
@@ -119,7 +119,7 @@ internal static class Nfiq2FingerJetFftEnhancement
 
     private static Complex32 Enhance(Complex32 value, int x, int y)
     {
-        var r2 = (x * x) + (y * y);
+        var r2 = x * x + y * y;
         if (r2 <= 6 || r2 >= 169)
         {
             return Complex32.Zero;
@@ -198,7 +198,7 @@ internal static class Nfiq2FingerJetFftEnhancement
             var size = 1 << s_blockBits;
             var stride = 2;
             var dt = (inverse ? 1 : -1) * (1 << (s_sinBits - s_blockBits));
-            var angle = dt + (inverse ? (1 << (s_sinBits - 1)) : 0);
+            var angle = dt + (inverse ? 1 << (s_sinBits - 1) : 0);
             for (var i = stride; i <= size / 2; i += stride, angle += dt)
             {
                 var w = new Complex32(Cos(angle), Sin(angle));
@@ -245,8 +245,8 @@ internal static class Nfiq2FingerJetFftEnhancement
                 {
                     var left = offset + i;
                     var right = left + blockSize;
-                    var tr = Reduce((wr * data[right]) - (wi * data[right + 1]), 12);
-                    var ti = Reduce((wr * data[right + 1]) + (wi * data[right]), 12);
+                    var tr = Reduce(wr * data[right] - wi * data[right + 1], 12);
+                    var ti = Reduce(wr * data[right + 1] + wi * data[right], 12);
                     data[right] = data[left] - tr;
                     data[right + 1] = data[left + 1] - ti;
                     data[left] += tr;
@@ -286,7 +286,7 @@ internal static class Nfiq2FingerJetFftEnhancement
     {
         var normalized = angle & ((1 << s_sinBits) - 1);
         var magnitude = SinTable[normalized & ((1 << (s_sinBits - 1)) - 1)];
-        return ((normalized & (1 << (s_sinBits - 1))) != 0) ? -magnitude : magnitude;
+        return (normalized & (1 << (s_sinBits - 1))) != 0 ? -magnitude : magnitude;
     }
 
     private static int Cos(int angle)
@@ -311,7 +311,7 @@ internal static class Nfiq2FingerJetFftEnhancement
     {
         ArgumentOutOfRangeException.ThrowIfZero(denominator);
 
-        if ((numerator >= 0) == (denominator > 0))
+        if (numerator >= 0 == denominator > 0)
         {
             return (Math.Abs(numerator) + (Math.Abs(denominator) >> 1)) / Math.Abs(denominator);
         }
@@ -406,8 +406,8 @@ internal static class Nfiq2FingerJetFftEnhancement
         public static Complex32 operator *(Complex32 left, Complex32 right)
         {
             return new(
-                (left.Real * right.Real) - (left.Imaginary * right.Imaginary),
-                (left.Real * right.Imaginary) + (left.Imaginary * right.Real));
+                left.Real * right.Real - left.Imaginary * right.Imaginary,
+                left.Real * right.Imaginary + left.Imaginary * right.Real);
         }
 
         public static Complex32 operator *(Complex32 value, int scalar)

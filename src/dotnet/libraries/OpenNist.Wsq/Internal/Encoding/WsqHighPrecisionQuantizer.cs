@@ -197,7 +197,7 @@ internal static class WsqHighPrecisionQuantizer
                     reciprocalSubbandAreas[subband]);
             }
 
-            quantizationScale = (PowLikeNbis(2.0f, (((float)bitRate / reciprocalAreaSum) - 1.0f)) / 2.5f)
+            quantizationScale = PowLikeNbis(2.0f, (float)bitRate / reciprocalAreaSum - 1.0f) / 2.5f
                 / PowLikeNbis(product, 1.0f / reciprocalAreaSum);
 
             Array.Clear(nonPositiveBitRateFlags);
@@ -205,7 +205,7 @@ internal static class WsqHighPrecisionQuantizer
             for (var index = 0; index < activeSubbandCount; index++)
             {
                 var subband = activeSubbands[index];
-                if ((quantizationBins[subband] / quantizationScale) >= (5.0f * sigma[subband]))
+                if (quantizationBins[subband] / quantizationScale >= 5.0f * sigma[subband])
                 {
                     nonPositiveBitRateFlags[subband] = 1;
                     nonPositiveBitRateCount++;
@@ -366,7 +366,7 @@ internal static class WsqHighPrecisionQuantizer
                 }
             }
 
-            quantizationScale = (Math.Pow(2.0, (bitRate / reciprocalAreaSum) - 1.0) / 2.5)
+            quantizationScale = Math.Pow(2.0, bitRate / reciprocalAreaSum - 1.0) / 2.5
                 / Math.Pow(product, 1.0 / reciprocalAreaSum);
             if (options.UseSinglePrecisionScaleFactor)
             {
@@ -378,7 +378,7 @@ internal static class WsqHighPrecisionQuantizer
             for (var index = 0; index < activeSubbandCount; index++)
             {
                 var subband = activeSubbands[index];
-                if ((initialQuantizationBins[subband] / quantizationScale) >= (5.0 * sigma[subband]))
+                if (initialQuantizationBins[subband] / quantizationScale >= 5.0 * sigma[subband])
                 {
                     positiveBitRateFlags[subband] = true;
                     nonPositiveBitRateCount++;

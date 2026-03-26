@@ -48,11 +48,11 @@ internal static class WsqCoefficientQuantizer
                     }
                     else if (coefficient > 0.0f)
                     {
-                        quantizedCoefficient = checked((short)(((coefficient - halfZeroBin) / quantizationBin) + 1.0f));
+                        quantizedCoefficient = checked((short)((coefficient - halfZeroBin) / quantizationBin + 1.0f));
                     }
                     else
                     {
-                        quantizedCoefficient = checked((short)(((coefficient + halfZeroBin) / quantizationBin) - 1.0f));
+                        quantizedCoefficient = checked((short)((coefficient + halfZeroBin) / quantizationBin - 1.0f));
                     }
 
                     quantizedCoefficients[coefficientIndex++] = quantizedCoefficient;
@@ -100,11 +100,11 @@ internal static class WsqCoefficientQuantizer
                     }
                     else if (coefficient > 0.0f)
                     {
-                        quantizedCoefficient = checked((short)(((coefficient - halfZeroBin) / quantizationBins[subband]) + 1.0f));
+                        quantizedCoefficient = checked((short)((coefficient - halfZeroBin) / quantizationBins[subband] + 1.0f));
                     }
                     else
                     {
-                        quantizedCoefficient = checked((short)(((coefficient + halfZeroBin) / quantizationBins[subband]) - 1.0f));
+                        quantizedCoefficient = checked((short)((coefficient + halfZeroBin) / quantizationBins[subband] - 1.0f));
                     }
 
                     quantizedCoefficients[coefficientIndex++] = quantizedCoefficient;
@@ -152,11 +152,11 @@ internal static class WsqCoefficientQuantizer
                     }
                     else if (coefficient > 0.0f)
                     {
-                        quantizedCoefficient = checked((short)(((coefficient - halfZeroBin) / quantizationBin) + 1.0f));
+                        quantizedCoefficient = checked((short)((coefficient - halfZeroBin) / quantizationBin + 1.0f));
                     }
                     else
                     {
-                        quantizedCoefficient = checked((short)(((coefficient + halfZeroBin) / quantizationBin) - 1.0f));
+                        quantizedCoefficient = checked((short)((coefficient + halfZeroBin) / quantizationBin - 1.0f));
                     }
 
                     quantizedCoefficients[coefficientIndex++] = quantizedCoefficient;
@@ -203,11 +203,11 @@ internal static class WsqCoefficientQuantizer
                     }
                     else if (coefficient > 0.0f)
                     {
-                        quantizedCoefficient = checked((short)(((coefficient - halfZeroBin) / quantizationBins[subband]) + 1.0f));
+                        quantizedCoefficient = checked((short)((coefficient - halfZeroBin) / quantizationBins[subband] + 1.0f));
                     }
                     else
                     {
-                        quantizedCoefficient = checked((short)(((coefficient + halfZeroBin) / quantizationBins[subband]) - 1.0f));
+                        quantizedCoefficient = checked((short)((coefficient + halfZeroBin) / quantizationBins[subband] - 1.0f));
                     }
 
                     quantizedCoefficients[coefficientIndex++] = quantizedCoefficient;

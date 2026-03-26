@@ -123,9 +123,9 @@ public static class NistEncoder
         }
 
         buffer[bytesWritten++] = (byte)'.';
-        buffer[bytesWritten++] = checked((byte)('0' + (tag.FieldNumber / 100)));
-        buffer[bytesWritten++] = checked((byte)('0' + ((tag.FieldNumber / 10) % 10)));
-        buffer[bytesWritten++] = checked((byte)('0' + (tag.FieldNumber % 10)));
+        buffer[bytesWritten++] = checked((byte)('0' + tag.FieldNumber / 100));
+        buffer[bytesWritten++] = checked((byte)('0' + tag.FieldNumber / 10 % 10));
+        buffer[bytesWritten++] = checked((byte)('0' + tag.FieldNumber % 10));
         output.Write(buffer[..bytesWritten]);
     }
 

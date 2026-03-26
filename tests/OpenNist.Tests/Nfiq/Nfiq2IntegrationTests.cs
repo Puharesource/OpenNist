@@ -121,7 +121,7 @@ internal sealed class Nfiq2IntegrationTests
         {
             throw new InvalidOperationException(
                 $"Expected mapped measure '{measureName}' to equal {expectedValue.ToString(CultureInfo.InvariantCulture)}, "
-                + $"but received {(actualValue?.ToString(CultureInfo.InvariantCulture) ?? "NA")}.");
+                + $"but received {actualValue?.ToString(CultureInfo.InvariantCulture) ?? "NA"}.");
         }
     }
 

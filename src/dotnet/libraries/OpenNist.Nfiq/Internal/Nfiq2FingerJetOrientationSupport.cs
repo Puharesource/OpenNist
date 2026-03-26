@@ -67,7 +67,7 @@ internal static class Nfiq2FingerJetOrientationSupport
             verticalDelay.Clear();
             var verticalDelayIndex = 0;
 
-            for (var y = 0; y < size + (n2 * width); y += width)
+            for (var y = 0; y < size + n2 * width; y += width)
             {
                 var horizontalDelay = horizontalDelayBuffer.AsSpan(0, boxSize);
                 horizontalDelay.Clear();
@@ -96,7 +96,7 @@ internal static class Nfiq2FingerJetOrientationSupport
                         {
                             horizontalAccumulator = unchecked((byte)(horizontalAccumulator - NextDelay(horizontalDelay, ref horizontalDelayIndex, filtered)));
                             filtered = horizontalAccumulator;
-                            values[y - ((width + 1) * n2) + x] = filtered > threshold ? (byte)1 : (byte)0;
+                            values[y - (width + 1) * n2 + x] = filtered > threshold ? (byte)1 : (byte)0;
                         }
                     }
                 }
@@ -151,7 +151,7 @@ internal readonly record struct Nfiq2FingerJetComplex(int Real, int Imaginary)
     public static Nfiq2FingerJetComplex Square(Nfiq2FingerJetComplex value)
     {
         return new(
-            (value.Real * value.Real) - (value.Imaginary * value.Imaginary),
+            value.Real * value.Real - value.Imaginary * value.Imaginary,
             2 * value.Real * value.Imaginary);
     }
 }

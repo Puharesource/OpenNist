@@ -88,7 +88,7 @@ internal static class Nfiq2FeatureMath
 
         for (var x = 0; x < blockWidth; x++)
         {
-            gradient[x] = image[((row + 1) * imageWidth) + column + x] - image[(row * imageWidth) + column + x];
+            gradient[x] = image[(row + 1) * imageWidth + column + x] - image[row * imageWidth + column + x];
         }
 
         for (var y = 1; y < blockHeight - 1; y++)
@@ -229,14 +229,14 @@ internal static class Nfiq2FeatureMath
 
         if (blockRow == 0)
         {
-            return image[((imageRow + 1) * imageWidth) + imageColumn] - image[(imageRow * imageWidth) + imageColumn];
+            return image[(imageRow + 1) * imageWidth + imageColumn] - image[imageRow * imageWidth + imageColumn];
         }
 
         if (blockRow == blockHeight - 1)
         {
-            return image[(imageRow * imageWidth) + imageColumn] - image[((imageRow - 1) * imageWidth) + imageColumn];
+            return image[imageRow * imageWidth + imageColumn] - image[(imageRow - 1) * imageWidth + imageColumn];
         }
 
-        return (image[((imageRow + 1) * imageWidth) + imageColumn] - image[((imageRow - 1) * imageWidth) + imageColumn]) / 2.0;
+        return (image[(imageRow + 1) * imageWidth + imageColumn] - image[(imageRow - 1) * imageWidth + imageColumn]) / 2.0;
     }
 }

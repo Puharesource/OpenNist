@@ -56,7 +56,7 @@ internal static class Nfiq2FingerJetMath
     {
         var normalized = angle & 0xff;
         var magnitude = SinTable[normalized & 0x7f];
-        return (sbyte)(((normalized & 0x80) != 0) ? -magnitude : magnitude);
+        return (sbyte)((normalized & 0x80) != 0 ? -magnitude : magnitude);
     }
 
     public static sbyte Cos(int angle)
@@ -99,7 +99,7 @@ internal static class Nfiq2FingerJetMath
             return 0;
         }
 
-        var value = table[(s * 96) / c];
+        var value = table[s * 96 / c];
         if (cls)
         {
             value = (byte)(0x40 - value);
@@ -112,7 +112,7 @@ internal static class Nfiq2FingerJetMath
 
         if (sn)
         {
-            value = unchecked((byte)(-value));
+            value = unchecked((byte)-value);
         }
 
         return value;
@@ -125,9 +125,9 @@ internal static class Nfiq2FingerJetMath
             throw new DivideByZeroException();
         }
 
-        var sign = ((x >= 0) != (y > 0)) ? -1L : 1L;
+        var sign = x >= 0 != y > 0 ? -1L : 1L;
         x = Math.Abs(x);
         y = Math.Abs(y);
-        return ((x + (y >> 1)) / y) * sign;
+        return (x + (y >> 1)) / y * sign;
     }
 }

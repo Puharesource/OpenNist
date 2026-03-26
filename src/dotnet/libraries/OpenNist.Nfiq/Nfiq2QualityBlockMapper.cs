@@ -85,15 +85,15 @@ public static class Nfiq2QualityBlockMapper
         {
             const double degreesToRadians = Math.PI / 180.0;
             var thetaMinRadians = s_orientationFlowAngleMinDegrees * degreesToRadians;
-            var denominator = (90.0 * degreesToRadians) - thetaMinRadians;
+            var denominator = 90.0 * degreesToRadians - thetaMinRadians;
             var minLocalValue = (0.0 - thetaMinRadians) / denominator;
-            var maxLocalValue = ((180.0 * degreesToRadians) - thetaMinRadians) / denominator;
+            var maxLocalValue = (180.0 * degreesToRadians - thetaMinRadians) / denominator;
             return KnownRange(nativeQualityMeasureValue, minLocalValue, maxLocalValue);
         }
 
         if (featureIdentifier is s_ridgeValleyUniformityMean or s_ridgeValleyUniformityStdDev)
         {
-            return checked((byte)Math.Floor((100.0 * Sigmoid(nativeQualityMeasureValue, 1.0, 0.5)) + 0.5));
+            return checked((byte)Math.Floor(100.0 * Sigmoid(nativeQualityMeasureValue, 1.0, 0.5) + 0.5));
         }
 
         return null;

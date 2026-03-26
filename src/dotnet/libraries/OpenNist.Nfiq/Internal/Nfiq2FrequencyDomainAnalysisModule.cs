@@ -54,7 +54,7 @@ internal static class Nfiq2FrequencyDomainAnalysisModule
                 geometry.ExtractedBlockSize,
                 s_slantedBlockHeight,
                 s_slantedBlockWidth,
-                orientation + (Math.PI / 2.0),
+                orientation + Math.PI / 2.0,
                 s_padRotatedBlock);
             values.Add(Nfiq2FrequencyDomainSupport.ComputeFrequencyDomainAnalysisScore(
                 blockCropped,

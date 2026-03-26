@@ -214,7 +214,7 @@ internal sealed class Nfiq2RandomForestModel
             rawPrediction += tree.Evaluate(features);
         }
 
-        var scaledPrediction = (rawPrediction / (double)TreeCount) * 100.0;
+        var scaledPrediction = rawPrediction / (double)TreeCount * 100.0;
         var qualityScore = checked((int)Math.Floor(scaledPrediction + 0.5));
         if (qualityScore is < 0 or > 100)
         {
@@ -248,7 +248,7 @@ internal sealed class Nfiq2RandomForestModel
             rawPrediction += tree.Evaluate(features);
         }
 
-        var scaledPrediction = (rawPrediction / (double)TreeCount) * 100.0;
+        var scaledPrediction = rawPrediction / (double)TreeCount * 100.0;
         var qualityScore = checked((int)Math.Floor(scaledPrediction + 0.5));
         if (qualityScore is < 0 or > 100)
         {

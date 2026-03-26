@@ -154,9 +154,9 @@ internal static class WsqHighPrecisionVarianceCalculator
         if (useCroppedRegion)
         {
             startX += node.Width / 8;
-            startY += (9 * node.Height) / 32;
-            regionWidth = (3 * node.Width) / 4;
-            regionHeight = (7 * node.Height) / 16;
+            startY += 9 * node.Height / 32;
+            regionWidth = 3 * node.Width / 4;
+            regionHeight = 7 * node.Height / 16;
         }
 
         var rowStart = startY * width + startX;
@@ -179,7 +179,7 @@ internal static class WsqHighPrecisionVarianceCalculator
             }
 
             var singlePrecisionSampleCount = regionWidth * regionHeight;
-            var singlePrecisionNormalizedSum = (singlePrecisionPixelSum * singlePrecisionPixelSum) / singlePrecisionSampleCount;
+            var singlePrecisionNormalizedSum = singlePrecisionPixelSum * singlePrecisionPixelSum / singlePrecisionSampleCount;
             return (singlePrecisionSquaredSum - singlePrecisionNormalizedSum) / (singlePrecisionSampleCount - 1.0f);
         }
 
@@ -199,7 +199,7 @@ internal static class WsqHighPrecisionVarianceCalculator
         }
 
         var sampleCount = regionWidth * regionHeight;
-        var normalizedSum = (pixelSum * pixelSum) / sampleCount;
+        var normalizedSum = pixelSum * pixelSum / sampleCount;
         return (squaredSum - normalizedSum) / (sampleCount - 1.0);
     }
 
@@ -217,9 +217,9 @@ internal static class WsqHighPrecisionVarianceCalculator
         if (useCroppedRegion)
         {
             startX += node.Width / 8;
-            startY += (9 * node.Height) / 32;
-            regionWidth = (3 * node.Width) / 4;
-            regionHeight = (7 * node.Height) / 16;
+            startY += 9 * node.Height / 32;
+            regionWidth = 3 * node.Width / 4;
+            regionHeight = 7 * node.Height / 16;
         }
 
         var rowStart = startY * width + startX;
@@ -239,7 +239,7 @@ internal static class WsqHighPrecisionVarianceCalculator
         }
 
         var sampleCount = regionWidth * regionHeight;
-        var normalizedSum = (pixelSum * pixelSum) / sampleCount;
+        var normalizedSum = pixelSum * pixelSum / sampleCount;
         return (squaredSum - normalizedSum) / (sampleCount - 1.0f);
     }
 }

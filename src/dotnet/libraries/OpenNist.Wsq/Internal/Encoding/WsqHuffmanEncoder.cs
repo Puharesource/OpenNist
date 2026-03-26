@@ -333,7 +333,7 @@ internal static class WsqHuffmanEncoder
         var orderedValues = new byte[s_huffmanCategoryCount + 1];
         var orderedValueCount = 0;
 
-        for (var codeLength = 1; codeLength <= (WsqConstants.MaxHuffmanBits << 1); codeLength++)
+        for (var codeLength = 1; codeLength <= WsqConstants.MaxHuffmanBits << 1; codeLength++)
         {
             for (var symbol = 0; symbol < s_huffmanCategoryCount; symbol++)
             {

@@ -55,7 +55,7 @@ internal static class Nfiq2FingerJetMinutiaExtractor
         var cxy = new Convolution3X3(width, t0: 2, t1: 1, normBits: 5);
         var cyy = new Convolution3X3(width, t0: 2, t1: 1, normBits: 5);
         var maxima = new Max2D5Fast(width);
-        var candidateDelay = new PackedBoolDelay((width * (s_orientationFilterSize - s_max2D5FastYOffset)) - s_max2D5FastXOffset, initialValue: false);
+        var candidateDelay = new PackedBoolDelay(width * (s_orientationFilterSize - s_max2D5FastYOffset) - s_max2D5FastXOffset, initialValue: false);
         var directionAccumulator = new DirectionAccumulator(widthHalf, s_orientationFilterSize);
         var orientationSums = new Nfiq2FingerJetComplex[widthHalf];
         var direction = new byte[widthHalf];
@@ -64,7 +64,7 @@ internal static class Nfiq2FingerJetMinutiaExtractor
         {
             for (var x = 0; x < width; x++)
             {
-                var pIndex = (s_startRowOffset * width) + (y * width) + x;
+                var pIndex = s_startRowOffset * width + y * width + x;
                 var outside = pIndex >= endIndex;
                 var gx = 0;
                 var gy = 0;
@@ -73,7 +73,7 @@ internal static class Nfiq2FingerJetMinutiaExtractor
                     outside = phasemap[pIndex + 1] == s_invalid
                         || phasemap[pIndex - 3] == s_invalid
                         || phasemap[pIndex + width] == s_invalid
-                        || phasemap[pIndex - (3 * width)] == s_invalid;
+                        || phasemap[pIndex - 3 * width] == s_invalid;
                     gx = phasemap[pIndex + 1] - phasemap[pIndex - 1];
                     gy = phasemap[pIndex + width] - phasemap[pIndex - width];
                 }
@@ -82,8 +82,8 @@ internal static class Nfiq2FingerJetMinutiaExtractor
                 var gxy = cxy.Next(gx * gy);
                 var gyy = cyy.Next(gy * gy);
 
-                var e1b = (gxx + gyy) > (2 * s_smmeThreshold);
-                var b2 = (s_smmeThreshold - gxx) * (s_smmeThreshold - gyy) - (gxy * gxy);
+                var e1b = gxx + gyy > 2 * s_smmeThreshold;
+                var b2 = (s_smmeThreshold - gxx) * (s_smmeThreshold - gyy) - gxy * gxy;
                 var e = e1b && b2 > 0;
 
                 if ((x & 1) == 0 && (y & 1) == 0)
@@ -107,7 +107,7 @@ internal static class Nfiq2FingerJetMinutiaExtractor
                 var yp = y + s_startRowOffset - Convolution3X3.YOffset - s_orientationFilterSize;
                 candidate = candidate
                     && Nfiq2FingerJetMinutiaExtractionSupport.IsInFootprint(xp, yp, width, size, phasemap);
-                var candidateTraceIndex = (y * width) + x;
+                var candidateTraceIndex = y * width + x;
                 if ((uint)candidateTraceIndex < (uint)candidateMap.Length)
                 {
                     candidateMap[candidateTraceIndex] = candidate ? (byte)1 : (byte)0;
@@ -227,7 +227,7 @@ internal static class Nfiq2FingerJetMinutiaExtractor
         var cxy = new Convolution3X3(width, t0: 2, t1: 1, normBits: 5);
         var cyy = new Convolution3X3(width, t0: 2, t1: 1, normBits: 5);
         var maxima = new Max2D5Fast(width);
-        var candidateDelay = new PackedBoolDelay((width * (s_orientationFilterSize - s_max2D5FastYOffset)) - s_max2D5FastXOffset, initialValue: false);
+        var candidateDelay = new PackedBoolDelay(width * (s_orientationFilterSize - s_max2D5FastYOffset) - s_max2D5FastXOffset, initialValue: false);
         var directionAccumulator = new DirectionAccumulator(widthHalf, s_orientationFilterSize);
         var orientationSums = new Nfiq2FingerJetComplex[widthHalf];
         var direction = new byte[widthHalf];
@@ -236,7 +236,7 @@ internal static class Nfiq2FingerJetMinutiaExtractor
         {
             for (var x = 0; x < width; x++)
             {
-                var pIndex = (s_startRowOffset * width) + (y * width) + x;
+                var pIndex = s_startRowOffset * width + y * width + x;
                 var outside = pIndex >= endIndex;
                 var gx = 0;
                 var gy = 0;
@@ -245,7 +245,7 @@ internal static class Nfiq2FingerJetMinutiaExtractor
                     outside = phasemap[pIndex + 1] == s_invalid
                         || phasemap[pIndex - 3] == s_invalid
                         || phasemap[pIndex + width] == s_invalid
-                        || phasemap[pIndex - (3 * width)] == s_invalid;
+                        || phasemap[pIndex - 3 * width] == s_invalid;
                     gx = phasemap[pIndex + 1] - phasemap[pIndex - 1];
                     gy = phasemap[pIndex + width] - phasemap[pIndex - width];
                 }
@@ -254,8 +254,8 @@ internal static class Nfiq2FingerJetMinutiaExtractor
                 var gxy = cxy.Next(gx * gy);
                 var gyy = cyy.Next(gy * gy);
 
-                var e1b = (gxx + gyy) > (2 * s_smmeThreshold);
-                var b2 = (s_smmeThreshold - gxx) * (s_smmeThreshold - gyy) - (gxy * gxy);
+                var e1b = gxx + gyy > 2 * s_smmeThreshold;
+                var b2 = (s_smmeThreshold - gxx) * (s_smmeThreshold - gyy) - gxy * gxy;
                 var e = e1b && b2 > 0;
 
                 if ((x & 1) == 0 && (y & 1) == 0)
@@ -279,7 +279,7 @@ internal static class Nfiq2FingerJetMinutiaExtractor
                 var yp = y + s_startRowOffset - Convolution3X3.YOffset - s_orientationFilterSize;
                 candidate = candidate
                     && Nfiq2FingerJetMinutiaExtractionSupport.IsInFootprint(xp, yp, width, size, phasemap);
-                var candidateTraceIndex = (y * width) + x;
+                var candidateTraceIndex = y * width + x;
                 if ((uint)candidateTraceIndex < (uint)candidateMap.Length)
                 {
                     candidateMap[candidateTraceIndex] = candidate ? (byte)1 : (byte)0;
@@ -396,7 +396,7 @@ internal static class Nfiq2FingerJetMinutiaExtractor
         var cxy = new Convolution3X3(width, t0: 2, t1: 1, normBits: 5);
         var cyy = new Convolution3X3(width, t0: 2, t1: 1, normBits: 5);
         var maxima = new Max2D5Fast(width);
-        var candidateDelay = new PackedBoolDelay((width * (s_orientationFilterSize - s_max2D5FastYOffset)) - s_max2D5FastXOffset, initialValue: false);
+        var candidateDelay = new PackedBoolDelay(width * (s_orientationFilterSize - s_max2D5FastYOffset) - s_max2D5FastXOffset, initialValue: false);
         var directionAccumulator = new DirectionAccumulator(widthHalf, s_orientationFilterSize);
         var orientationSums = new Nfiq2FingerJetComplex[widthHalf];
         var direction = new byte[widthHalf];
@@ -405,7 +405,7 @@ internal static class Nfiq2FingerJetMinutiaExtractor
         {
             for (var x = 0; x < width; x++)
             {
-                var pIndex = (s_startRowOffset * width) + (y * width) + x;
+                var pIndex = s_startRowOffset * width + y * width + x;
                 var outside = pIndex >= endIndex;
                 var gx = 0;
                 var gy = 0;
@@ -414,7 +414,7 @@ internal static class Nfiq2FingerJetMinutiaExtractor
                     outside = phasemap[pIndex + 1] == s_invalid
                         || phasemap[pIndex - 3] == s_invalid
                         || phasemap[pIndex + width] == s_invalid
-                        || phasemap[pIndex - (3 * width)] == s_invalid;
+                        || phasemap[pIndex - 3 * width] == s_invalid;
                     gx = phasemap[pIndex + 1] - phasemap[pIndex - 1];
                     gy = phasemap[pIndex + width] - phasemap[pIndex - width];
                 }
@@ -423,8 +423,8 @@ internal static class Nfiq2FingerJetMinutiaExtractor
                 var gxy = cxy.Next(gx * gy);
                 var gyy = cyy.Next(gy * gy);
 
-                var e1b = (gxx + gyy) > (2 * s_smmeThreshold);
-                var b2 = (s_smmeThreshold - gxx) * (s_smmeThreshold - gyy) - (gxy * gxy);
+                var e1b = gxx + gyy > 2 * s_smmeThreshold;
+                var b2 = (s_smmeThreshold - gxx) * (s_smmeThreshold - gyy) - gxy * gxy;
                 var e = e1b && b2 > 0;
 
                 if ((x & 1) == 0 && (y & 1) == 0)
@@ -558,12 +558,12 @@ internal static class Nfiq2FingerJetMinutiaExtractor
                 _verticalIndex2 = 0;
             }
 
-            var h0 = (v1 * _t0) + ((v2 + value) * _t1);
+            var h0 = v1 * _t0 + (v2 + value) * _t1;
             var h1 = _horizontalDelay1;
             _horizontalDelay1 = h0;
             var h2 = _horizontalDelay2;
             _horizontalDelay2 = h1;
-            var output = (h1 * _t0) + ((h2 + h0) * _t1);
+            var output = h1 * _t0 + (h2 + h0) * _t1;
             return (output + (1 << (_normBits - 1))) >> _normBits;
         }
     }
@@ -593,7 +593,7 @@ internal static class Nfiq2FingerJetMinutiaExtractor
                 Array.Clear(_maxima[Mod7(y - 1)], 0, _maxima[row].Length);
             }
 
-            if (y >= 6 && (y % 3) == 0 && x >= 6 && (x % 3) == 0)
+            if (y >= 6 && y % 3 == 0 && x >= 6 && x % 3 == 0)
             {
                 FindMaxInBlock(y - 4, x - 4);
             }
@@ -676,7 +676,7 @@ internal static class Nfiq2FingerJetMinutiaExtractor
             _buffer = new byte[byteSize];
             _initMask = delayLength == 0
                 ? (byte)1
-                : (byte)(1 << ((-delayLength) & 7));
+                : (byte)(1 << (-delayLength & 7));
             _mask = _initMask;
 
             if (initialValue)

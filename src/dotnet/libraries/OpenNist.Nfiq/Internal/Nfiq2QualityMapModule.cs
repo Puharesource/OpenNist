@@ -80,17 +80,17 @@ internal static class Nfiq2QualityMapModule
                     sumY += twiceProduct;
                 }
 
-                var deltaSquares = (gx * gx) - (gy * gy);
+                var deltaSquares = gx * gx - gy * gy;
                 if (!double.IsNaN(deltaSquares))
                 {
                     sumX += deltaSquares;
                 }
 
-                coherenceDenominator += Math.Sqrt((twiceProduct * twiceProduct) + (deltaSquares * deltaSquares));
+                coherenceDenominator += Math.Sqrt(twiceProduct * twiceProduct + deltaSquares * deltaSquares);
             }
         }
 
-        var coherenceNumerator = Math.Sqrt((sumX * sumX) + (sumY * sumY));
+        var coherenceNumerator = Math.Sqrt(sumX * sumX + sumY * sumY);
         if (double.IsNaN(coherenceNumerator))
         {
             coherenceNumerator = 0.0;

@@ -181,8 +181,8 @@ internal static class WsqContainerWriter
     private static int GetTransformPayloadSize(WsqTransformTable transformTable)
     {
         return 2
-            + ((transformTable.LowPassFilterLength + 1) / 2) * 6
-            + ((transformTable.HighPassFilterLength + 1) / 2) * 6;
+            + (transformTable.LowPassFilterLength + 1) / 2 * 6
+            + (transformTable.HighPassFilterLength + 1) / 2 * 6;
     }
 
     private static int GetQuantizationPayloadSize()

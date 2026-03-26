@@ -100,7 +100,7 @@ internal sealed class Nfiq2FingerprintImage
             rightColumnIndex = 0;
         }
 
-        if ((rightColumnIndex <= leftColumnIndex) || (bottomRowIndex <= topRowIndex))
+        if (rightColumnIndex <= leftColumnIndex || bottomRowIndex <= topRowIndex)
         {
             throw new Nfiq2Exception(
                 $"Asked to inclusively crop from ({leftColumnIndex},{topRowIndex}) to ({rightColumnIndex},{bottomRowIndex}).");
@@ -124,7 +124,7 @@ internal sealed class Nfiq2FingerprintImage
         var destinationOffset = 0;
         for (var row = topRowIndex; row <= bottomRowIndex; row++)
         {
-            var rowOffset = checked((row * Width) + leftColumnIndex);
+            var rowOffset = checked(row * Width + leftColumnIndex);
             Pixels.Span.Slice(rowOffset, croppedWidth).CopyTo(croppedPixels.AsSpan(destinationOffset, croppedWidth));
             destinationOffset += croppedWidth;
         }
@@ -149,7 +149,7 @@ internal sealed class Nfiq2FingerprintImage
         long sum = 0;
         for (var row = 0; row < Height; row++)
         {
-            sum += Pixels.Span[(row * Width) + columnIndex];
+            sum += Pixels.Span[row * Width + columnIndex];
         }
 
         return sum / (double)Height;

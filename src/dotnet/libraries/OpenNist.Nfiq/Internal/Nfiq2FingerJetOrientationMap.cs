@@ -123,7 +123,7 @@ internal static class Nfiq2FingerJetOrientationMap
         var x33 = new SingleShortDelay();
         var dom = new SingleComplexDelay();
 
-        var p0Index = ((width + 1) * 2) + 4;
+        var p0Index = (width + 1) * 2 + 4;
         var p1Index = p0Index + width - 1;
         var orientationMagnitude = new Nfiq2FingerJetComplex[orientationWidth];
 
@@ -234,7 +234,7 @@ internal static class Nfiq2FingerJetOrientationMap
             var od1Index = 0;
             var od2Index = 0;
 
-            for (var y = 0; y < size + (filterTail * width); y += width)
+            for (var y = 0; y < size + filterTail * width; y += width)
             {
                 var od3 = od3Buffer.AsSpan(0, filterSize);
                 var od4 = od4Buffer.AsSpan(0, filterSize);
@@ -266,7 +266,7 @@ internal static class Nfiq2FingerJetOrientationMap
                         else
                         {
                             window = o4 - NextDelay(od4, ref od4Index, o4);
-                            var index = y + x - ((width + 1) * filterTail);
+                            var index = y + x - (width + 1) * filterTail;
                             if (footprint[index] == 0)
                             {
                                 orientation[index] = Nfiq2FingerJetComplex.Zero;

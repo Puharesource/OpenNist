@@ -137,7 +137,7 @@ internal static class Nfiq2ImgProcRoiModule
                     {
                         var sampleColumn = column + dx;
                         var sampleValue = IsInside(sampleRow, sampleColumn, width, height)
-                            ? source[(sampleRow * width) + sampleColumn]
+                            ? source[sampleRow * width + sampleColumn]
                             : s_whitePixel;
                         if (sampleValue < minValue)
                         {
@@ -184,7 +184,7 @@ internal static class Nfiq2ImgProcRoiModule
                 for (var index = 0; index < kernel.Length; index++)
                 {
                     var sampleRow = Reflect101(row + index - radius, height);
-                    sum += kernel[index] * horizontal[(sampleRow * width) + column];
+                    sum += kernel[index] * horizontal[sampleRow * width + column];
                 }
 
                 destination[rowOffset + column] = ClampToByte(sum);
@@ -305,7 +305,7 @@ internal static class Nfiq2ImgProcRoiModule
                 return;
             }
 
-            var index = (row * width) + column;
+            var index = row * width + column;
             if (visited[index] || image[index] != s_whitePixel)
             {
                 return;
@@ -413,7 +413,7 @@ internal static class Nfiq2ImgProcRoiModule
                 return;
             }
 
-            var candidate = (row * width) + column;
+            var candidate = row * width + column;
             if (visited[candidate] || image[candidate] != s_blackPixel)
             {
                 return;
@@ -476,9 +476,9 @@ internal static class Nfiq2ImgProcRoiModule
             return 0;
         }
 
-        while ((index < 0) || (index >= length))
+        while (index < 0 || index >= length)
         {
-            index = index < 0 ? -index : (length * 2) - index - 2;
+            index = index < 0 ? -index : length * 2 - index - 2;
         }
 
         return index;

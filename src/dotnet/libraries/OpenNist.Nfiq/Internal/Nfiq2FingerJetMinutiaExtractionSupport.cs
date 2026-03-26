@@ -18,21 +18,21 @@ internal static class Nfiq2FingerJetMinutiaExtractionSupport
 
         var xp = x + neighborhood;
         var yp = y + neighborhood;
-        if (xp < (neighborhood * 2) || yp < (neighborhood * 2) || xp >= width)
+        if (xp < neighborhood * 2 || yp < neighborhood * 2 || xp >= width)
         {
             return false;
         }
 
-        var offset = xp + (yp * width);
+        var offset = xp + yp * width;
         if ((uint)offset >= (uint)size)
         {
             return false;
         }
 
-        return phasemap[offset - (2 * neighborhood)] != s_phasemapFiller
+        return phasemap[offset - 2 * neighborhood] != s_phasemapFiller
             && phasemap[offset] != s_phasemapFiller
-            && phasemap[offset - ((width * 2 + 2) * neighborhood)] != s_phasemapFiller
-            && phasemap[offset - (width * 2 * neighborhood)] != s_phasemapFiller;
+            && phasemap[offset - (width * 2 + 2) * neighborhood] != s_phasemapFiller
+            && phasemap[offset - width * 2 * neighborhood] != s_phasemapFiller;
     }
 
     public static bool TryAdjustAngle(
@@ -47,7 +47,7 @@ internal static class Nfiq2FingerJetMinutiaExtractionSupport
         var start = new AnglePoint((short)x, (short)y, (byte)(angle >> 5), phasemap, width);
         var current = start.Next(phasemap, width, min: false, relative);
         var p2 = start.Next(phasemap, width, min: true, relative);
-        var min = (255 - p2.Value) > current.Value;
+        var min = 255 - p2.Value > current.Value;
         if (min)
         {
             current = p2;
@@ -57,7 +57,7 @@ internal static class Nfiq2FingerJetMinutiaExtractionSupport
         for (var iteration = 0; iteration < 20; iteration++)
         {
             current = current.Next(phasemap, width, min, relative);
-            if (min == (current.Value >= 128))
+            if (min == current.Value >= 128)
             {
                 break;
             }
@@ -85,7 +85,7 @@ internal static class Nfiq2FingerJetMinutiaExtractionSupport
             }
         }
 
-        if (d0 < (14 * 14))
+        if (d0 < 14 * 14)
         {
             return false;
         }
@@ -134,10 +134,10 @@ internal static class Nfiq2FingerJetMinutiaExtractionSupport
             var v0 = values[index];
             var v1 = verticalDelay1.Next(v0);
             var v2 = verticalDelay2.Next(v1);
-            var h0 = (v1 * t0) + ((v2 + v0) * t1);
+            var h0 = v1 * t0 + (v2 + v0) * t1;
             var h1 = horizontalDelay1.Next(h0);
             var h2 = horizontalDelay2.Next(h1);
-            var output = (h1 * t0) + ((h2 + h0) * t1);
+            var output = h1 * t0 + (h2 + h0) * t1;
             result[index] = (output + (1 << (normBits - 1))) >> normBits;
         }
 
@@ -184,7 +184,7 @@ internal static class Nfiq2FingerJetMinutiaExtractionSupport
             var rowSpan = new Nfiq2FingerJetComplex[widthHalf];
             for (var x = 0; x < widthHalf; x++)
             {
-                rowSpan[x] = evenRowOrientations[(row * widthHalf) + x];
+                rowSpan[x] = evenRowOrientations[row * widthHalf + x];
             }
 
             var direction = accumulator.NextRow(rowSpan);
@@ -209,7 +209,7 @@ internal static class Nfiq2FingerJetMinutiaExtractionSupport
 
         var size = phasemap.Length;
         var height = size / width;
-        var output = new List<Nfiq2FingerJetComplex>((((height + orientationFilterSize) + 1) / 2) * (width / 2));
+        var output = new List<Nfiq2FingerJetComplex>((height + orientationFilterSize + 1) / 2 * (width / 2));
 
         var cxx = new Convolution3X3(width, t0: 2, t1: 1, normBits: 5);
         var cxy = new Convolution3X3(width, t0: 2, t1: 1, normBits: 5);
@@ -220,7 +220,7 @@ internal static class Nfiq2FingerJetMinutiaExtractionSupport
         {
             for (var x = 0; x < width; x++)
             {
-                var pIndex = (startRowOffset * width) + (y * width) + x;
+                var pIndex = startRowOffset * width + y * width + x;
                 var outside = pIndex >= endIndex;
                 var gx = 0;
                 var gy = 0;
@@ -246,7 +246,7 @@ internal static class Nfiq2FingerJetMinutiaExtractionSupport
 
     private static uint DistanceSquared(int x, int y)
     {
-        return unchecked((uint)((x * x) + (y * y)));
+        return unchecked((uint)(x * x + y * y));
     }
 
     private sealed class Max2D5Fast
@@ -414,12 +414,12 @@ internal static class Nfiq2FingerJetMinutiaExtractionSupport
                 _verticalIndex2 = 0;
             }
 
-            var h0 = (v1 * _t0) + ((v2 + value) * _t1);
+            var h0 = v1 * _t0 + (v2 + value) * _t1;
             var h1 = _horizontalDelay1;
             _horizontalDelay1 = h0;
             var h2 = _horizontalDelay2;
             _horizontalDelay2 = h1;
-            var output = (h1 * _t0) + ((h2 + h0) * _t1);
+            var output = h1 * _t0 + (h2 + h0) * _t1;
             return (output + (1 << (_normBits - 1))) >> _normBits;
         }
     }
@@ -449,7 +449,7 @@ internal static class Nfiq2FingerJetMinutiaExtractionSupport
             _buffer = new byte[Math.Max(byteSize, 1)];
             _initMask = delayLength == 0
                 ? (byte)1
-                : (byte)(1 << ((-delayLength) & 7));
+                : (byte)(1 << (-delayLength & 7));
             _mask = _initMask;
 
             if (initialValue)
@@ -571,7 +571,7 @@ internal static class Nfiq2FingerJetMinutiaExtractionSupport
     private readonly record struct AnglePoint(short X, short Y, byte Angle, byte Value)
     {
         public AnglePoint(short x, short y, byte angle, ReadOnlySpan<byte> phasemap, int width)
-            : this(x, y, angle, phasemap[x + (y * width)])
+            : this(x, y, angle, phasemap[x + y * width])
         {
         }
 

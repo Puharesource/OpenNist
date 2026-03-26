@@ -18,7 +18,7 @@ internal static class Nfiq2FingerJetImagePreparation
     private const int s_orientationScale = 4;
     private const int s_maxWidth = 256;
     private const int s_maxHeight = 400;
-    private const int s_maxBufferSize = s_maxWidth * (s_maxHeight + (s_maxHeight / 4));
+    private const int s_maxBufferSize = s_maxWidth * (s_maxHeight + s_maxHeight / 4);
     private const int s_orientationCellByteWidth = 2;
 
     public static void ValidateCreateFeatureSetInput(int width, int height, int pixelsPerInch)
@@ -33,14 +33,14 @@ internal static class Nfiq2FingerJetImagePreparation
             throw new Nfiq2Exception("FingerJet raw input resolution falls outside the native CreateFeatureSet limits.");
         }
 
-        if ((width * 500) < (s_createFeatureSetMinSizeAt500Scale * pixelsPerInch)
-            || (width * 500) > (s_createFeatureSetMaxWidthAt500Scale * pixelsPerInch))
+        if (width * 500 < s_createFeatureSetMinSizeAt500Scale * pixelsPerInch
+            || width * 500 > s_createFeatureSetMaxWidthAt500Scale * pixelsPerInch)
         {
             throw new Nfiq2Exception("FingerJet raw input width falls outside the native CreateFeatureSet limits.");
         }
 
-        if ((height * 500) < (s_createFeatureSetMinSizeAt500Scale * pixelsPerInch)
-            || (height * 500) > (s_createFeatureSetMaxHeightAt500Scale * pixelsPerInch))
+        if (height * 500 < s_createFeatureSetMinSizeAt500Scale * pixelsPerInch
+            || height * 500 > s_createFeatureSetMaxHeightAt500Scale * pixelsPerInch)
         {
             throw new Nfiq2Exception("FingerJet raw input height falls outside the native CreateFeatureSet limits.");
         }
@@ -65,15 +65,15 @@ internal static class Nfiq2FingerJetImagePreparation
         if (height > s_maxHeight)
         {
             var maxHeightIn = IsApproximately500Dpi(pixelsPerInch)
-                ? (s_maxHeight * 3) / 2
-                : (s_maxHeight * pixelsPerInch) / s_internalResolutionDpi;
+                ? s_maxHeight * 3 / 2
+                : s_maxHeight * pixelsPerInch / s_internalResolutionDpi;
             var diff = inputHeight - maxHeightIn;
             if (diff <= 0)
             {
                 throw new Nfiq2Exception("FingerJet vertical crop planning diverged from the native extractor.");
             }
 
-            inputOffset += (diff / 2) * inputWidth;
+            inputOffset += diff / 2 * inputWidth;
             yOffset += (height - s_maxHeight) / 2;
             height = s_maxHeight;
         }
@@ -81,8 +81,8 @@ internal static class Nfiq2FingerJetImagePreparation
         if (width > s_maxWidth)
         {
             var maxWidthIn = IsApproximately500Dpi(pixelsPerInch)
-                ? (s_maxWidth * 3) / 2
-                : (s_maxWidth * pixelsPerInch) / s_internalResolutionDpi;
+                ? s_maxWidth * 3 / 2
+                : s_maxWidth * pixelsPerInch / s_internalResolutionDpi;
             var diff = inputWidth - maxWidthIn;
             if (diff <= 0)
             {
@@ -95,10 +95,10 @@ internal static class Nfiq2FingerJetImagePreparation
         }
 
         var size = checked(width * height);
-        var orientationMapWidth = ((width - 1) / s_orientationScale) + 1;
-        var orientationMapHeight = ((height - 1) / s_orientationScale) + 1;
+        var orientationMapWidth = (width - 1) / s_orientationScale + 1;
+        var orientationMapHeight = (height - 1) / s_orientationScale + 1;
         var orientationMapSize = checked(orientationMapWidth * orientationMapHeight);
-        var bufferSizeNeeded = size + (orientationMapSize * (1 + s_orientationCellByteWidth));
+        var bufferSizeNeeded = size + orientationMapSize * (1 + s_orientationCellByteWidth);
         if (bufferSizeNeeded > s_maxBufferSize)
         {
             throw new Nfiq2Exception("FingerJet working buffer exceeded the native extractor limit.");
@@ -110,14 +110,14 @@ internal static class Nfiq2FingerJetImagePreparation
         {
             Resize23(preparedPixels, width, size, sourcePixels, inputOffset, inputWidth);
         }
-        else if (Math.Abs(pixelsPerInch - s_internalResolutionDpi) <= 33 && (inputWidth % s_orientationScale) == 0)
+        else if (Math.Abs(pixelsPerInch - s_internalResolutionDpi) <= 33 && inputWidth % s_orientationScale == 0)
         {
             sourcePixels.Slice(inputOffset, size).CopyTo(preparedPixels);
             pixelsPerInch = Nfiq2FingerJetMath.MulDiv(pixelsPerInch, 5, 3);
         }
         else
         {
-            var scale256 = (pixelsPerInch * 256) / s_internalResolutionDpi;
+            var scale256 = pixelsPerInch * 256 / s_internalResolutionDpi;
             Resize(preparedPixels, width, size, sourcePixels, inputOffset, inputWidth, inputHeight, scale256);
             pixelsPerInch = 500;
         }
@@ -137,8 +137,8 @@ internal static class Nfiq2FingerJetImagePreparation
             throw new Nfiq2Exception("FingerJet extraction resolution falls outside the native extractor limits.");
         }
 
-        var widthAt500 = (image.Width * 500) / image.PixelsPerInch;
-        var heightAt500 = (image.Width * 500) / image.PixelsPerInch;
+        var widthAt500 = image.Width * 500 / image.PixelsPerInch;
+        var heightAt500 = image.Width * 500 / image.PixelsPerInch;
         if (widthAt500 < s_extractMin500Width || heightAt500 < s_extractMin500Height)
         {
             throw new Nfiq2Exception("FingerJet extraction image is too small at native 500 PPI scale.");
@@ -154,20 +154,20 @@ internal static class Nfiq2FingerJetImagePreparation
     {
         if (IsApproximately500Dpi(pixelsPerInch))
         {
-            return (inputWidth / 6) * 4;
+            return inputWidth / 6 * 4;
         }
 
-        return ((inputWidth * s_internalResolutionDpi) / pixelsPerInch) & ~(s_orientationScale - 1);
+        return (inputWidth * s_internalResolutionDpi / pixelsPerInch) & ~(s_orientationScale - 1);
     }
 
     private static int ComputePreparedHeight(int inputHeight, int pixelsPerInch)
     {
         if (IsApproximately500Dpi(pixelsPerInch))
         {
-            return (inputHeight / 6) * 4;
+            return inputHeight / 6 * 4;
         }
 
-        return ((inputHeight * s_internalResolutionDpi) / pixelsPerInch) & ~(s_orientationScale - 1);
+        return (inputHeight * s_internalResolutionDpi / pixelsPerInch) & ~(s_orientationScale - 1);
     }
 
     private static bool IsApproximately500Dpi(int pixelsPerInch)
@@ -181,7 +181,7 @@ internal static class Nfiq2FingerJetImagePreparation
         Resize23Block(firstRowsBuffer, outputWidth, input, inputOffset, inputWidth);
         firstRowsBuffer[..(outputWidth * 2)].CopyTo(output);
 
-        var sourceOffset = inputOffset + (inputWidth * 3);
+        var sourceOffset = inputOffset + inputWidth * 3;
         var destinationOffset = outputWidth * 2;
         while (destinationOffset < outputSize)
         {
@@ -198,7 +198,7 @@ internal static class Nfiq2FingerJetImagePreparation
 
         for (var inputColumn = 0; inputColumn < outputWidth * 3 / 2; inputColumn += 3)
         {
-            var outputColumn = (inputColumn / 3) * 2;
+            var outputColumn = inputColumn / 3 * 2;
             var row0 = inputOffset + inputColumn;
             var row1 = row0 + inputWidth;
             var row2 = row1 + inputWidth;
@@ -213,15 +213,15 @@ internal static class Nfiq2FingerJetImagePreparation
             var i21 = input[row2 + 1];
             var i22 = input[row2 + 2];
 
-            var o00 = (i00 * 4) + (i01 * 2) + (i10 * 2) + i11;
-            var o01 = (i02 * 4) + (i01 * 2) + (i12 * 2) + i11;
-            var o10 = (i20 * 4) + (i21 * 2) + (i10 * 2) + i11;
-            var o11 = (i22 * 4) + (i21 * 2) + (i12 * 2) + i11;
+            var o00 = i00 * 4 + i01 * 2 + i10 * 2 + i11;
+            var o01 = i02 * 4 + i01 * 2 + i12 * 2 + i11;
+            var o10 = i20 * 4 + i21 * 2 + i10 * 2 + i11;
+            var o11 = i22 * 4 + i21 * 2 + i12 * 2 + i11;
 
-            output[outputColumn] = (byte)((o00 * multiplier) / divisor);
-            output[outputColumn + 1] = (byte)((o01 * multiplier) / divisor);
-            output[outputWidth + outputColumn] = (byte)((o10 * multiplier) / divisor);
-            output[outputWidth + outputColumn + 1] = (byte)((o11 * multiplier) / divisor);
+            output[outputColumn] = (byte)(o00 * multiplier / divisor);
+            output[outputColumn + 1] = (byte)(o01 * multiplier / divisor);
+            output[outputWidth + outputColumn] = (byte)(o10 * multiplier / divisor);
+            output[outputWidth + outputColumn + 1] = (byte)(o11 * multiplier / divisor);
         }
     }
 
@@ -245,15 +245,15 @@ internal static class Nfiq2FingerJetImagePreparation
             var endOfLine = destinationOffset + outputWidth;
             for (; destinationOffset < endOfLine; destinationOffset++)
             {
-                if ((sourceOffset + inputWidth) < (inputOffset + (inputWidth * inputHeight)))
+                if (sourceOffset + inputWidth < inputOffset + inputWidth * inputHeight)
                 {
                     var topLeft = input[sourceOffset];
                     var topRight = input[sourceOffset + 1];
                     var bottomLeft = input[sourceOffset + inputWidth];
                     var bottomRight = input[sourceOffset + inputWidth + 1];
                     output[destinationOffset] = (byte)(
-                        (((topLeft * (256 - dx)) + (topRight * dx)) * (256 - dy)
-                        + (((bottomLeft * (256 - dx)) + (bottomRight * dx)) * dy)) >> 16);
+                        ((topLeft * (256 - dx) + topRight * dx) * (256 - dy)
+                        + (bottomLeft * (256 - dx) + bottomRight * dx) * dy) >> 16);
                 }
 
                 dx += scale256;

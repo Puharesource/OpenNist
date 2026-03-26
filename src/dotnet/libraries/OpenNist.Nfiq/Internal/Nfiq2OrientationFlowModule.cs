@@ -29,7 +29,7 @@ internal static class Nfiq2OrientationFlowModule
         var maskBloqSeg = ComputeForegroundNeighborhoodMask(blocks);
 
         var angleMinRadians = s_angleMinDegrees * (Math.PI / 180.0);
-        var angleDiff = ((90.0 - s_angleMinDegrees) * Math.PI) / 180.0;
+        var angleDiff = (90.0 - s_angleMinDegrees) * Math.PI / 180.0;
 
         var values = new List<double>(loqAll.Length);
         for (var index = 0; index < loqAll.Length; index++)
@@ -57,7 +57,7 @@ internal static class Nfiq2OrientationFlowModule
         Nfiq2FingerprintImage fingerprintImage,
         ReadOnlySpan<byte> segmentationMask)
     {
-        var sumSquare = (s_slantedBlockSizeX * s_slantedBlockSizeX) + (s_slantedBlockSizeY * s_slantedBlockSizeY);
+        var sumSquare = s_slantedBlockSizeX * s_slantedBlockSizeX + s_slantedBlockSizeY * s_slantedBlockSizeY;
         var extractedBlockSize = Math.Ceiling(Math.Sqrt(sumSquare));
         var overlapDifference = extractedBlockSize - s_localRegionSquare;
         var blockOffset = (int)Math.Ceiling(overlapDifference / 2.0);
@@ -183,12 +183,12 @@ internal static class Nfiq2OrientationFlowModule
 
     private static int GetBlockIndex(int row, int column, int blockColumns)
     {
-        return (row * blockColumns) + column;
+        return row * blockColumns + column;
     }
 
     private static int GetPaddedIndex(int row, int column, int blockColumns)
     {
-        return (row * (blockColumns + 2)) + column;
+        return row * (blockColumns + 2) + column;
     }
 }
 

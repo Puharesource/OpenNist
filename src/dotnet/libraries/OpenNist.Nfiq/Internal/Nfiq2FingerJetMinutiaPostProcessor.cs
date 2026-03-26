@@ -16,16 +16,16 @@ internal static class Nfiq2FingerJetMinutiaPostProcessor
         ArgumentNullException.ThrowIfNull(minutiae);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(imageResolution);
 
-        var offsetX = (xOffset * s_imageScale) / imageResolution;
-        var offsetY = (yOffset * s_imageScale) / imageResolution;
+        var offsetX = xOffset * s_imageScale / imageResolution;
+        var offsetY = yOffset * s_imageScale / imageResolution;
         var result = new Nfiq2Minutia[minutiae.Count];
 
         for (var index = 0; index < minutiae.Count; index++)
         {
             var source = minutiae[index];
             var angle = unchecked((byte)(-source.Angle + 64));
-            var scaledX = (source.X * s_imageScale) / imageResolution;
-            var scaledY = (source.Y * s_imageScale) / imageResolution;
+            var scaledX = source.X * s_imageScale / imageResolution;
+            var scaledY = source.Y * s_imageScale / imageResolution;
             scaledX += offsetX;
             scaledY += offsetY;
             scaledX = Nfiq2FingerJetMath.MulDiv(scaledX, 197, s_stdFmdDeserializerResolution);

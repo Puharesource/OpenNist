@@ -98,7 +98,7 @@ internal static class Nfiq2BlockFeatureSupport
         c /= pixelCount;
 
         var delta = a - b;
-        var denominator = (c * c) + (delta * delta) + double.Epsilon;
+        var denominator = c * c + delta * delta + double.Epsilon;
         var sin2Theta = c / denominator;
         var cos2Theta = delta / denominator;
         return Math.Atan2(sin2Theta, cos2Theta) / 2.0;
