@@ -79,7 +79,7 @@ export function RootLayout() {
   }, [navigate])
 
   return (
-    <div id="top" className="relative min-h-screen overflow-hidden">
+    <div id="top" className="relative flex min-h-screen flex-col overflow-hidden">
       <a
         href="#main-content"
         className="absolute left-4 top-4 z-50 -translate-y-20 rounded-full bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-[var(--on-primary)] shadow-lg transition-transform focus:translate-y-0"
@@ -88,7 +88,7 @@ export function RootLayout() {
       </a>
       <div className="blueprint-grid pointer-events-none absolute inset-0 opacity-50" />
       <SharedHeader />
-      <main id="main-content" className="relative z-10">
+      <main id="main-content" className="relative z-10 flex-1">
         <Outlet />
       </main>
       {!onApp ? <SiteFooter /> : null}

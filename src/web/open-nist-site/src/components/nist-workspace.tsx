@@ -128,7 +128,14 @@ function buildFieldKey(recordIndex: number, fieldKey: string): string {
 }
 
 function canRenderOpaqueRecordPreview(record: NistRecordInfo): boolean {
-  return record.type === 4 || record.type === 7 || record.type === 8
+  return (
+    record.type === 3 ||
+    record.type === 4 ||
+    record.type === 5 ||
+    record.type === 6 ||
+    record.type === 7 ||
+    record.type === 8
+  )
 }
 
 function getInitialCollapsedRecordKeys(document: NistWorkspaceDocument | null): Record<string, boolean> {
@@ -298,6 +305,25 @@ function formatType4FingerPositions(bytes: Uint8Array): string {
 }
 
 function getType4HeaderFields(document: NistWorkspaceDocument, record: NistRecordInfo): NistDisplayField[] {
+  return getTraditionalFingerprintImageHeaderFields(document, record)
+}
+
+function getType3HeaderFields(document: NistWorkspaceDocument, record: NistRecordInfo): NistDisplayField[] {
+  return getTraditionalFingerprintImageHeaderFields(document, record)
+}
+
+function getType5HeaderFields(document: NistWorkspaceDocument, record: NistRecordInfo): NistDisplayField[] {
+  return getTraditionalFingerprintImageHeaderFields(document, record)
+}
+
+function getType6HeaderFields(document: NistWorkspaceDocument, record: NistRecordInfo): NistDisplayField[] {
+  return getTraditionalFingerprintImageHeaderFields(document, record)
+}
+
+function getTraditionalFingerprintImageHeaderFields(
+  document: NistWorkspaceDocument,
+  record: NistRecordInfo
+): NistDisplayField[] {
   const recordBytes = getRecordBytes(document, record)
   if (recordBytes.length < 18) {
     return []
@@ -308,13 +334,13 @@ function getType4HeaderFields(document: NistWorkspaceDocument, record: NistRecor
   const fingerPositionBytes = recordBytes.subarray(6, 12)
 
   return [
-    createDisplayField("4.002", `${recordBytes[4]}`, "binary-header", 0),
-    createDisplayField("4.003", `${recordBytes[5]}`, "binary-header", 0),
-    createDisplayField("4.004", formatType4FingerPositions(fingerPositionBytes), "binary-header", 0),
-    createDisplayField("4.005", `${recordBytes[12]}`, "binary-header", 0),
-    createDisplayField("4.006", `${width}`, "binary-header", 0),
-    createDisplayField("4.007", `${height}`, "binary-header", 0),
-    createDisplayField("4.008", `${recordBytes[17]}`, "binary-header", 0)
+    createDisplayField(`${record.type}.002`, `${recordBytes[4]}`, "binary-header", 0),
+    createDisplayField(`${record.type}.003`, `${recordBytes[5]}`, "binary-header", 0),
+    createDisplayField(`${record.type}.004`, formatType4FingerPositions(fingerPositionBytes), "binary-header", 0),
+    createDisplayField(`${record.type}.005`, `${recordBytes[12]}`, "binary-header", 0),
+    createDisplayField(`${record.type}.006`, `${width}`, "binary-header", 0),
+    createDisplayField(`${record.type}.007`, `${height}`, "binary-header", 0),
+    createDisplayField(`${record.type}.008`, `${recordBytes[17]}`, "binary-header", 0)
   ]
 }
 
@@ -360,10 +386,28 @@ function getType8HeaderFields(document: NistWorkspaceDocument, record: NistRecor
 
 function getDisplayFields(document: NistWorkspaceDocument, record: NistRecordInfo): NistDisplayField[] {
   if (record.isOpaqueBinaryRecord) {
+    if (record.type === 3) {
+      const recordBytes = getRecordBytes(document, record)
+      const payload = recordBytes.length >= 18 ? recordBytes.subarray(18) : new Uint8Array()
+      return [...getType3HeaderFields(document, record), createBinaryPayloadField("3.999", payload, 0)]
+    }
+
     if (record.type === 4) {
       const recordBytes = getRecordBytes(document, record)
       const payload = recordBytes.length >= 18 ? recordBytes.subarray(18) : new Uint8Array()
       return [...getType4HeaderFields(document, record), createBinaryPayloadField("4.999", payload, 0)]
+    }
+
+    if (record.type === 5) {
+      const recordBytes = getRecordBytes(document, record)
+      const payload = recordBytes.length >= 18 ? recordBytes.subarray(18) : new Uint8Array()
+      return [...getType5HeaderFields(document, record), createBinaryPayloadField("5.999", payload, 0)]
+    }
+
+    if (record.type === 6) {
+      const recordBytes = getRecordBytes(document, record)
+      const payload = recordBytes.length >= 18 ? recordBytes.subarray(18) : new Uint8Array()
+      return [...getType6HeaderFields(document, record), createBinaryPayloadField("6.999", payload, 0)]
     }
 
     if (record.type === 7) {
@@ -433,7 +477,7 @@ function buildBinaryAssetFromSelection(
     }
 
     if (selection.field.source === "binary-payload" && selection.record.isOpaqueBinaryRecord) {
-      if (selection.record.type === 4 || selection.record.type === 7) {
+      if (selection.record.type === 3 || selection.record.type === 4 || selection.record.type === 7) {
         const recordBytes = getRecordBytes(document, selection.record)
         if (recordBytes.length < 18) {
           return null
@@ -469,7 +513,10 @@ function buildBinaryAssetFromSelection(
     }
   }
 
-  if (!selection.record.isOpaqueBinaryRecord || (selection.record.type !== 4 && selection.record.type !== 7)) {
+  if (
+    !selection.record.isOpaqueBinaryRecord ||
+    (selection.record.type !== 3 && selection.record.type !== 4 && selection.record.type !== 7)
+  ) {
     return null
   }
 
@@ -835,11 +882,18 @@ async function renderOpaqueRecordPreview(
 ): Promise<
   { status: "ready"; objectUrl: string; alt: string; details: string } | { status: "unsupported"; message: string }
 > {
-  if (record.type !== 4 && record.type !== 7 && record.type !== 8) {
+  if (
+    record.type !== 3 &&
+    record.type !== 4 &&
+    record.type !== 5 &&
+    record.type !== 6 &&
+    record.type !== 7 &&
+    record.type !== 8
+  ) {
     return {
       status: "unsupported",
       message:
-        "Binary preview is currently available for Type-4, Type-7, and Type-8 image records, plus fielded image payloads."
+        "Binary preview is currently available for Type-3 through Type-8 image records, plus fielded image payloads."
     }
   }
 
@@ -951,6 +1005,24 @@ async function renderOpaqueRecordPreview(
     }
   }
 
+  if ((record.type === 5 || record.type === 6) && compressionCode === 0) {
+    const expectedBitonalLength = Math.ceil(width / 8) * height
+    if (imagePayload.length < expectedBitonalLength) {
+      return {
+        status: "unsupported",
+        message: `The Type-${record.type} record was shorter than its declared raw bitonal pixel dimensions.`
+      }
+    }
+
+    const previewBytes = await renderBitonalPreviewBytes(imagePayload.subarray(0, expectedBitonalLength), width, height)
+    return {
+      status: "ready",
+      objectUrl: createObjectUrl(previewBytes, "image/png"),
+      alt: `Type-${record.type} preview`,
+      details: `Type-${record.type} raw bitonal image · ${width}×${height}`
+    }
+  }
+
   if (compressionCode === 0) {
     const expectedPixelCount = width * height
     if (imagePayload.length < expectedPixelCount) {
@@ -969,7 +1041,7 @@ async function renderOpaqueRecordPreview(
     }
   }
 
-  if (compressionCode === 1) {
+  if ((record.type === 3 || record.type === 4 || record.type === 7) && compressionCode === 1) {
     const decoded = await decodeWsqBytes(imagePayload)
     const previewBytes = await renderGray8PreviewBytes(decoded.rawPixels, decoded.width, decoded.height)
 
@@ -1125,7 +1197,7 @@ export function NistWorkspace({
             setPreviewState({
               status: "unsupported",
               message:
-                "This binary record is preserved exactly, but the workspace only renders previews for Type-4, Type-7, and Type-8 image records right now."
+                "This binary record is preserved exactly, but the workspace only renders previews for Type-3 through Type-8 image records right now."
             })
             return
           }
@@ -1456,7 +1528,7 @@ export function NistWorkspace({
                                   {displayFields.map((field, fieldIndex) => {
                                     const fieldMetadata = field.fieldNumber
                                       ? getNistFieldMetadata(record.type, field.fieldNumber)
-                                      : { label: "Unknown field" }
+                                      : { label: field.tag, valueType: "Text or binary field content" }
                                     const FieldIcon = getFieldIcon(record.type, field)
                                     const hasSubfields = shouldShowSubfieldItems(field)
                                     const fieldCollapseKey = buildFieldKey(recordIndex, field.key)
@@ -1778,7 +1850,7 @@ function NistInspector({
     selection.kind === "field"
       ? [
           fieldMetadata?.description ? `What it is\n${fieldMetadata.description}` : null,
-          `Expected value\n${fieldMetadata?.valueType ?? "Profile-defined"}`,
+          `Expected value\n${fieldMetadata?.valueType ?? "Text or binary field content"}`,
           selection.field.source === "binary-header"
             ? "Source\nDerived binary header. This value is decoded from the fixed binary header for inspection without modifying the original record bytes."
             : selection.field.source === "binary-payload"

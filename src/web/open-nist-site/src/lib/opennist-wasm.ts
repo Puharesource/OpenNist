@@ -50,6 +50,15 @@ type WorkerRequestInput =
   | Omit<InspectNistRequest, "id">
   | Omit<EncodeNistRequest, "id">
 
+export type OpenNistBinarySource =
+  | Uint8Array
+  | ArrayBuffer
+  | ArrayBufferView
+  | Blob
+  | Response
+  | ReadableStream<Uint8Array>
+  | AsyncIterable<Uint8Array>
+
 type DecodedWsqNfiqDocument = DecodedWsqDocument & {
   assessment: NfiqAssessmentResult
 }
@@ -74,6 +83,91 @@ const pendingRequests = new Map<
     reject: (error: Error) => void
   }
 >()
+
+function isReadableStream(value: unknown): value is ReadableStream<Uint8Array> {
+  return typeof ReadableStream !== "undefined" && value instanceof ReadableStream
+}
+
+function isAsyncIterable(value: unknown): value is AsyncIterable<Uint8Array> {
+  return !!value && typeof (value as AsyncIterable<Uint8Array>)[Symbol.asyncIterator] === "function"
+}
+
+async function concatenateBinaryChunks(chunks: AsyncIterable<Uint8Array>): Promise<Uint8Array> {
+  const normalizedChunks: Uint8Array[] = []
+  let totalLength = 0
+
+  for await (const chunk of chunks) {
+    normalizedChunks.push(chunk)
+    totalLength += chunk.byteLength
+  }
+
+  const bytes = new Uint8Array(totalLength)
+  let offset = 0
+
+  for (const chunk of normalizedChunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+
+  return bytes
+}
+
+export async function readOpenNistBinarySource(source: OpenNistBinarySource): Promise<Uint8Array> {
+  if (source instanceof Uint8Array) {
+    return source
+  }
+
+  if (source instanceof ArrayBuffer) {
+    return new Uint8Array(source)
+  }
+
+  if (ArrayBuffer.isView(source)) {
+    return new Uint8Array(source.buffer, source.byteOffset, source.byteLength)
+  }
+
+  if (typeof Blob !== "undefined" && source instanceof Blob) {
+    return readOpenNistBinarySource(source.stream())
+  }
+
+  if (typeof Response !== "undefined" && source instanceof Response) {
+    if (!source.body) {
+      throw new Error("The supplied Response does not have a readable body.")
+    }
+
+    return readOpenNistBinarySource(source.body)
+  }
+
+  if (isReadableStream(source)) {
+    const reader = source.getReader()
+
+    return concatenateBinaryChunks({
+      async *[Symbol.asyncIterator]() {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) {
+            return
+          }
+
+          yield value
+        }
+      }
+    })
+  }
+
+  if (isAsyncIterable(source)) {
+    return concatenateBinaryChunks(source)
+  }
+
+  throw new TypeError("Unsupported OpenNist binary source.")
+}
+
+function toTransferableUint8Array(bytes: Uint8Array): Uint8Array {
+  if (bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength) {
+    return bytes
+  }
+
+  return bytes.slice()
+}
 
 function createWorker(): Worker {
   const worker = new Worker(new URL("./opennist-wasm.worker.ts?v=2026-03-26-1", import.meta.url), { type: "module" })
@@ -165,15 +259,17 @@ export async function getOpenNistVersion(): Promise<string> {
 }
 
 export async function encodeRawToWsqBytes(
-  rawPixels: Uint8Array,
+  rawPixels: OpenNistBinarySource,
   width: number,
   height: number,
   pixelsPerInch: number,
   bitRate: number
 ): Promise<Uint8Array> {
+  const resolvedPixels = await readOpenNistBinarySource(rawPixels)
+
   return callWorker<Uint8Array>({
     type: "encodeWsq",
-    rawPixels,
+    rawPixels: resolvedPixels,
     width,
     height,
     pixelsPerInch,
@@ -181,49 +277,59 @@ export async function encodeRawToWsqBytes(
   })
 }
 
-export async function decodeWsqBytes(wsqBytes: Uint8Array): Promise<DecodedWsqDocument> {
+export async function decodeWsqBytes(wsqBytes: OpenNistBinarySource): Promise<DecodedWsqDocument> {
+  const resolvedBytes = await readOpenNistBinarySource(wsqBytes)
+
   return callWorker<DecodedWsqDocument>({
     type: "decodeWsq",
-    wsqBytes
+    wsqBytes: resolvedBytes
   })
 }
 
 export async function decodeWsqAndAssessNfiq(
-  wsqBytes: Uint8Array,
+  wsqBytes: OpenNistBinarySource,
   options?: { transferOwnership?: boolean }
 ): Promise<DecodedWsqNfiqDocument> {
+  const resolvedBytes = await readOpenNistBinarySource(wsqBytes)
+  const transferableBytes = options?.transferOwnership ? toTransferableUint8Array(resolvedBytes) : resolvedBytes
+
   return callWorkerWithTransfers<DecodedWsqNfiqDocument>(
     {
       type: "decodeWsqAndAssessNfiq",
-      wsqBytes
+      wsqBytes: transferableBytes
     },
-    options?.transferOwnership ? [wsqBytes.buffer] : []
+    options?.transferOwnership ? [transferableBytes.buffer] : []
   )
 }
 
 export async function assessNfiqRawImage(
-  rawPixels: Uint8Array,
+  rawPixels: OpenNistBinarySource,
   width: number,
   height: number,
   pixelsPerInch: number,
   options?: { transferOwnership?: boolean }
 ): Promise<NfiqAssessmentResult> {
+  const resolvedPixels = await readOpenNistBinarySource(rawPixels)
+  const transferablePixels = options?.transferOwnership ? toTransferableUint8Array(resolvedPixels) : resolvedPixels
+
   return callWorkerWithTransfers<NfiqAssessmentResult>(
     {
       type: "assessNfiq",
-      rawPixels,
+      rawPixels: transferablePixels,
       width,
       height,
       pixelsPerInch
     },
-    options?.transferOwnership ? [rawPixels.buffer] : []
+    options?.transferOwnership ? [transferablePixels.buffer] : []
   )
 }
 
-export async function inspectNistBytes(nistBytes: Uint8Array): Promise<NistFileInfo> {
+export async function inspectNistBytes(nistBytes: OpenNistBinarySource): Promise<NistFileInfo> {
+  const resolvedBytes = await readOpenNistBinarySource(nistBytes)
+
   return callWorker<NistFileInfo>({
     type: "inspectNist",
-    nistBytes
+    nistBytes: resolvedBytes
   })
 }
 

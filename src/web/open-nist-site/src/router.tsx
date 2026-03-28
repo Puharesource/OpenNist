@@ -1,6 +1,6 @@
 import { createRootRoute, createRoute, createRouter, Navigate } from "@tanstack/react-router"
 
-import { BiometricSubjectsPage, LibraryDocumentationPage } from "@/components/docs-pages"
+import { BiometricSubjectsPage, DocumentationArticlePage, LibraryDocumentationPage } from "@/components/docs-pages"
 import { LandingPage } from "@/components/landing-page"
 import { RootLayout } from "@/components/site-chrome"
 import { WorkspacePage } from "@/components/workspace-page"
@@ -19,6 +19,12 @@ const documentationRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "docs",
   component: LibraryDocumentationPage
+})
+
+const documentationArticleRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "docs/$docSlug",
+  component: DocumentationArticlePage
 })
 
 const subjectsRoute = createRoute({
@@ -54,6 +60,7 @@ const nfiqRoute = createRoute({
 const routeTree = rootRoute.addChildren({
   landingRoute,
   documentationRoute,
+  documentationArticleRoute,
   subjectsRoute,
   appRedirectRoute,
   codecsRoute,

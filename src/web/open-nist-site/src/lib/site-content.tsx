@@ -1,6 +1,8 @@
 import type { LucideIcon } from "lucide-react"
 import { Boxes, Cpu, FolderTree, Gauge, Globe, Images, ScanSearch, ShieldCheck, Workflow } from "lucide-react"
 
+import { getDocumentationSeo } from "@/lib/docs-content"
+
 export type WorkspaceView = "codecs" | "nist" | "nfiq"
 
 export const sharedNavItems = [
@@ -94,6 +96,11 @@ export type SiteSeo = {
 
 export function getSiteSeo(pathname: string): SiteSeo {
   const normalizedPath = pathname === "/" ? "/" : pathname.replace(/\/+$/, "")
+  const documentationSeo = getDocumentationSeo(normalizedPath)
+
+  if (documentationSeo) {
+    return documentationSeo
+  }
 
   switch (normalizedPath) {
     case "/docs":

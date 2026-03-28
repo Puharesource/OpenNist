@@ -298,17 +298,12 @@ function RuntimeSection() {
 
         <div className="relative">
           <div className="absolute inset-0 rounded-[calc(var(--radius-xl)+10px)] bg-[var(--color-secondary)]/10 blur-3xl" />
-          <div className="relative overflow-hidden rounded-[calc(var(--radius-xl)+6px)] border border-white/10 bg-[#081120] shadow-[var(--effect-modal-shadow)]">
-            <div className="flex items-center gap-2 border-b border-white/10 bg-black/20 px-4 py-3">
-              <div className="size-3 rounded-full bg-red-400/70" />
-              <div className="size-3 rounded-full bg-amber-300/70" />
-              <div className="size-3 rounded-full bg-emerald-400/70" />
-              <span className="ml-3 font-mono text-xs uppercase tracking-[0.24em] text-white/45">
-                Nfiq2Algorithm.cs
-              </span>
-            </div>
-            <CodeSnippet code={codeSampleLines.join("\n")} lang="csharp" />
-          </div>
+          <CodeSnippet
+            code={codeSampleLines.join("\n")}
+            lang="csharp"
+            filename="Nfiq2Algorithm.cs"
+            className="relative rounded-[calc(var(--radius-xl)+6px)] border border-white/10 bg-[#081120] shadow-[var(--effect-modal-shadow)]"
+          />
         </div>
       </div>
     </section>

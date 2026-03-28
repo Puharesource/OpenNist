@@ -11,8 +11,20 @@ Current scope:
 Current JavaScript surface from `wwwroot/opennist.interop.js`:
 
 - `OpenNistWasm.getVersion()`
-- `OpenNistWasm.encodeWsq(rawPixelsBase64, width, height, pixelsPerInch, bitRate)`
-- `OpenNistWasm.decodeWsq(wsqBase64)`
+- `OpenNistWasm.readBinarySource(source)`
+- `OpenNistWasm.encodeWsq(rawPixels, width, height, pixelsPerInch, bitRate)`
+- `OpenNistWasm.inspectWsq(wsqSource)`
+- `OpenNistWasm.decodeWsq(wsqSource)`
+- `OpenNistWasm.assessNfiq(rawPixels, width, height, pixelsPerInch)`
+
+The `source` arguments accept:
+
+- `Uint8Array`
+- `ArrayBuffer` and typed-array views
+- `File` or `Blob`
+- `Response`
+- `ReadableStream<Uint8Array>`
+- `AsyncIterable<Uint8Array>`
 
 Example publish command:
 

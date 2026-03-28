@@ -1,18 +1,32 @@
 # OpenNist
 
-OpenNist is a .NET library suite for working with biometric and NIST-related formats, standards, and quality tooling.
+OpenNist is an Apache-2.0 biometric toolkit for .NET and WebAssembly. The repository currently focuses on three modular libraries:
 
-The repository is still early, but it is no longer scaffolding-only. The current WSQ work now includes a managed parser, a managed decode path backed by the official NIST reference codestream corpus and NBIS-generated decoder reconstructions, and a working managed encode path that accepts raw grayscale input streams and emits WSQ codestreams with generated Huffman tables and NISTCOM metadata. The managed decoder now matches the local NBIS-generated raw reference reconstructions byte-for-byte across the official public decoder corpus. On the encoder side, the managed implementation now satisfies the published NIST public-corpus checks for file size, frame-header values, quantization-bin widths, and quantized coefficient-bin tolerances when encoded with the reference software implementation number used by the included corpus, and it now also matches local `NBIS Release 5.0.0` encoder output byte-for-byte across all 80 public encoder cases. Exact encoder-parity investigation has also shown that the published NIST reference corpus and local `NBIS Release 5.0.0` are not identical exact targets across all encoder cases: local `NBIS Release 5.0.0 cwsq` runs are deterministic, but they still do not reproduce the bundled public reference codestreams byte-for-byte. So the repo now uses exact local `NBIS Release 5.0.0` codestream parity as its primary internal exactness target while keeping the published NIST threshold checks as the certification-oriented acceptance floor. Exact published reference-bin and reference-codestream parity remain separate diagnostic goals, and formal FBI/NIST certification is still outside the scope of the current repository state.
+- `OpenNist.Nist` for ANSI/NIST-style transaction files
+- `OpenNist.Wsq` for WSQ inspection, decode, and encode workflows
+- `OpenNist.Nfiq` for managed NFIQ 2 scoring
 
-NFIQ 2 support is now implemented through `OpenNist.Nfiq` as a wrapper around the official NIST `nfiq2` toolchain. The package can analyze single files, in-memory 8-bit grayscale images, and multi-file batches, parse the official CSV output into typed results, and evaluate conformance against the published NFIQ 2.3.0 compliance CSVs. The repository test suite now exercises the public NIST SFinGe example images against the bundled official expected outputs and verifies conformance evaluation against the published standard and mapped CSV baselines.
+The repo also includes:
 
-OpenNist is licensed under the Apache License 2.0. See [`LICENSE`](LICENSE).
+- `OpenNist.Wasm` for browser-hosted interop
+- a React-based web app for NIST inspection, image codec workflows, and NFIQ review
+- benchmark coverage for NIST, WSQ, and NFIQ hot paths
 
-## Planned packages
+## Documentation
 
-- `OpenNist.Nist`: support for ANSI/NIST and related interchange structures.
-- `OpenNist.Wsq`: WSQ-specific types and helpers.
-- `OpenNist.Nfiq`: NFIQ-related integration points and utilities.
+Start here:
+
+- [Documentation hub](docs/README.md)
+- [Quickstart](docs/quickstart.md)
+- [Package reference](docs/reference/package-reference.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Glossary](docs/glossary.md)
+
+Specialized WSQ notes:
+
+- [WSQ implementation notes](docs/wsq.md)
+- [WSQ NBIS stage oracle notes](docs/wsq-nbis-stage-oracle.md)
+- [WSQ NBIS corpus comparison](docs/wsq-nbis-corpus-comparison.md)
 
 ## Repository layout
 
@@ -20,66 +34,79 @@ OpenNist is licensed under the Apache License 2.0. See [`LICENSE`](LICENSE).
 /src
   /design-system
   /dotnet
-    /apps
     /interop
+      /OpenNist.Wasm
     /libraries
+      /OpenNist.Nfiq
       /OpenNist.Nist
       /OpenNist.Wsq
-      /OpenNist.Nfiq
   /web
+    /open-nist-site
 /tests
   /OpenNist.Tests
 /tools
+  /OpenNist.Benchmarks
 /docs
 OpenNist.slnx
 ```
 
-## Development
+## Prerequisites
 
-### Prerequisites
+- .NET SDK `10.0.103` or a compatible .NET 10 feature band
+- [Bun](https://bun.sh) for the web app workspace
 
-- .NET SDK 10.0.103 or compatible .NET 10 SDK feature band
+The pinned SDK is defined in [`global.json`](global.json).
 
-### Git conventions
+## Build
 
-- Commit messages follow the Conventional Commits format: `<type>(optional-scope): <summary>`.
-- The repository includes a versioned `commit-msg` hook in `.githooks/` and a commit template in `.gitmessage`.
-- Contributor setup notes are in [`CONTRIBUTING.md`](CONTRIBUTING.md).
-
-### Restore
+Restore and build the .NET solution:
 
 ```bash
 dotnet restore OpenNist.slnx
-```
-
-### Build
-
-```bash
 dotnet build OpenNist.slnx
 ```
 
-### Test
+Run the test suite:
 
 ```bash
-dotnet test --solution OpenNist.slnx
+dotnet test --project tests/OpenNist.Tests/OpenNist.Tests.csproj
 ```
 
-## Packaging notes
+Run the web app locally:
 
-- Shared SDK, analyzer, and package metadata settings are centralized in `Directory.Build.props`.
-- Shared package versions are centralized in `Directory.Packages.props`.
-- Shared package license metadata uses the SPDX expression `Apache-2.0`.
-- Each non-test project is configured to pack cleanly as its own NuGet package.
-- `OpenNist.Tests` verifies the baseline project graph and internal visibility wiring used by the package projects.
+```bash
+cd src/web/open-nist-site
+bun install
+bun run dev
+```
 
-## Documentation
+## Current scope
 
-Additional notes live in [`docs/`](docs/), starting with the package overview in [`docs/package-overview.md`](docs/package-overview.md).
+### `OpenNist.Nist`
 
-Shared UI design guidance for the web app is documented in [`docs/design-system.md`](docs/design-system.md), with the source design assets under [`src/design-system/`](src/design-system/).
+- decode ANSI/NIST-style fielded and mixed binary transactions
+- preserve opaque binary records for byte-exact round-tripping
+- encode the in-memory object model back to transaction bytes
 
-WSQ-specific implementation notes live in [`docs/wsq.md`](docs/wsq.md).
+### `OpenNist.Wsq`
 
-The NBIS-oracle debugging approach for the remaining WSQ encoder blocker cases is documented in [`docs/wsq-nbis-stage-oracle.md`](docs/wsq-nbis-stage-oracle.md).
+- inspect WSQ metadata
+- decode WSQ into raw 8-bit grayscale pixels
+- encode raw 8-bit grayscale pixels into WSQ
+- benchmark and regression-test exactness against the checked-in corpus
 
-The direct local `cwsq`-vs-bundled-reference comparison report is documented in [`docs/wsq-nbis-corpus-comparison.md`](docs/wsq-nbis-corpus-comparison.md).
+### `OpenNist.Nfiq`
+
+- score 500 PPI 8-bit grayscale fingerprint images
+- expose mapped quality measures
+- run in both .NET and browser-hosted WebAssembly flows
+
+## Development notes
+
+- Commit messages use Conventional Commits.
+- Local contributor setup is documented in [CONTRIBUTING.md](CONTRIBUTING.md).
+- Shared package metadata is centralized in `Directory.Build.props` and `Directory.Packages.props`.
+
+## License
+
+OpenNist is licensed under the Apache License 2.0. See [LICENSE](LICENSE).

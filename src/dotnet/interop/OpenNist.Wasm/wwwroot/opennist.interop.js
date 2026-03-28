@@ -6,6 +6,87 @@ const exportPath = ["OpenNist", "Wasm", "OpenNistWasmExports"];
 let runtimePromise;
 let exportsPromise;
 
+function isUint8Array(value) {
+  return value instanceof Uint8Array;
+}
+
+function isArrayBuffer(value) {
+  return value instanceof ArrayBuffer;
+}
+
+function isArrayBufferView(value) {
+  return ArrayBuffer.isView(value);
+}
+
+function isBlobLike(value) {
+  return typeof Blob !== "undefined" && value instanceof Blob;
+}
+
+function isResponseLike(value) {
+  return typeof Response !== "undefined" && value instanceof Response;
+}
+
+function isReadableStreamLike(value) {
+  return typeof ReadableStream !== "undefined" && value instanceof ReadableStream;
+}
+
+function isAsyncIterable(value) {
+  return value && typeof value[Symbol.asyncIterator] === "function";
+}
+
+async function readChunksToUint8Array(chunks) {
+  let totalLength = 0;
+  const normalizedChunks = [];
+
+  for await (const chunk of chunks) {
+    const bytes = await readBinarySource(chunk);
+    normalizedChunks.push(bytes);
+    totalLength += bytes.byteLength;
+  }
+
+  const combined = new Uint8Array(totalLength);
+  let offset = 0;
+
+  for (const chunk of normalizedChunks) {
+    combined.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return combined;
+}
+
+export async function readBinarySource(source) {
+  if (isUint8Array(source)) {
+    return source;
+  }
+
+  if (isArrayBuffer(source)) {
+    return new Uint8Array(source);
+  }
+
+  if (isArrayBufferView(source)) {
+    return new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
+  }
+
+  if (isBlobLike(source)) {
+    return readBinarySource(source.stream());
+  }
+
+  if (isResponseLike(source)) {
+    if (!source.body) {
+      throw new Error("The supplied Response does not have a readable body.");
+    }
+
+    return readBinarySource(source.body);
+  }
+
+  if (isReadableStreamLike(source) || isAsyncIterable(source)) {
+    return readChunksToUint8Array(source);
+  }
+
+  throw new TypeError("Unsupported OpenNist binary source. Expected bytes, a Blob/File, Response, or readable stream.");
+}
+
 function isAbsoluteUrl(url) {
   return /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(url);
 }
@@ -89,25 +170,26 @@ export async function getVersion() {
 }
 
 export async function encodeWsq(rawPixels, width, height, pixelsPerInch = 500, bitRate = 2.25) {
-  return invoke("EncodeWsq", rawPixels, width, height, pixelsPerInch, bitRate);
+  return invoke("EncodeWsq", await readBinarySource(rawPixels), width, height, pixelsPerInch, bitRate);
 }
 
 export async function inspectWsq(wsqBytes) {
-  const json = await invoke("InspectWsq", wsqBytes);
+  const json = await invoke("InspectWsq", await readBinarySource(wsqBytes));
   return JSON.parse(json);
 }
 
 export async function decodeWsq(wsqBytes) {
-  return invoke("DecodeWsq", wsqBytes);
+  return invoke("DecodeWsq", await readBinarySource(wsqBytes));
 }
 
 export async function assessNfiq(rawPixels, width, height, pixelsPerInch = 500) {
-  const json = await invoke("AssessNfiq", rawPixels, width, height, pixelsPerInch);
+  const json = await invoke("AssessNfiq", await readBinarySource(rawPixels), width, height, pixelsPerInch);
   return JSON.parse(json);
 }
 
 window.OpenNistWasm = {
   getVersion,
+  readBinarySource,
   encodeWsq,
   inspectWsq,
   decodeWsq,

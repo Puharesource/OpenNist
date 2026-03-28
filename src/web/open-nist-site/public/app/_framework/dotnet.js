@@ -1613,7 +1613,7 @@ const ft = new (class {
     /*json-start*/ {
       mainAssemblyName: "OpenNist.Wasm",
       resources: {
-        hash: "sha256-JiDcBK1aVTvt7+koiTDvp7sBQhE+ZqmVe38NNkZ6KXM=",
+        hash: "sha256-TZBc11Y1TRGi0xKY0DIAZhdUX9KTpCHpdUzr10fXdWg=",
         jsModuleNative: [
           {
             name: "dotnet.native.ykrnppwhq2.js"
@@ -1654,26 +1654,26 @@ const ft = new (class {
           },
           {
             virtualPath: "OpenNist.Nfiq.wasm",
-            name: "OpenNist.Nfiq.yfhl7bdbv3.wasm",
-            integrity: "sha256-crHczu0O7CPhxTQK2N3V4ypU2hMoAIFOg6Kqm6CrRiM=",
+            name: "OpenNist.Nfiq.lji9sprdor.wasm",
+            integrity: "sha256-36mNxxrYjy35VR0D8ws6Q4YcMqNHvQLIq77bYm6HsDY=",
             cache: "force-cache"
           },
           {
             virtualPath: "OpenNist.Nist.wasm",
-            name: "OpenNist.Nist.unm2z41cm1.wasm",
-            integrity: "sha256-xn1+nY6U40+GO4yMAAjWCzWXHsigiFzIZ7YpkFOTPPk=",
+            name: "OpenNist.Nist.9tvrpchbmv.wasm",
+            integrity: "sha256-zRKjlizh3592cMwEMYxoeLiCN+52gropznbvTMybuOQ=",
             cache: "force-cache"
           },
           {
             virtualPath: "OpenNist.Wasm.wasm",
-            name: "OpenNist.Wasm.kaxxfqmesn.wasm",
-            integrity: "sha256-zB1oT+GTcKFpPBWjb1VDpwTVqGXcQRddhxb170dwjIE=",
+            name: "OpenNist.Wasm.tibwlo3l69.wasm",
+            integrity: "sha256-VQfDgNYK6IBrKOFRwOaEnrkDEYYyX+UPogXIgchzmdM=",
             cache: "force-cache"
           },
           {
             virtualPath: "OpenNist.Wsq.wasm",
-            name: "OpenNist.Wsq.w7j8ylhav1.wasm",
-            integrity: "sha256-tIaBY/2OAomEkzy3vDPFBOLAuSbjzy1ptWBfYANDtcs=",
+            name: "OpenNist.Wsq.dwu96pgu8x.wasm",
+            integrity: "sha256-rU7jnd7J1doAF0aqXE+Gvje0T5KZrpgM7/hcVWujqfU=",
             cache: "force-cache"
           },
           {
