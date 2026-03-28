@@ -177,7 +177,7 @@ function SharedHeader() {
             variant="outline"
             className="hidden rounded-[var(--radius-lg)] border-[color:var(--effect-ghost-border)] bg-transparent text-[var(--color-primary)] hover:bg-[var(--color-surface-container-low)] sm:inline-flex"
           >
-            <a href="https://github.com/OpenNist/OpenNist" target="_blank" rel="noreferrer">
+            <a href="https://github.com/Puharesource/OpenNist" target="_blank" rel="noreferrer">
               <Code2 className="size-4" />
               GitHub
             </a>

@@ -2,7 +2,10 @@ namespace OpenNist.Tests.Nfiq;
 
 using System.Globalization;
 using OpenNist.Nfiq;
+using OpenNist.Nfiq.Errors;
 using OpenNist.Nfiq.Internal;
+using OpenNist.Nfiq.Internal.Runtime;
+using OpenNist.Nfiq.Runtime;
 using OpenNist.Tests.Nfiq.TestDataSources;
 using OpenNist.Tests.Nfiq.TestSupport;
 

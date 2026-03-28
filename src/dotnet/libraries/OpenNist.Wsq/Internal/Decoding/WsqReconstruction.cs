@@ -1,6 +1,7 @@
 namespace OpenNist.Wsq.Internal.Decoding;
 
 using System.Buffers;
+using OpenNist.Wsq.Internal.Container;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Major Code Smell",

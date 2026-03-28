@@ -9,6 +9,7 @@ import useOpenNistFromTypescriptMarkdown from "../../../../../docs/how-to/use-op
 import packageOverviewMarkdown from "../../../../../docs/package-overview.md?raw"
 import quickstartMarkdown from "../../../../../docs/quickstart.md?raw"
 import docsIndexMarkdown from "../../../../../docs/README.md?raw"
+import errorCodesMarkdown from "../../../../../docs/reference/error-codes.md?raw"
 import nistRecordAndFieldReferenceMarkdown from "../../../../../docs/reference/nist-record-and-field-reference.md?raw"
 import nistSubfieldAndItemReferenceMarkdown from "../../../../../docs/reference/nist-subfield-and-item-reference.md?raw"
 import packageReferenceMarkdown from "../../../../../docs/reference/package-reference.md?raw"
@@ -168,6 +169,17 @@ export const documentationPages: DocumentationPage[] = [
     seoTitle: "OpenNist Package Reference",
     seoDescription:
       "Reference the OpenNist package set, including OpenNist.Nist, OpenNist.Wsq, OpenNist.Nfiq, and OpenNist.Wasm."
+  },
+  {
+    slug: "error-codes",
+    title: "Error codes",
+    description: "Stable NFIQ 2 error codes, grouped validation failures, and public failure guidance.",
+    section: "reference",
+    sourcePath: "reference/error-codes.md",
+    markdown: stripLeadingHeading(errorCodesMarkdown),
+    seoTitle: "OpenNist Error Codes",
+    seoDescription:
+      "Reference OpenNist NFIQ 2 error codes, grouped validation failures, retry guidance, and the strict versus non-throwing failure model."
   },
   {
     slug: "nist-record-and-field-reference",

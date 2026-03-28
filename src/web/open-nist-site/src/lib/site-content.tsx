@@ -19,9 +19,9 @@ export const landingStats = [
 
 export const landingCapabilities = [
   {
-    title: "WSQ and JPEG2000 encoding",
+    title: "WSQ encoding",
     description:
-      "Convert fingerprint rasters into standards-aligned WSQ and JPEG2000 payloads with controllable bitrate and metadata handling.",
+      "Convert fingerprint rasters into standards-aligned WSQ payloads with controllable bitrate and metadata handling.",
     icon: Workflow
   },
   {
@@ -65,7 +65,6 @@ export const landingFeatures = [
 export const runtimePoints = [
   "NIST package parsing and record access",
   "WSQ compression and expansion",
-  "JPEG2000 support across the .NET surface",
   "Managed NFIQ 2 scoring and reporting"
 ] as const
 
@@ -77,12 +76,12 @@ export const workspaceViews: Array<{
 }> = [
   { id: "nist", label: "NIST Structure", eyebrow: "Record inspection", icon: FolderTree },
   { id: "nfiq", label: "NFIQ 2 Review", eyebrow: "Quality scoring", icon: Gauge },
-  { id: "codecs", label: "Image Codecs", eyebrow: "WSQ and JPEG2000", icon: Images }
+  { id: "codecs", label: "Image Codecs", eyebrow: "WSQ and raster export", icon: Images }
 ] as const
 
 export const footerLinks = [
-  { label: "Documentation", href: "https://github.com/OpenNist/OpenNist" },
-  { label: "GitHub", href: "https://github.com/OpenNist/OpenNist" },
+  { label: "Documentation", href: "https://opennist.tarkan.dev/docs" },
+  { label: "GitHub", href: "https://github.com/Puharesource/OpenNist" },
   { label: "NIST Standards", href: "https://www.nist.gov/itl/iad/image-group" }
 ] as const
 
@@ -105,16 +104,16 @@ export function getSiteSeo(pathname: string): SiteSeo {
   switch (normalizedPath) {
     case "/docs":
       return {
-        title: "OpenNist Documentation for .NET, WSQ, NIST, JPEG2000 and NFIQ 2",
+        title: "OpenNist Documentation for .NET, WSQ, NIST and NFIQ 2",
         description:
-          "Read OpenNist documentation for biometric image conversion, NIST record parsing, WSQ and JPEG2000 workflows, and managed NFIQ 2 scoring.",
+          "Read OpenNist documentation for biometric image conversion, NIST record parsing, WSQ workflows, structured error handling, and managed NFIQ 2 scoring.",
         canonicalUrl: `${siteBaseUrl}/docs`
       }
     case "/subjects":
       return {
         title: "Biometric Subjects and Interchange Formats in OpenNist",
         description:
-          "Explore the biometric subjects and interchange formats supported by OpenNist, including fingerprint-focused NIST, WSQ, JPEG2000, and NFIQ 2 workflows.",
+          "Explore the biometric subjects and interchange formats supported by OpenNist, including fingerprint-focused NIST, WSQ, and NFIQ 2 workflows.",
         canonicalUrl: `${siteBaseUrl}/subjects`
       }
     case "/app/nist":
@@ -142,15 +141,15 @@ export function getSiteSeo(pathname: string): SiteSeo {
       return {
         title: "OpenNist Image Codecs Workspace",
         description:
-          "Convert fingerprint images between WSQ, JPEG2000, and raster formats in the browser with OpenNist WebAssembly codecs and native save support.",
+          "Convert fingerprint images between WSQ and raster formats in the browser with OpenNist WebAssembly codecs and native save support.",
         canonicalUrl: `${siteBaseUrl}/app/codecs`
       }
     case "/":
     default:
       return {
-        title: "OpenNist: .NET and WebAssembly Toolkit for NIST, WSQ, JPEG2000 and NFIQ 2",
+        title: "OpenNist: .NET and WebAssembly Toolkit for NIST, WSQ and NFIQ 2",
         description:
-          "OpenNist is an open source biometric toolkit for .NET and WebAssembly with managed NIST parsing, WSQ and JPEG2000 codecs, and NFIQ 2 scoring.",
+          "OpenNist is an open source biometric toolkit for .NET and WebAssembly with managed NIST parsing, WSQ codecs, and NFIQ 2 scoring.",
         canonicalUrl: normalizedPath === "/" ? siteBaseUrl : `${siteBaseUrl}${normalizedPath}`
       }
   }
@@ -220,20 +219,20 @@ export function getImageWorkspaceContent(view: Exclude<WorkspaceView, "nist">): 
     default:
       return {
         title: "Image codec conversion workspace",
-        description: "Convert between WSQ, JPEG2000, and image formats.",
-        previewLabel: "WSQ and JPEG2000 preview surface",
+        description: "Convert between WSQ and image formats.",
+        previewLabel: "WSQ preview surface",
         previewDescription: "Image preview with file and codec details in the inspector.",
         inspectorTitle: "Image Contents",
         inspectorBadge: "Inspector",
         inspectorEyebrow: "Codecs",
-        inspectorSummary: "Image size, format details, and the available WSQ and JPEG2000 conversions.",
+        inspectorSummary: "Image size, format details, and the available WSQ and raster conversions.",
         accentValue: "512×512",
         accentMeta: "8-bit grayscale image",
         inspectorSections: [
           {
             title: "File metadata",
             items: [
-              { label: "Formats", value: "WSQ, JP2, PNG, TIFF" },
+              { label: "Formats", value: "WSQ, PNG, TIFF" },
               { label: "Resolution", value: "500 ppi target" },
               { label: "Source class", value: "Fingerprint image" }
             ]
@@ -241,8 +240,8 @@ export function getImageWorkspaceContent(view: Exclude<WorkspaceView, "nist">): 
           {
             title: "Planned actions",
             items: [
-              { label: "Decode", value: "Display WSQ and JP2 on the main canvas" },
-              { label: "Transcode", value: "Move between WSQ, JP2, and image formats" },
+              { label: "Decode", value: "Display WSQ and raster images on the main canvas" },
+              { label: "Transcode", value: "Move between WSQ and image formats" },
               { label: "Export", value: "Raster and codec download targets" }
             ]
           }

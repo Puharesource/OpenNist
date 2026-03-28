@@ -6,6 +6,7 @@ using OpenNist.Tests.Wsq.TestDataSources;
 using OpenNist.Tests.Wsq.TestFixtures;
 using OpenNist.Tests.Wsq.TestSupport;
 using OpenNist.Wsq.Internal;
+using OpenNist.Wsq.Internal.Container;
 using OpenNist.Wsq.Internal.Decoding;
 using OpenNist.Wsq.Internal.Encoding;
 

@@ -24,6 +24,7 @@ This documentation follows a Good Docs-style split between concepts, task guides
 ## Reference
 
 - [Package reference](reference/package-reference.md)
+- [Error codes](reference/error-codes.md)
 - [NIST record and field reference](reference/nist-record-and-field-reference.md)
 - [NIST subfield and item reference](reference/nist-subfield-and-item-reference.md)
 - [Repository layout](reference/repository-layout.md)

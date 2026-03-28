@@ -2,4 +2,8 @@
   <PropertyGroup>
     <Description>ANSI/NIST-related types and scaffolding for the OpenNist ecosystem.</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenNist.Primitives\OpenNist.Primitives.csproj" />
+  </ItemGroup>
 </Project>

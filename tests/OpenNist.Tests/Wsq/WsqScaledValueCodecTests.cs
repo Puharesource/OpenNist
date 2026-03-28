@@ -1,6 +1,7 @@
 namespace OpenNist.Tests.Wsq;
 
 using OpenNist.Wsq.Internal;
+using OpenNist.Wsq.Internal.Scaling;
 
 [Category("Unit: WSQ - Value Scaling")]
 internal sealed class WsqScaledValueCodecTests

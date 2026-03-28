@@ -3,6 +3,7 @@ namespace OpenNist.Tests.Wsq.TestFixtures;
 using System.Text.Json;
 using OpenNist.Tests.Wsq.TestDataReaders;
 using OpenNist.Wsq;
+using OpenNist.Wsq.Model;
 
 internal static class WsqNistReferenceFixtureCatalog
 {

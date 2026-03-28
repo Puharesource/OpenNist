@@ -13,6 +13,35 @@ var result = await algorithm.AnalyzeFileAsync("fingerprint.pgm");
 Console.WriteLine($"Score: {result.Score}");
 ```
 
+## Use the non-throwing API when validation failures are expected
+
+```csharp
+using OpenNist.Nfiq;
+
+var algorithm = new Nfiq2Algorithm();
+var result = await algorithm.TryAnalyzeAsync(
+    rawPixels,
+    new Nfiq2RawImageDescription(
+        Width: width,
+        Height: height,
+        BitsPerPixel: 8,
+        PixelsPerInch: 500));
+
+if (!result.IsSuccess)
+{
+    Console.WriteLine(result.Error!.Code);
+
+    foreach (var error in result.Error.ValidationErrors ?? [])
+    {
+        Console.WriteLine($"- {error.Code}: {error.Message}");
+    }
+
+    return;
+}
+
+Console.WriteLine($"Score: {result.Value!.QualityScore}");
+```
+
 ## Score an in-memory raw image when you already have pixels
 
 ```csharp
@@ -38,3 +67,5 @@ Managed NFIQ 2 analysis currently expects:
 - 500 PPI input
 
 If your source image is WSQ or another container format, decode or normalize it first so the NFIQ step receives raw grayscale image data in the expected shape.
+
+See also: [Error codes](../reference/error-codes.md)

@@ -1,6 +1,7 @@
 namespace OpenNist.Tests.Nfiq;
 
 using OpenNist.Nfiq.Internal;
+using OpenNist.Nfiq.Internal.Csv;
 
 [Category("Unit: NFIQ2 - CSV Parser")]
 internal sealed class Nfiq2CsvReportParserTests

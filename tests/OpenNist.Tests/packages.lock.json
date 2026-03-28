@@ -4,27 +4,27 @@
     "net10.0": {
       "JetBrains.Annotations": {
         "type": "Direct",
-        "requested": "[2025.2.0, )",
-        "resolved": "2025.2.0",
-        "contentHash": "2BvMkOSW+50EbQFhWFIPWTqmcDLiyyjwkMN7lN386bhP2vN/7ts5t59qu11HtenmHFxqDzaD8J1fFoh+QTOzVA=="
+        "requested": "[2025.2.4, )",
+        "resolved": "2025.2.4",
+        "contentHash": "TwbgxAkXxY+vNEhNVx/QXjJ4vqxmepOjsgRvvImQPbHkHMMb4W+ahL3laMsxXKtNT7iMy+E1B3xkqao2hf1n3A=="
       },
       "SonarAnalyzer.CSharp": {
         "type": "Direct",
-        "requested": "[10.15.0.120848, )",
-        "resolved": "10.15.0.120848",
-        "contentHash": "1hM3HVRl5jdC/ZBDu+G7CCYLXRGe/QaP01Zy+c9ETPhY7lWD8g8HiefY6sGaH0T3CJ4wAy0/waGgQTh0TYy0oQ=="
+        "requested": "[10.22.0.136894, )",
+        "resolved": "10.22.0.136894",
+        "contentHash": "6fI0XUWHvFIa/cvo1HuopV1Gh1hnKJq+XlTMJ2q71+6D3uVkl6Vxza3fFKQ9C4Bc7KFUFtukzRPmiH1be0JxOA=="
       },
       "TUnit": {
         "type": "Direct",
-        "requested": "[1.19.22, )",
-        "resolved": "1.19.22",
-        "contentHash": "87POwiVu9ogSH9+uftCRBYhQVF+K5upHSKRSYrb2J6N2Racq8ZHJWdHKL0nvMfGiYwo4UjTkihD+JXCVZIQXRg==",
+        "requested": "[1.22.6, )",
+        "resolved": "1.22.6",
+        "contentHash": "Sf9IW23gVQyE2/x8uscCAAN8mCNAlBfOetabpQhxEGbp/twkQDtDrRJzZJt99T1MCy894Q2u/457oHYylvLM3w==",
         "dependencies": {
           "Microsoft.Testing.Extensions.CodeCoverage": "18.5.2",
           "Microsoft.Testing.Extensions.Telemetry": "2.1.0",
           "Microsoft.Testing.Extensions.TrxReport": "2.1.0",
-          "TUnit.Assertions": "1.19.22",
-          "TUnit.Engine": "1.19.22"
+          "TUnit.Assertions": "1.22.6",
+          "TUnit.Engine": "1.22.6"
         }
       },
       "EnumerableAsyncProcessor": {
@@ -98,42 +98,51 @@
       },
       "TUnit.Assertions": {
         "type": "Transitive",
-        "resolved": "1.19.22",
-        "contentHash": "ezjHTegGwineoa/T6VhqvMnrITcbV+9Z9fo6gEu4HqRnH6tFKR6I9fJ3+e3fxnJo4gVZioOoPOXSRTPuiBOrCw=="
+        "resolved": "1.22.6",
+        "contentHash": "QEI1pEwuArdmitXB+ch3DOALymlU+uUirp70ZXO91XKYbMxKejaTvNGw8TyCrkxuTV1gK6aTjZbWQcQ0ayeZsg=="
       },
       "TUnit.Core": {
         "type": "Transitive",
-        "resolved": "1.19.22",
-        "contentHash": "WLmRMx40Mq8Mbh6+dM4GuReXfmtsCzMm97z6Jgcwa1ujNvX14GOXEUsvFsw5V4j80doj9fok8cf/ZvUNbK9hWw=="
+        "resolved": "1.22.6",
+        "contentHash": "mqhWVrQfde62/XcQmaDZgnVZ8B2zaZaI+E9qlem3O4bFX2BaUpyEpsNFAyQBXyGcpZgoUp30jbxyUgemIWZ+oA=="
       },
       "TUnit.Engine": {
         "type": "Transitive",
-        "resolved": "1.19.22",
-        "contentHash": "hOuYRrWlluWuShLybkeW/NRWqwq1XTSi7bthCABtV5rmS6DFFSmlurucWfpsQUyspHG842CZ7BZXNMpkfRwjcQ==",
+        "resolved": "1.22.6",
+        "contentHash": "7JuNj4/U4rSDoGAGDhvnFjkPkmg9L5WLEQFHoGMdFrJr8+3QfPq+1dBWVGhSJIBj3ghraq149NA2v8vICjiqYA==",
         "dependencies": {
           "EnumerableAsyncProcessor": "3.8.4",
           "Microsoft.Testing.Extensions.TrxReport.Abstractions": "2.1.0",
           "Microsoft.Testing.Platform": "2.1.0",
           "Microsoft.Testing.Platform.MSBuild": "2.1.0",
-          "TUnit.Core": "1.19.22"
+          "TUnit.Core": "1.22.6"
         }
       },
       "opennist.nfiq": {
         "type": "Project",
         "dependencies": {
-          "JetBrains.Annotations": "[2025.2.0, )"
+          "JetBrains.Annotations": "[2025.2.4, )",
+          "OpenNist.Primitives": "[1.0.0, )"
         }
       },
       "opennist.nist": {
         "type": "Project",
         "dependencies": {
-          "JetBrains.Annotations": "[2025.2.0, )"
+          "JetBrains.Annotations": "[2025.2.4, )",
+          "OpenNist.Primitives": "[1.0.0, )"
+        }
+      },
+      "opennist.primitives": {
+        "type": "Project",
+        "dependencies": {
+          "JetBrains.Annotations": "[2025.2.4, )"
         }
       },
       "opennist.wsq": {
         "type": "Project",
         "dependencies": {
-          "JetBrains.Annotations": "[2025.2.0, )"
+          "JetBrains.Annotations": "[2025.2.4, )",
+          "OpenNist.Primitives": "[1.0.0, )"
         }
       }
     }

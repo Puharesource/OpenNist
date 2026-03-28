@@ -3,6 +3,7 @@ namespace OpenNist.Tests.Nfiq.TestSupport;
 using System.Diagnostics;
 using System.Globalization;
 using OpenNist.Nfiq.Internal;
+using OpenNist.Nfiq.Internal.Model;
 
 internal static class Nfiq2MinutiaeOracleReader
 {

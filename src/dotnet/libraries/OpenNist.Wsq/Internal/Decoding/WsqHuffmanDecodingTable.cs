@@ -1,5 +1,8 @@
 namespace OpenNist.Wsq.Internal.Decoding;
 
+using OpenNist.Wsq.Internal.Container;
+using OpenNist.Wsq.Internal.Metadata;
+
 internal sealed class WsqHuffmanDecodingTable
 {
     public required int[] MaxCodes { get; init; }

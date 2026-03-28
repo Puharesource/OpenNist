@@ -5,6 +5,7 @@ using OpenNist.Tests.Wsq.TestDataSources;
 using OpenNist.Tests.Wsq.TestDiagnostics;
 using OpenNist.Tests.Wsq.TestFixtures;
 using OpenNist.Wsq.Internal;
+using OpenNist.Wsq.Internal.Metadata;
 
 [Category("Diagnostic: WSQ - Encoder Follow-On QBin Synthesis")]
 internal sealed class WsqHighPrecisionRegionTwoFollowOnTests

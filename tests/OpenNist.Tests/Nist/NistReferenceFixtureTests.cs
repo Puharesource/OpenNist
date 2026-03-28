@@ -1,6 +1,8 @@
 namespace OpenNist.Tests.Nist;
 
 using OpenNist.Nist;
+using OpenNist.Nist.Codecs;
+using OpenNist.Nist.Model;
 using OpenNist.Tests.Nist.TestDataSources;
 
 [Category("Fixture: NIST - Reference Files")]

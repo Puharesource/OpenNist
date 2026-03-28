@@ -2,6 +2,9 @@ namespace OpenNist.Tests.Nist;
 
 using System.Text;
 using OpenNist.Nist;
+using OpenNist.Nist.Codecs;
+using OpenNist.Nist.Errors;
+using OpenNist.Nist.Model;
 
 [Category("Unit: NIST - Decoder")]
 internal sealed class NistDecoderTests
@@ -53,10 +56,15 @@ internal sealed class NistDecoderTests
     {
         var bytes = Encoding.Latin1.GetBytes($"1.001:999{NistSeparators.GroupSeparator}1.002:0500{NistSeparators.FileSeparator}");
 
-        var act = () => NistDecoder.Decode(bytes);
+        var result = NistDecoder.TryDecode(bytes);
+        await Assert.That(result.IsSuccess).IsFalse();
+        await Assert.That(result.Error).IsNotNull();
+        await Assert.That(result.Error!.Code).IsEqualTo(NistErrorCodes.RecordLengthExceedsRemainingBytes);
 
-        await Assert.That(act).Throws<FormatException>()
-            .WithMessage("Logical record length exceeds the remaining file size.", StringComparison.Ordinal);
+        var act = () => NistDecoder.Decode(bytes);
+        var exception = await Assert.ThrowsAsync<NistException>(async () => await Task.Run(act));
+        await Assert.That(exception).IsNotNull();
+        await Assert.That(exception!.ErrorCode).IsEqualTo(NistErrorCodes.RecordLengthExceedsRemainingBytes);
     }
 
     [Test]
@@ -66,10 +74,15 @@ internal sealed class NistDecoderTests
         var validRecord = NistTestData.BuildRecord(["1.001:0", "1.002:0500"]);
         var invalidRecord = validRecord[..^1];
 
-        var act = () => NistDecoder.Decode(invalidRecord);
+        var result = NistDecoder.TryDecode(invalidRecord);
+        await Assert.That(result.IsSuccess).IsFalse();
+        await Assert.That(result.Error).IsNotNull();
+        await Assert.That(result.Error!.Code).IsEqualTo(NistErrorCodes.RecordLengthExceedsRemainingBytes);
 
-        await Assert.That(act).Throws<FormatException>()
-            .WithMessage("Logical record length exceeds the remaining file size.", StringComparison.Ordinal);
+        var act = () => NistDecoder.Decode(invalidRecord);
+        var exception = await Assert.ThrowsAsync<NistException>(async () => await Task.Run(act));
+        await Assert.That(exception).IsNotNull();
+        await Assert.That(exception!.ErrorCode).IsEqualTo(NistErrorCodes.RecordLengthExceedsRemainingBytes);
     }
 
     [Test]
@@ -78,9 +91,14 @@ internal sealed class NistDecoderTests
     {
         var bytes = Encoding.Latin1.GetBytes($"1.002:0500{NistSeparators.FileSeparator}");
 
-        var act = () => NistDecoder.Decode(bytes);
+        var result = NistDecoder.TryDecode(bytes);
+        await Assert.That(result.IsSuccess).IsFalse();
+        await Assert.That(result.Error).IsNotNull();
+        await Assert.That(result.Error!.Code).IsEqualTo(NistErrorCodes.MissingLenField);
 
-        await Assert.That(act).Throws<FormatException>()
-            .WithMessage("Logical record does not start with a LEN field.", StringComparison.Ordinal);
+        var act = () => NistDecoder.Decode(bytes);
+        var exception = await Assert.ThrowsAsync<NistException>(async () => await Task.Run(act));
+        await Assert.That(exception).IsNotNull();
+        await Assert.That(exception!.ErrorCode).IsEqualTo(NistErrorCodes.MissingLenField);
     }
 }

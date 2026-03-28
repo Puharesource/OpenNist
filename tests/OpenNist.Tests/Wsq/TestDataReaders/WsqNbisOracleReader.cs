@@ -5,6 +5,8 @@ using System.Globalization;
 using OpenNist.Tests.Wsq.TestFixtures;
 using OpenNist.Tests.Wsq.TestSupport;
 using OpenNist.Wsq.Internal;
+using OpenNist.Wsq.Internal.Metadata;
+using OpenNist.Wsq.Internal.Scaling;
 
 internal static class WsqNbisOracleReader
 {

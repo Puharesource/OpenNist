@@ -1,6 +1,7 @@
 namespace OpenNist.Wsq.Internal.Decoding;
 
 using System.Collections.Concurrent;
+using OpenNist.Wsq.Internal.Metadata;
 
 internal static class WsqWaveletTreeBuilder
 {

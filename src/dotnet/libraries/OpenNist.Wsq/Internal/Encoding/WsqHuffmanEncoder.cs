@@ -1,6 +1,8 @@
 namespace OpenNist.Wsq.Internal.Encoding;
 
 using OpenNist.Wsq.Internal;
+using OpenNist.Wsq.Internal.Container;
+using OpenNist.Wsq.Internal.Metadata;
 
 internal static class WsqHuffmanEncoder
 {
@@ -108,7 +110,7 @@ internal static class WsqHuffmanEncoder
 
     private static void CountBlockCategories(ReadOnlySpan<short> coefficients, Span<int> categoryFrequencies)
     {
-        var lowerMaximumCoefficient = 1 - s_maximumCoefficientInTable;
+        const int lowerMaximumCoefficient = 1 - s_maximumCoefficientInTable;
         var coefficientIndex = 0;
 
         while (coefficientIndex < coefficients.Length)

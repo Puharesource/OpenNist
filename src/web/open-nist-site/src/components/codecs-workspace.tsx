@@ -308,7 +308,7 @@ export function CodecsWorkspace({
                 {currentLabel}
               </h1>
               <p className="mt-1 max-w-xl text-xs leading-5 text-[var(--color-on-surface-variant)]">
-                Convert between WSQ, JPEG2000, and image formats.
+                Convert between WSQ and image formats.
               </p>
             </div>
             <WorkspaceSidebarToggleGroup showRightToggle={showInspector} />
@@ -375,7 +375,7 @@ export function CodecsWorkspace({
                     </div>
                     <div>
                       <p className="font-display text-2xl font-semibold tracking-[-0.04em] text-[var(--color-primary)]">
-                        WSQ and JPEG2000 preview surface
+                        WSQ preview surface
                       </p>
                       <p className="mt-2 text-sm leading-7 text-[var(--color-on-surface-variant)]">
                         Open a biometric image or WSQ file to decode it, inspect it, or create a WSQ version.
@@ -636,7 +636,7 @@ function CodecsInspector({
             label: "Format",
             value: document.sourceKind === "WSQ" ? "WSQ" : "Image",
             description:
-              "WSQ is a fingerprint-focused compression format. Image means a regular raster file like PNG, TIFF, or JPEG2000."
+              "WSQ is a fingerprint-focused compression format. Image means a regular raster file like PNG, TIFF, or BMP."
           },
           {
             label: "Original file size",

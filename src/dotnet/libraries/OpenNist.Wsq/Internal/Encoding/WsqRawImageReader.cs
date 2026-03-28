@@ -1,5 +1,10 @@
 namespace OpenNist.Wsq.Internal.Encoding;
 
+using OpenNist.Wsq.Errors;
+using OpenNist.Wsq.Internal;
+using OpenNist.Wsq.Internal.Errors;
+using OpenNist.Wsq.Model;
+
 internal static class WsqRawImageReader
 {
     public static async ValueTask<byte[]> ReadAsync(
@@ -8,7 +13,7 @@ internal static class WsqRawImageReader
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(rawImageStream);
-        ValidateRawImage(rawImage);
+        ValidateRawImageOrThrow(rawImage);
 
         var expectedByteCount = checked(rawImage.Width * rawImage.Height);
 
@@ -18,8 +23,7 @@ internal static class WsqRawImageReader
 
             if (remainingLength != expectedByteCount)
             {
-                throw new InvalidDataException(
-                    $"Expected {expectedByteCount} raw bytes for a {rawImage.Width}x{rawImage.Height} image, but found {remainingLength}.");
+                throw WsqErrors.ExceptionFrom(WsqErrors.ValidationFailed([WsqErrors.RawImageByteCountMismatch(remainingLength, expectedByteCount)]));
             }
 
             return bufferSegment.AsSpan(checked((int)memoryStream.Position), remainingLength).ToArray();
@@ -31,8 +35,7 @@ internal static class WsqRawImageReader
 
             if (remainingLength != expectedByteCount)
             {
-                throw new InvalidDataException(
-                    $"Expected {expectedByteCount} raw bytes for a {rawImage.Width}x{rawImage.Height} image, but found {remainingLength}.");
+                throw WsqErrors.ExceptionFrom(WsqErrors.ValidationFailed([WsqErrors.RawImageByteCountMismatch(remainingLength, expectedByteCount)]));
             }
 
             var rawBytes = GC.AllocateUninitializedArray<byte>(remainingLength);
@@ -45,8 +48,8 @@ internal static class WsqRawImageReader
 
         if (buffer.Length != expectedByteCount)
         {
-            throw new InvalidDataException(
-                $"Expected {expectedByteCount} raw bytes for a {rawImage.Width}x{rawImage.Height} image, but found {buffer.Length}.");
+            throw WsqErrors.ExceptionFrom(
+                WsqErrors.ValidationFailed([WsqErrors.RawImageByteCountMismatch(checked((int)buffer.Length), expectedByteCount)]));
         }
 
         return buffer.TryGetBuffer(out var bufferedData)
@@ -60,7 +63,7 @@ internal static class WsqRawImageReader
         out ReadOnlySpan<byte> rawPixels)
     {
         ArgumentNullException.ThrowIfNull(rawImageStream);
-        ValidateRawImage(rawImage);
+        ValidateRawImageOrThrow(rawImage);
 
         var expectedByteCount = checked(rawImage.Width * rawImage.Height);
         if (rawImageStream is not MemoryStream memoryStream || !memoryStream.TryGetBuffer(out var bufferSegment))
@@ -72,29 +75,43 @@ internal static class WsqRawImageReader
         var remainingLength = checked((int)(memoryStream.Length - memoryStream.Position));
         if (remainingLength != expectedByteCount)
         {
-            throw new InvalidDataException(
-                $"Expected {expectedByteCount} raw bytes for a {rawImage.Width}x{rawImage.Height} image, but found {remainingLength}.");
+            throw WsqErrors.ExceptionFrom(WsqErrors.ValidationFailed([WsqErrors.RawImageByteCountMismatch(remainingLength, expectedByteCount)]));
         }
 
         rawPixels = bufferSegment.AsSpan(checked((int)memoryStream.Position), remainingLength);
         return true;
     }
 
-    private static void ValidateRawImage(WsqRawImageDescription rawImage)
+    internal static WsqValidationResult ValidateRawImage(WsqRawImageDescription rawImage)
     {
+        var errors = new List<WsqValidationError>(capacity: 3);
+
         if (rawImage.Width <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(rawImage), rawImage.Width, "Image width must be positive.");
+            errors.Add(WsqErrors.RawImageWidthMustBePositive(rawImage.Width));
         }
 
         if (rawImage.Height <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(rawImage), rawImage.Height, "Image height must be positive.");
+            errors.Add(WsqErrors.RawImageHeightMustBePositive(rawImage.Height));
         }
 
         if (rawImage.BitsPerPixel != 8)
         {
-            throw new NotSupportedException($"WSQ encoding currently requires 8-bit grayscale input, but received {rawImage.BitsPerPixel} bits per pixel.");
+            errors.Add(WsqErrors.RawImageBitsPerPixelUnsupported(rawImage.BitsPerPixel));
+        }
+
+        return errors.Count == 0
+            ? WsqValidationResult.Success()
+            : WsqValidationResult.Failure(errors);
+    }
+
+    private static void ValidateRawImageOrThrow(WsqRawImageDescription rawImage)
+    {
+        var validation = ValidateRawImage(rawImage);
+        if (!validation.IsValid)
+        {
+            throw WsqErrors.ExceptionFrom(WsqErrors.ValidationFailed(validation.Errors));
         }
     }
 }

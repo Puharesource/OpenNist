@@ -5,6 +5,7 @@ using OpenNist.Tests.Wsq.TestFixtures;
 using OpenNist.Wsq.Internal;
 using OpenNist.Wsq.Internal.Decoding;
 using OpenNist.Wsq.Internal.Encoding;
+using OpenNist.Wsq.Internal.Metadata;
 
 internal static class WsqHighPrecisionRegionTwoFollowOnSnapshotBuilder
 {

@@ -1,6 +1,7 @@
 namespace OpenNist.Tests.Nfiq.TestSupport;
 
 using OpenNist.Nfiq;
+using OpenNist.Nfiq.Configuration;
 
 internal static class Nfiq2TestPaths
 {

@@ -1,5 +1,7 @@
 namespace OpenNist.Wsq.Internal.Encoding;
 
+using OpenNist.Wsq.Internal.Metadata;
+
 internal static class WsqQuantizationParameters
 {
     private const float s_firstRegionReciprocalAreaSingle = 1.0f / 1024.0f;

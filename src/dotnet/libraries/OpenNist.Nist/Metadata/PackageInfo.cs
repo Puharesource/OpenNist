@@ -1,0 +1,20 @@
+namespace OpenNist.Nist.Metadata;
+
+using JetBrains.Annotations;
+
+/// <summary>
+/// Describes the OpenNist.Nist package.
+/// </summary>
+[PublicAPI]
+public static class PackageInfo
+{
+    /// <summary>
+    /// Gets the NuGet package identifier.
+    /// </summary>
+    public const string PackageId = "OpenNist.Nist";
+}
+
+internal static class InternalVisibilityProbe
+{
+    internal const string s_packageId = PackageInfo.PackageId;
+}

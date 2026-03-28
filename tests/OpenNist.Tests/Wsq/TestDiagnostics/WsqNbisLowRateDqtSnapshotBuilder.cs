@@ -3,9 +3,12 @@ namespace OpenNist.Tests.Wsq.TestDiagnostics;
 using OpenNist.Tests.Wsq.TestDataReaders;
 using OpenNist.Tests.Wsq.TestFixtures;
 using OpenNist.Wsq;
+using OpenNist.Wsq.Codecs;
 using OpenNist.Wsq.Internal;
+using OpenNist.Wsq.Internal.Container;
 using OpenNist.Wsq.Internal.Decoding;
 using OpenNist.Wsq.Internal.Encoding;
+using OpenNist.Wsq.Internal.Scaling;
 
 internal static class WsqNbisLowRateDqtSnapshotBuilder
 {

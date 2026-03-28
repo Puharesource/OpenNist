@@ -2,6 +2,23 @@
 
 This page describes the main packages you consume, what each one is for, and when to choose it.
 
+## `OpenNist.Primitives`
+
+Purpose:
+
+- provide shared low-level result, error, validation, and documentation-link primitives
+- support the higher-level OpenNist libraries without making `Common` a catch-all package
+
+Key types:
+
+- `OpenNistResult<,>`
+- `OpenNistErrorInfo<,>`
+- `OpenNistValidationError`
+- `OpenNistValidationResult<>`
+- `OpenNistDocumentation`
+
+Use it when you are extending OpenNist itself or building closely related integrations that need to share the same structured failure model. Most consumers should start with one of the format- or workflow-specific packages below.
+
 ## `OpenNist.Nist`
 
 Purpose:
@@ -52,6 +69,8 @@ Key types:
 - `Nfiq2AssessmentResult`
 - `Nfiq2AnalysisOptions`
 - `Nfiq2RawImageDescription`
+- `Nfiq2Result<T>`
+- `Nfiq2Exception`
 
 Use it when you need fingerprint quality scoring on supported grayscale inputs from .NET.
 
@@ -75,3 +94,4 @@ See also:
 
 - [Use OpenNist from .NET](../how-to/use-opennist-from-dotnet.md)
 - [Use OpenNist from TypeScript](../how-to/use-opennist-from-typescript.md)
+- [Error codes](error-codes.md)

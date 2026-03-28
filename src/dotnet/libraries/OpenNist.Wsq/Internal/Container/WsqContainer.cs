@@ -1,0 +1,56 @@
+namespace OpenNist.Wsq.Internal.Container;
+
+using OpenNist.Wsq.Internal.Scaling;
+
+internal sealed record WsqContainer(
+    WsqFrameHeader FrameHeader,
+    WsqTransformTable TransformTable,
+    WsqQuantizationTable QuantizationTable,
+    IReadOnlyList<WsqHuffmanTable> HuffmanTables,
+    IReadOnlyList<WsqCommentSegment> Comments,
+    IReadOnlyList<WsqBlock> Blocks,
+    int? PixelsPerInch);
+
+internal sealed record WsqFrameHeader(
+    byte Black,
+    byte White,
+    ushort Height,
+    ushort Width,
+    double Shift,
+    double Scale,
+    byte WsqEncoder,
+    ushort SoftwareImplementationNumber);
+
+internal sealed record WsqTransformTable(
+    byte HighPassFilterLength,
+    byte LowPassFilterLength,
+    IReadOnlyList<float> LowPassFilterCoefficients,
+    IReadOnlyList<float> HighPassFilterCoefficients);
+
+internal sealed record WsqQuantizationTable(
+    double BinCenter,
+    WsqScaledUInt16 SerializedBinCenter,
+    IReadOnlyList<double> QuantizationBins,
+    IReadOnlyList<double> ZeroBins,
+    IReadOnlyList<WsqScaledUInt16> SerializedQuantizationBins,
+    IReadOnlyList<WsqScaledUInt16> SerializedZeroBins);
+
+internal sealed record WsqHuffmanTable(
+    byte TableId,
+    IReadOnlyList<byte> CodeLengthCounts,
+    IReadOnlyList<byte> Values);
+
+internal sealed record WsqCommentSegment(
+    string Text,
+    IReadOnlyDictionary<string, string> Fields)
+{
+    public bool IsNistComment => Fields.Count > 0;
+}
+
+internal sealed record WsqBlock(
+    byte HuffmanTableId,
+    WsqHuffmanTable HuffmanTable,
+    byte[] EncodedData)
+{
+    public int EncodedByteCount => EncodedData.Length;
+}

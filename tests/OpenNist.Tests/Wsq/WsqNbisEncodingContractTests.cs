@@ -5,6 +5,7 @@ using OpenNist.Tests.Wsq.TestDataSources;
 using OpenNist.Tests.Wsq.TestFixtures;
 using OpenNist.Tests.Wsq.TestSupport;
 using OpenNist.Wsq;
+using OpenNist.Wsq.Codecs;
 
 [Category("Contract: WSQ - NBIS Reference Encoding")]
 internal sealed class WsqNbisEncodingContractTests

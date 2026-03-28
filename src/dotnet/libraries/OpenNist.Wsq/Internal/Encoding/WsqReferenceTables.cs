@@ -1,6 +1,7 @@
 namespace OpenNist.Wsq.Internal.Encoding;
 
 using OpenNist.Wsq.Internal;
+using OpenNist.Wsq.Internal.Container;
 
 internal static class WsqReferenceTables
 {

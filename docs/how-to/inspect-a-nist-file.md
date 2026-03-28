@@ -8,7 +8,16 @@ Use `NistDecoder` to load an ANSI/NIST-style transaction into the OpenNist objec
 using OpenNist.Nist;
 
 await using var stream = File.OpenRead("sample.an2");
-var file = NistDecoder.Decode(stream);
+var result = NistDecoder.TryDecode(stream);
+
+if (!result.IsSuccess)
+{
+    Console.WriteLine(result.Error!.Code);
+    Console.WriteLine(result.Error.Message);
+    return;
+}
+
+var file = result.Value!;
 ```
 
 ## Walk records and fields
@@ -41,3 +50,5 @@ NistEncoder.Encode(output, file);
 ```
 
 OpenNist preserves opaque binary records specifically so transaction files can survive decode/encode workflows without losing raw payload bytes.
+
+See also: [Error codes](../reference/error-codes.md)

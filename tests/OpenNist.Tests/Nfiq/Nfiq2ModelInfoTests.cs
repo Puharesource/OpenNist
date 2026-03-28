@@ -1,6 +1,7 @@
 namespace OpenNist.Tests.Nfiq;
 
 using OpenNist.Nfiq;
+using OpenNist.Nfiq.Configuration;
 using OpenNist.Tests.Nfiq.TestSupport;
 
 [Category("Contract: NFIQ2 - Model Info")]

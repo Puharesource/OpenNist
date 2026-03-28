@@ -13,13 +13,13 @@ import { getFileFingerprint } from "@/lib/codecs-document"
 import type { WorkspaceView } from "@/lib/site-content"
 import { setWorkspaceActiveFile } from "@/lib/workspace-session"
 
-export const ACCEPTED_FILES = ".nist,.nst,.an2,.eft,.wsq,.jp2,.j2k,.j2c,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp,.gif"
+export const ACCEPTED_FILES = ".nist,.nst,.an2,.eft,.wsq,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp,.gif"
 
 const OPEN_PICKER_TYPES = [
   {
     description: "Biometric transaction and image files",
     accept: {
-      "application/octet-stream": [".nist", ".nst", ".an2", ".eft", ".wsq", ".jp2", ".j2k", ".j2c"],
+      "application/octet-stream": [".nist", ".nst", ".an2", ".eft", ".wsq"],
       "image/png": [".png"],
       "image/jpeg": [".jpg", ".jpeg"],
       "image/tiff": [".tif", ".tiff"],

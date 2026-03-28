@@ -1,7 +1,10 @@
 namespace OpenNist.Tests.Nfiq.TestSupport;
 
 using OpenNist.Nfiq;
+using OpenNist.Nfiq.Configuration;
 using OpenNist.Nfiq.Internal;
+using OpenNist.Nfiq.Internal.Runtime;
+using OpenNist.Nfiq.Runtime;
 
 internal static class Nfiq2TestContext
 {

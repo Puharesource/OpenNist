@@ -1,6 +1,8 @@
 namespace OpenNist.Tests.Nfiq;
 
 using OpenNist.Nfiq.Internal;
+using OpenNist.Nfiq.Internal.Model;
+using OpenNist.Nfiq.Internal.Support;
 using OpenNist.Tests.Nfiq.TestSupport;
 
 [Category("Unit: NFIQ2 - Ridge/Valley Support")]

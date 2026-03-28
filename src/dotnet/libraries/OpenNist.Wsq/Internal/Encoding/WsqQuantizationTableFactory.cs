@@ -1,6 +1,8 @@
 namespace OpenNist.Wsq.Internal.Encoding;
 
 using OpenNist.Wsq.Internal;
+using OpenNist.Wsq.Internal.Container;
+using OpenNist.Wsq.Internal.Scaling;
 
 internal static class WsqQuantizationTableFactory
 {

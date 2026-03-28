@@ -2,6 +2,8 @@ namespace OpenNist.Tests.Nist;
 
 using System.Globalization;
 using OpenNist.Nist;
+using OpenNist.Nist.Codecs;
+using OpenNist.Nist.Model;
 
 [Category("Unit: NIST - Encoder")]
 internal sealed class NistEncoderTests

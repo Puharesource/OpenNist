@@ -7,4 +7,8 @@
     <EmbeddedResource Include="Assets\Nfiq2\nist_plain_tir-ink.txt" LogicalName="OpenNist.Nfiq.Assets.Nfiq2.nist_plain_tir-ink.txt" />
     <EmbeddedResource Include="Assets\Nfiq2\nist_plain_tir-ink.yaml" LogicalName="OpenNist.Nfiq.Assets.Nfiq2.nist_plain_tir-ink.yaml" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenNist.Primitives\OpenNist.Primitives.csproj" />
+  </ItemGroup>
 </Project>

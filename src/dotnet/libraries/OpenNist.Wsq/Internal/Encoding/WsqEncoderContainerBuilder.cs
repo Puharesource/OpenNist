@@ -2,6 +2,8 @@ namespace OpenNist.Wsq.Internal.Encoding;
 
 using System.Globalization;
 using OpenNist.Wsq.Internal;
+using OpenNist.Wsq.Internal.Container;
+using OpenNist.Wsq.Model;
 
 internal static class WsqEncoderContainerBuilder
 {

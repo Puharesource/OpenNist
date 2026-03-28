@@ -1,6 +1,7 @@
 namespace OpenNist.Tests.Nfiq;
 
 using OpenNist.Nfiq.Internal;
+using OpenNist.Nfiq.Internal.FingerJet;
 
 [Category("Unit: NFIQ2 - FingerJet Math")]
 internal sealed class Nfiq2FingerJetMathTests

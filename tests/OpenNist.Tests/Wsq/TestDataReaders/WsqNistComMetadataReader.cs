@@ -2,6 +2,7 @@ namespace OpenNist.Tests.Wsq.TestDataReaders;
 
 using System.Globalization;
 using OpenNist.Wsq;
+using OpenNist.Wsq.Model;
 
 internal static class WsqNistComMetadataReader
 {

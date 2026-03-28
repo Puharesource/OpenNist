@@ -2,6 +2,7 @@ namespace OpenNist.Wsq.Internal.Encoding;
 
 using System.Linq;
 using OpenNist.Wsq.Internal.Decoding;
+using OpenNist.Wsq.Internal.Metadata;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Major Code Smell",
@@ -174,9 +175,9 @@ internal static class WsqHighPrecisionQuantizer
 
         Span<int> activeSubbands = workingSubbands;
         var activeSubbandCount = initialSubbandCount;
-        var reciprocalAreaSum = 0.0f;
-        var product = 0.0f;
-        var quantizationScale = 0.0f;
+        float reciprocalAreaSum;
+        float product;
+        float quantizationScale;
         var iterationCount = 0;
 
         while (true)

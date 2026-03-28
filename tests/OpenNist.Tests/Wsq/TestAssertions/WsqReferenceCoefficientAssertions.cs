@@ -2,6 +2,7 @@ namespace OpenNist.Tests.Wsq.TestAssertions;
 
 using OpenNist.Tests.Wsq.TestFixtures;
 using OpenNist.Wsq.Internal;
+using OpenNist.Wsq.Internal.Container;
 using OpenNist.Wsq.Internal.Decoding;
 using OpenNist.Wsq.Internal.Encoding;
 

@@ -1,6 +1,7 @@
 namespace OpenNist.Wsq.Internal.Encoding;
 
 using OpenNist.Wsq.Internal.Decoding;
+using OpenNist.Wsq.Internal.Metadata;
 
 internal static class WsqHighPrecisionVarianceCalculator
 {

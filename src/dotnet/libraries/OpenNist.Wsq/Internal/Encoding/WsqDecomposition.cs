@@ -1,6 +1,7 @@
 namespace OpenNist.Wsq.Internal.Encoding;
 
 using System.Buffers;
+using OpenNist.Wsq.Internal.Container;
 using OpenNist.Wsq.Internal.Decoding;
 
 internal static class WsqDecomposition

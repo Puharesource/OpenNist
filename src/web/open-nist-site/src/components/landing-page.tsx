@@ -28,11 +28,11 @@ function HeroSection() {
         <div className="space-y-7">
           <div className="space-y-4">
             <h1 className="max-w-5xl font-display text-5xl font-semibold leading-[0.95] tracking-[-0.07em] text-[var(--color-primary)] md:text-7xl">
-              Native NIST, WSQ &amp; JPEG2000 for modern .NET
+              Native NIST, WSQ and NFIQ for modern .NET
             </h1>
             <p className="max-w-2xl text-lg leading-8 text-[var(--color-on-surface)]/78 md:text-xl">
-              OpenNist is a standards-focused biometric imaging toolkit for .NET, with managed WSQ, NIST, JPEG2000 and
-              NFIQ workflows that also target WebAssembly.
+              OpenNist is a standards-focused biometric imaging toolkit for .NET, with managed WSQ, NIST, and NFIQ
+              workflows that also target WebAssembly.
             </p>
           </div>
 
@@ -166,7 +166,7 @@ function CapabilitiesSection() {
             <div className="rounded-[var(--radius-lg)] bg-[var(--color-surface-container-high)] p-4">
               <PipelineRow source="NIST Type-4 / Type-14" target="Managed object graph" />
               <Separator className="my-4 bg-[color:var(--effect-ghost-border)]" />
-              <PipelineRow source="Raw grayscale raster" target="WSQ or JPEG2000" />
+              <PipelineRow source="Raw grayscale raster" target="WSQ or raster export" />
               <Separator className="my-4 bg-[color:var(--effect-ghost-border)]" />
               <PipelineRow source="Fingerprint image" target="Managed NFIQ 2 result" />
             </div>
@@ -250,8 +250,8 @@ function EngineeringSection() {
             <div className="rounded-[var(--radius-xl)] bg-[var(--color-surface-container-high)] p-5">
               <p className="font-display text-lg tracking-[-0.03em] text-[var(--color-primary)]">OpenNist.Wasm</p>
               <p className="mt-2 leading-7 text-[var(--color-on-surface-variant)]">
-                WebAssembly runtime packaging for in-browser NIST inspection, WSQ and JPEG2000 operations, and managed
-                quality workflows without shipping native binaries.
+                WebAssembly runtime packaging for in-browser NIST inspection, WSQ operations, and managed quality
+                workflows without shipping native binaries.
               </p>
             </div>
             <div className="rounded-[var(--radius-xl)] bg-[var(--color-surface-container-high)] p-5">
@@ -347,7 +347,7 @@ function InstallSection() {
                 variant="outline"
                 className="rounded-[var(--radius-lg)] border-[color:var(--effect-ghost-border)] bg-transparent text-[var(--color-primary)] hover:bg-[var(--color-surface-container-low)]"
               >
-                <a href="https://github.com/OpenNist/OpenNist" target="_blank" rel="noreferrer">
+                <a href="https://opennist.tarkan.dev/docs" target="_blank" rel="noreferrer">
                   <BookOpenText className="size-4" />
                   Documentation
                 </a>

@@ -1,5 +1,8 @@
 namespace OpenNist.Wsq.Internal.Decoding;
 
+using OpenNist.Wsq.Internal.Container;
+using OpenNist.Wsq.Internal.Metadata;
+
 internal static class WsqHuffmanDecoder
 {
     public static short[] DecodeQuantizedCoefficients(

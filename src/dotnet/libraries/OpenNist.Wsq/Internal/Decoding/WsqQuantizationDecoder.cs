@@ -1,5 +1,8 @@
 namespace OpenNist.Wsq.Internal.Decoding;
 
+using OpenNist.Wsq.Internal.Container;
+using OpenNist.Wsq.Internal.Metadata;
+
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Major Code Smell",
     "S1244:Floating point numbers should not be tested for equality",

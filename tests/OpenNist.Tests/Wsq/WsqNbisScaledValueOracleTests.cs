@@ -2,6 +2,7 @@ namespace OpenNist.Tests.Wsq;
 
 using OpenNist.Tests.Wsq.TestDataReaders;
 using OpenNist.Wsq.Internal;
+using OpenNist.Wsq.Internal.Scaling;
 
 [Category("Oracle: NBIS 5.0.0 - WSQ Value Scaling")]
 internal sealed class WsqNbisScaledValueOracleTests

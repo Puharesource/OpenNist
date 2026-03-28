@@ -4,7 +4,9 @@ using System.Text;
 using OpenNist.Tests.Wsq.TestDataSources;
 using OpenNist.Tests.Wsq.TestFixtures;
 using OpenNist.Wsq;
+using OpenNist.Wsq.Codecs;
 using OpenNist.Wsq.Internal;
+using OpenNist.Wsq.Internal.Container;
 
 [Category("Contract: WSQ - NIST Certification")]
 internal sealed class WsqReferenceCodestreamCertificationContractTests

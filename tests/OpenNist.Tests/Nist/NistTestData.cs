@@ -3,6 +3,7 @@ namespace OpenNist.Tests.Nist;
 using System.Globalization;
 using System.Text;
 using OpenNist.Nist;
+using OpenNist.Nist.Model;
 
 internal static class NistTestData
 {

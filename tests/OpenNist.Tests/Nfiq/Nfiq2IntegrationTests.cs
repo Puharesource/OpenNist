@@ -2,6 +2,8 @@ namespace OpenNist.Tests.Nfiq;
 
 using System.Globalization;
 using OpenNist.Nfiq;
+using OpenNist.Nfiq.Errors;
+using OpenNist.Nfiq.Runtime;
 using OpenNist.Tests.Nfiq.TestDataSources;
 using OpenNist.Tests.Nfiq.TestSupport;
 
@@ -57,6 +59,63 @@ internal sealed class Nfiq2IntegrationTests
         await Assert.That(rawResult.QualityScore).IsEqualTo(fileResult.QualityScore);
         await Assert.That(rawResult.NativeQualityMeasures["MMB"]).IsEqualTo(fileResult.NativeQualityMeasures["MMB"]);
         await Assert.That(rawResult.NativeQualityMeasures["Mu"]).IsEqualTo(fileResult.NativeQualityMeasures["Mu"]);
+    }
+
+    [Test]
+    [DisplayName("should combine raw-image validation failures in the non-throwing API")]
+    public async Task ShouldCombineRawImageValidationFailuresInTheNonThrowingApi()
+    {
+        var result = await s_algorithm.TryAnalyzeAsync(
+            ReadOnlyMemory<byte>.Empty,
+            new(Width: 0, Height: 0, BitsPerPixel: 16, PixelsPerInch: 400)).ConfigureAwait(false);
+
+        await Assert.That(result.IsSuccess).IsFalse();
+        await Assert.That(result.Error).IsNotNull();
+        var error = result.Error!;
+        await Assert.That(error.Code).IsEqualTo(Nfiq2ErrorCodes.ValidationFailed);
+        var validationErrors = error.ValidationErrors ?? [];
+        var validationCodes = validationErrors.Select(static error => error.Code).ToArray();
+        await Assert.That(validationErrors).Count().IsEqualTo(5);
+        await Assert.That(validationCodes).Contains(Nfiq2ErrorCodes.RawImageWidthMustBePositive);
+        await Assert.That(validationCodes).Contains(Nfiq2ErrorCodes.RawImageHeightMustBePositive);
+        await Assert.That(validationCodes).Contains(Nfiq2ErrorCodes.RawImageBitsPerPixelUnsupported);
+        await Assert.That(validationCodes).Contains(Nfiq2ErrorCodes.RawImagePixelsPerInchUnsupported);
+        await Assert.That(validationCodes).Contains(Nfiq2ErrorCodes.RawImagePixelBufferLengthMismatch);
+    }
+
+    [Test]
+    [DisplayName("should throw a structured NFIQ exception with combined validation failures")]
+    public async Task ShouldThrowStructuredNfiqExceptionWithCombinedValidationFailures()
+    {
+        var exception = await Assert.ThrowsAsync<Nfiq2Exception>(async () =>
+        {
+            await s_algorithm.AnalyzeAsync(
+                ReadOnlyMemory<byte>.Empty,
+                new(Width: 0, Height: 0, BitsPerPixel: 16, PixelsPerInch: 400)).ConfigureAwait(false);
+        });
+
+        await Assert.That(exception).IsNotNull();
+        await Assert.That(exception!.ErrorCode).IsEqualTo(Nfiq2ErrorCodes.ValidationFailed);
+        await Assert.That(exception.DocumentationUri).IsNotNull();
+        await Assert.That(exception.ValidationErrors).Count().IsEqualTo(5);
+    }
+
+    [Test]
+    [DisplayName("should combine trimmed width and height violations instead of failing one at a time")]
+    public async Task ShouldCombineTrimmedWidthAndHeightViolationsInsteadOfFailingOneAtATime()
+    {
+        var oversizedPixels = new byte[900 * 1100];
+        var result = await s_algorithm.TryAnalyzeAsync(
+            oversizedPixels,
+            new(Width: 900, Height: 1100, BitsPerPixel: 8, PixelsPerInch: 500)).ConfigureAwait(false);
+
+        await Assert.That(result.IsSuccess).IsFalse();
+        await Assert.That(result.Error).IsNotNull();
+        var error = result.Error!;
+        await Assert.That(error.Code).IsEqualTo(Nfiq2ErrorCodes.ValidationFailed);
+        var validationCodes = (error.ValidationErrors ?? []).Select(static error => error.Code).ToArray();
+        await Assert.That(validationCodes).Contains(Nfiq2ErrorCodes.TrimmedImageWidthTooLarge);
+        await Assert.That(validationCodes).Contains(Nfiq2ErrorCodes.TrimmedImageHeightTooLarge);
     }
 
     [Test]

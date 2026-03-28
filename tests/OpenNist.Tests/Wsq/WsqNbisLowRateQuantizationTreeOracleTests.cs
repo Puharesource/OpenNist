@@ -5,6 +5,7 @@ using OpenNist.Tests.Wsq.TestDataSources;
 using OpenNist.Tests.Wsq.TestFixtures;
 using OpenNist.Wsq.Internal;
 using OpenNist.Wsq.Internal.Decoding;
+using OpenNist.Wsq.Internal.Metadata;
 
 [Category("Diagnostic: WSQ - NBIS Low-Rate Quantization Tree Oracle")]
 internal sealed class WsqNbisLowRateQuantizationTreeOracleTests

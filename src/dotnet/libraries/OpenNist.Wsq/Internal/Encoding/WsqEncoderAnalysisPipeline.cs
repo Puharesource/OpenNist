@@ -1,7 +1,9 @@
 namespace OpenNist.Wsq.Internal.Encoding;
 
 using OpenNist.Wsq.Internal;
+using OpenNist.Wsq.Internal.Container;
 using OpenNist.Wsq.Internal.Decoding;
+using OpenNist.Wsq.Model;
 
 internal static class WsqEncoderAnalysisPipeline
 {
