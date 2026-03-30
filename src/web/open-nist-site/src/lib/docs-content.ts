@@ -3,7 +3,7 @@ import ansiNistTransactionsMarkdown from "../../../../../docs/concepts/ansi-nist
 import modularPackageModelMarkdown from "../../../../../docs/concepts/modular-package-model.md?raw"
 import glossaryMarkdown from "../../../../../docs/glossary.md?raw"
 import decodeWsqMarkdown from "../../../../../docs/how-to/decode-wsq.md?raw"
-import deployCloudflarePagesMarkdown from "../../../../../docs/how-to/deploy-the-site-to-cloudflare-pages.md?raw"
+import deployCloudflareMarkdown from "../../../../../docs/how-to/deploy-the-site-to-cloudflare.md?raw"
 import inspectNistFileMarkdown from "../../../../../docs/how-to/inspect-a-nist-file.md?raw"
 import scoreFingerprintMarkdown from "../../../../../docs/how-to/score-a-fingerprint-with-nfiq2.md?raw"
 import useOpenNistFromDotnetMarkdown from "../../../../../docs/how-to/use-opennist-from-dotnet.md?raw"
@@ -140,15 +140,15 @@ export const documentationPages: DocumentationPage[] = [
     showWasmInstallTabs: true
   },
   {
-    slug: "deploy-the-site-to-cloudflare-pages",
-    title: "Deploy the site to Cloudflare Pages",
-    description: "Deploy the website and app to Cloudflare Pages with external FFmpeg runtime assets.",
+    slug: "deploy-the-site-to-cloudflare",
+    title: "Deploy the site to Cloudflare",
+    description: "Deploy the website and app to Cloudflare with static assets and external FFmpeg runtime assets.",
     section: "support",
-    sourcePath: "how-to/deploy-the-site-to-cloudflare-pages.md",
-    markdown: stripLeadingHeading(deployCloudflarePagesMarkdown),
-    seoTitle: "Deploy OpenNist to Cloudflare Pages",
+    sourcePath: "how-to/deploy-the-site-to-cloudflare.md",
+    markdown: stripLeadingHeading(deployCloudflareMarkdown),
+    seoTitle: "Deploy OpenNist to Cloudflare",
     seoDescription:
-      "Deploy the OpenNist website and app to Cloudflare Pages, configure the custom domain, and externalize FFmpeg runtime assets."
+      "Deploy the OpenNist website and app to Cloudflare with a Worker-backed static asset deployment, configure the custom domain, and externalize FFmpeg runtime assets."
   },
   {
     slug: "decode-wsq",

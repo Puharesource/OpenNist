@@ -9,6 +9,8 @@
     "dev": "bun run wasm:sync:debug && vite",
     "build": "bun run wasm:sync && tsc -b && vite build",
     "build:cloudflare": "tsc -b && vite build",
+    "preview:cloudflare": "bun run build:cloudflare && wrangler dev",
+    "deploy:cloudflare": "bun run build:cloudflare && wrangler deploy",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "lint": "oxlint -c .oxlintrc.json --react-plugin --jsx-a11y-plugin src scripts",
@@ -49,6 +51,7 @@
     "oxlint": "^1.56.0",
     "tailwindcss": "^4.2.2",
     "typescript": "~5.9.3",
-    "vite": "^8.0.1"
+    "vite": "^8.0.1",
+    "wrangler": "^4.78.0"
   }
 }

@@ -16,7 +16,7 @@ Use these guides to choose the right package, integrate it into your app, and tr
 
 - [Use OpenNist from .NET](how-to/use-opennist-from-dotnet.md)
 - [Use OpenNist from TypeScript](how-to/use-opennist-from-typescript.md)
-- [Deploy the site to Cloudflare Pages](how-to/deploy-the-site-to-cloudflare-pages.md)
+- [Deploy the site to Cloudflare](how-to/deploy-the-site-to-cloudflare.md)
 - [Decode a WSQ file](how-to/decode-wsq.md)
 - [Inspect a NIST transaction](how-to/inspect-a-nist-file.md)
 - [Score a fingerprint with NFIQ 2](how-to/score-a-fingerprint-with-nfiq2.md)
