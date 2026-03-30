@@ -34,12 +34,14 @@ The upstream `ffmpeg-core.wasm` file is larger than Cloudflare's per-asset uploa
 
 The site now resolves FFmpeg from configurable external URLs:
 
+- `VITE_FFMPEG_CLASS_WORKER_URL`
 - `VITE_FFMPEG_CORE_URL`
 - `VITE_FFMPEG_WASM_URL`
 
 Example values:
 
 ```text
+VITE_FFMPEG_CLASS_WORKER_URL=https://static.tarkan.dev/opennist/ffmpeg/worker.js
 VITE_FFMPEG_CORE_URL=https://static.tarkan.dev/opennist/ffmpeg/ffmpeg-core.js
 VITE_FFMPEG_WASM_URL=https://static.tarkan.dev/opennist/ffmpeg/ffmpeg-core.wasm
 ```

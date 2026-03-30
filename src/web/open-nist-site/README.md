@@ -20,9 +20,9 @@ bun run preview:cloudflare
 bun run deploy:cloudflare
 ```
 
-Cloudflare Pages notes:
+Cloudflare deployment notes:
 
 - `bun run build` refreshes the committed OpenNist WASM interop assets with `dotnet publish` before running the Vite build.
 - `bun run build:cloudflare` skips the .NET publish step and builds from the already committed assets in `public/`.
-- `ffmpeg.wasm` is resolved from `VITE_FFMPEG_CORE_URL` and `VITE_FFMPEG_WASM_URL` when set, and otherwise falls back to jsDelivr for `@ffmpeg/core@0.12.10`.
+- `ffmpeg.wasm` is resolved from `VITE_FFMPEG_CLASS_WORKER_URL`, `VITE_FFMPEG_CORE_URL`, and `VITE_FFMPEG_WASM_URL` when set, and otherwise falls back to jsDelivr for the upstream `@ffmpeg/ffmpeg` and `@ffmpeg/core` packages.
 - `wrangler.jsonc` configures the site for Cloudflare Workers static asset hosting with SPA fallback handling.

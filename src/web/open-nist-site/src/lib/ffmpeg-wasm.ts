@@ -1,5 +1,4 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg"
-import classWorkerURL from "@ffmpeg/ffmpeg/worker?url"
 import { fetchFile } from "@ffmpeg/util"
 
 type NormalizedImageDocument = {
@@ -13,7 +12,9 @@ type ExportFormat = "png" | "jpeg" | "tiff" | "bmp" | "webp"
 
 const PREVIEW_NAME = "preview.png"
 const RAW_NAME = "working.raw"
+const DEFAULT_FFMPEG_PACKAGE_VERSION = "0.12.15"
 const DEFAULT_FFMPEG_CORE_VERSION = "0.12.10"
+const DEFAULT_FFMPEG_CLASS_WORKER_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@${DEFAULT_FFMPEG_PACKAGE_VERSION}/dist/esm/worker.js`
 const DEFAULT_FFMPEG_CORE_BASE_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${DEFAULT_FFMPEG_CORE_VERSION}/dist/esm`
 
 let ffmpegPromise: Promise<FFmpeg> | undefined
@@ -33,7 +34,8 @@ async function loadFfmpeg(): Promise<FFmpeg> {
     ffmpegPromise = (async () => {
       const ffmpeg = new FFmpeg()
       await ffmpeg.load({
-        classWorkerURL,
+        classWorkerURL:
+          import.meta.env.VITE_FFMPEG_CLASS_WORKER_URL?.trim() || DEFAULT_FFMPEG_CLASS_WORKER_URL,
         coreURL: resolveFfmpegAssetUrl(import.meta.env.VITE_FFMPEG_CORE_URL, "ffmpeg-core.js"),
         wasmURL: resolveFfmpegAssetUrl(import.meta.env.VITE_FFMPEG_WASM_URL, "ffmpeg-core.wasm")
       })
