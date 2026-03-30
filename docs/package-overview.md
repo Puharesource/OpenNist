@@ -9,6 +9,7 @@ For the current package map, use:
 
 ## Current package set
 
+- `OpenNist.Primitives`
 - `OpenNist.Nist`
 - `OpenNist.Wsq`
 - `OpenNist.Nfiq`

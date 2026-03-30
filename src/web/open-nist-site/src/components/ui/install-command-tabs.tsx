@@ -1,15 +1,15 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { siBun, siDeno, siNpm, siPnpm, siYarn, type SimpleIcon } from "simple-icons"
 
 import { CodeSnippet } from "@/components/ui/code-snippet"
 import { cn } from "@/lib/utils"
 
 const packageManagers = [
-  { id: "npm", label: "npm", commandPrefix: "npm install", icon: siNpm },
-  { id: "bun", label: "bun", commandPrefix: "bun add", icon: siBun },
-  { id: "pnpm", label: "pnpm", commandPrefix: "pnpm add", icon: siPnpm },
-  { id: "yarn", label: "yarn", commandPrefix: "yarn add", icon: siYarn },
-  { id: "deno", label: "deno", commandPrefix: "deno add", icon: siDeno }
+  { id: "npm", label: "npm", commandPrefix: "npm install", packagePrefix: "", icon: siNpm },
+  { id: "bun", label: "bun", commandPrefix: "bun add", packagePrefix: "", icon: siBun },
+  { id: "pnpm", label: "pnpm", commandPrefix: "pnpm add", packagePrefix: "", icon: siPnpm },
+  { id: "yarn", label: "yarn", commandPrefix: "yarn add", packagePrefix: "", icon: siYarn },
+  { id: "deno", label: "deno", commandPrefix: "deno add", packagePrefix: "npm:", icon: siDeno }
 ] as const
 
 type InstallCommandTabsProps = {
@@ -22,7 +22,7 @@ type InstallCommandTabsProps = {
 export function InstallCommandTabs({ title, description, packageName, note }: InstallCommandTabsProps) {
   const [value, setValue] = useState<(typeof packageManagers)[number]["id"]>("npm")
   const selected = packageManagers.find((manager) => manager.id === value) ?? packageManagers[0]
-  const command = useMemo(() => `${selected.commandPrefix} ${packageName}`, [packageName, selected.commandPrefix])
+  const command = `${selected.commandPrefix} ${selected.packagePrefix}${packageName}`
 
   return (
     <section className="space-y-4">

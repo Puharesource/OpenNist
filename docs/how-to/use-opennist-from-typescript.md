@@ -61,18 +61,18 @@ const decoded = await decodeWsq(response)
 
 ```ts
 const assessment = await assessNfiq(
-  decoded.pixels,
+  decoded.rawPixels,
   decoded.width,
   decoded.height,
   decoded.pixelsPerInch ?? 500
 )
 
-console.log(assessment.score)
+console.log(assessment.qualityScore)
 ```
 
 ### Encode WSQ from raw grayscale pixels
 
-```ts filename=opennist.worker.ts
+```ts
 const wsqBytes = await encodeWsq(rawPixels, width, height, 500, 2.25)
 ```
 
@@ -104,7 +104,7 @@ self.addEventListener("message", async (event) => {
     case "decodeWsqAndAssessNfiq": {
       const decoded = await decodeWsq(request.wsqSource)
       const assessment = await assessNfiq(
-        decoded.pixels,
+        decoded.rawPixels,
         decoded.width,
         decoded.height,
         decoded.pixelsPerInch ?? 500

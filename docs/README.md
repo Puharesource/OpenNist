@@ -1,12 +1,11 @@
 # OpenNist Documentation
 
-This documentation follows a Good Docs-style split between concepts, task guides, reference material, and troubleshooting.
+Use these guides to choose the right package, integrate it into your app, and troubleshoot common issues.
 
-## Start here
+## Getting started
 
 - [Quickstart](quickstart.md)
-- [Troubleshooting](troubleshooting.md)
-- [Glossary](glossary.md)
+- [Changelog](CHANGELOG.md)
 
 ## Concepts
 
@@ -17,6 +16,7 @@ This documentation follows a Good Docs-style split between concepts, task guides
 
 - [Use OpenNist from .NET](how-to/use-opennist-from-dotnet.md)
 - [Use OpenNist from TypeScript](how-to/use-opennist-from-typescript.md)
+- [Deploy the site to Cloudflare Pages](how-to/deploy-the-site-to-cloudflare-pages.md)
 - [Decode a WSQ file](how-to/decode-wsq.md)
 - [Inspect a NIST transaction](how-to/inspect-a-nist-file.md)
 - [Score a fingerprint with NFIQ 2](how-to/score-a-fingerprint-with-nfiq2.md)
@@ -28,11 +28,9 @@ This documentation follows a Good Docs-style split between concepts, task guides
 - [NIST record and field reference](reference/nist-record-and-field-reference.md)
 - [NIST subfield and item reference](reference/nist-subfield-and-item-reference.md)
 - [Repository layout](reference/repository-layout.md)
-- [Legacy package overview path](package-overview.md)
+- [Package overview](package-overview.md)
 
-## Deep dives
+## Support
 
-- [WSQ implementation notes](wsq.md)
-- [WSQ NBIS stage oracle notes](wsq-nbis-stage-oracle.md)
-- [WSQ NBIS corpus comparison](wsq-nbis-corpus-comparison.md)
-- [Web design system notes](design-system.md)
+- [Troubleshooting](troubleshooting.md)
+- [Glossary](glossary.md)

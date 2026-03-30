@@ -6,6 +6,8 @@ OpenNist uses a mixed failure model:
 - structured `Result`-style failures for expected validation, malformed-input, and supported-format outcomes
 - library-specific exceptions for strict APIs, with a stable error code and documentation link when available
 
+Those public result, error, validation, exception, and documentation-link shapes are now built on top of `OpenNist.Primitives`, so the three main .NET libraries share the same low-level failure model even though they expose domain-specific wrapper types.
+
 ## NIST failure model
 
 For `OpenNist.Nist`, the public shapes are:
@@ -49,69 +51,69 @@ General ranges:
 
 ## NIST codes
 
-## ONNIST9000
+### ONNIST9000
 
 Unexpected NIST library failure.
 
-## ONNIST1000
+### ONNIST1000
 
 Malformed NIST transaction content that did not match a more specific public decode code.
 
-## ONNIST1001
+### ONNIST1001
 
 Decoded record type did not match the type declared in the Type-1 CNT field.
 
-## ONNIST1002
+### ONNIST1002
 
 Logical record length exceeds the available remaining bytes.
 
-## ONNIST1003
+### ONNIST1003
 
 Logical record did not end with the expected file separator.
 
-## ONNIST1004
+### ONNIST1004
 
 Logical record did not start with a LEN field.
 
-## ONNIST1005
+### ONNIST1005
 
 LEN field did not contain a terminating separator.
 
-## ONNIST1006
+### ONNIST1006
 
 LEN field did not contain a valid integer.
 
-## ONNIST1007
+### ONNIST1007
 
 Binary logical record length header was incomplete.
 
-## ONNIST1008
+### ONNIST1008
 
 Field tag separator was not found while decoding a fielded logical record.
 
-## ONNIST1009
+### ONNIST1009
 
 Logical record did not contain any fields.
 
-## ONNIST1010
+### ONNIST1010
 
 The Type-1 CNT field contained an empty logical-record descriptor.
 
-## ONNIST1011
+### ONNIST1011
 
 The Type-1 CNT field contained an invalid logical-record type.
 
-## ONNIST1012
+### ONNIST1012
 
 The decoder could not infer the expected binary logical-record type from the Type-1 CNT field.
 
 ## WSQ codes
 
-## ONWSQ9000
+### ONWSQ9000
 
 Unexpected WSQ library failure.
 
-## ONWSQ1000
+### ONWSQ1000
 
 One or more WSQ encode validation checks failed.
 
@@ -129,35 +131,35 @@ Retryable: No
 
 Classification: Validation
 
-## ONWSQ1001
+### ONWSQ1001
 
 Raw-image width must be greater than zero.
 
-## ONWSQ1002
+### ONWSQ1002
 
 Raw-image height must be greater than zero.
 
-## ONWSQ1003
+### ONWSQ1003
 
 Raw-image bits per pixel must be 8.
 
-## ONWSQ1004
+### ONWSQ1004
 
 WSQ bit rate must be greater than zero.
 
-## ONWSQ1005
+### ONWSQ1005
 
 WSQ encoder number must fit in a byte.
 
-## ONWSQ1006
+### ONWSQ1006
 
 WSQ software implementation number must fit in an unsigned 16-bit value.
 
-## ONWSQ1007
+### ONWSQ1007
 
 The raw pixel stream length does not match `width × height`.
 
-## ONWSQ2000
+### ONWSQ2000
 
 Malformed or unsupported WSQ bitstream.
 
@@ -178,7 +180,7 @@ Classification: Format
 
 ## NFIQ 2 codes
 
-## ONNFIQ9000
+### ONNFIQ9000
 
 Unexpected library failure.
 
@@ -196,7 +198,7 @@ Retryable: No
 
 Classification: Internal failure
 
-## ONNFIQ1000
+### ONNFIQ1000
 
 One or more NFIQ 2 validation checks failed.
 
@@ -214,87 +216,87 @@ Retryable: No
 
 Classification: Validation
 
-## ONNFIQ1001
+### ONNFIQ1001
 
 Raw-image width must be greater than zero.
 
-## ONNFIQ1002
+### ONNFIQ1002
 
 Raw-image height must be greater than zero.
 
-## ONNFIQ1003
+### ONNFIQ1003
 
 Raw-image bits per pixel must be 8.
 
-## ONNFIQ1004
+### ONNFIQ1004
 
 Raw-image resolution must be 500 PPI.
 
-## ONNFIQ1005
+### ONNFIQ1005
 
 Raw pixel buffer length does not match `width × height`.
 
-## ONNFIQ1006
+### ONNFIQ1006
 
 All image rows appear blank after near-white trimming.
 
-## ONNFIQ1007
+### ONNFIQ1007
 
 All image columns appear blank after near-white trimming.
 
-## ONNFIQ1008
+### ONNFIQ1008
 
 The trimmed fingerprint region is still wider than the supported limit.
 
 Current limit: 800 pixels
 
-## ONNFIQ1009
+### ONNFIQ1009
 
 The trimmed fingerprint region is still taller than the supported limit.
 
 Current limit: 1000 pixels
 
-## ONNFIQ1010
+### ONNFIQ1010
 
 FingerJet CreateFeatureSet dimensions exceed the supported native limit.
 
-## ONNFIQ1011
+### ONNFIQ1011
 
 FingerJet CreateFeatureSet resolution falls outside the supported native range.
 
-## ONNFIQ1012
+### ONNFIQ1012
 
 FingerJet CreateFeatureSet width falls outside the supported native range.
 
-## ONNFIQ1013
+### ONNFIQ1013
 
 FingerJet CreateFeatureSet height falls outside the supported native range.
 
-## ONNFIQ1014
+### ONNFIQ1014
 
 FingerJet extraction resolution falls outside the supported native range.
 
-## ONNFIQ1015
+### ONNFIQ1015
 
 FingerJet extraction width is smaller than the supported 500 PPI minimum.
 
-## ONNFIQ1016
+### ONNFIQ1016
 
 FingerJet extraction width exceeds the supported 500 PPI maximum.
 
-## ONNFIQ1017
+### ONNFIQ1017
 
 FingerJet extraction height is smaller than the supported 500 PPI minimum.
 
-## ONNFIQ1018
+### ONNFIQ1018
 
 FingerJet extraction height exceeds the supported 500 PPI maximum.
 
-## ONNFIQ1019
+### ONNFIQ1019
 
 Prepared pixel data is shorter than the declared prepared image size.
 
-## ONNFIQ1020
+### ONNFIQ1020
 
 FingerJet crop planning diverged from the expected native behavior.
 
@@ -311,13 +313,13 @@ Retryable: No
 
 Classification: Internal failure
 
-## ONNFIQ1021
+### ONNFIQ1021
 
 FingerJet working-buffer requirements exceeded the supported native limit.
 
 When it occurs:
 
-- the prepared image shape would require a larger working buffer than the managed port allows
+- the prepared image shape would require a larger working buffer than the current implementation allows
 
 How to fix it:
 

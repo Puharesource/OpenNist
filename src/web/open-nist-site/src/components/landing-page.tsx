@@ -31,8 +31,8 @@ function HeroSection() {
               Native NIST, WSQ and NFIQ for modern .NET
             </h1>
             <p className="max-w-2xl text-lg leading-8 text-[var(--color-on-surface)]/78 md:text-xl">
-              OpenNist is a standards-focused biometric imaging toolkit for .NET, with managed WSQ, NIST, and NFIQ
-              workflows that also target WebAssembly.
+              OpenNist is a standards-focused biometric imaging toolkit for .NET, with NIST, WSQ, and NFIQ workflows
+              that also target WASM.
             </p>
           </div>
 
@@ -122,14 +122,13 @@ function CapabilitiesSection() {
         <div className="space-y-8">
           <div className="max-w-2xl space-y-4">
             <p className="font-mono text-[0.74rem] uppercase tracking-[0.24em] text-[var(--color-secondary)]">
-              Powerful Biometric Conversion
+              Library capabilities
             </p>
             <h2 className="font-display text-4xl font-semibold tracking-[-0.05em] text-[var(--color-primary)] md:text-5xl">
               Format workflows built for operational biometric systems
             </h2>
             <p className="text-lg leading-8 text-[var(--color-on-surface-variant)]">
-              The project is centered on the formats and record types that actually show up in biometric pipelines, not
-              generic image editing abstractions.
+              The API is centered on the file formats and workflows that show up in biometric systems.
             </p>
           </div>
 
@@ -173,7 +172,6 @@ function CapabilitiesSection() {
 
             <div className="grid grid-cols-3 gap-3">
               <FormatChip>WSQ</FormatChip>
-              <FormatChip>JP2</FormatChip>
               <FormatChip>NIST</FormatChip>
               <FormatChip>NFIQ</FormatChip>
               <FormatChip>WASM</FormatChip>
@@ -193,14 +191,14 @@ function EngineeringSection() {
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl space-y-4">
             <p className="font-mono text-[0.74rem] uppercase tracking-[0.24em] text-[var(--color-secondary)]">
-              Engineering Excellence
+              Package surfaces
             </p>
             <h2 className="font-display text-4xl font-semibold tracking-[-0.05em] text-[var(--color-primary)] md:text-5xl">
-              A managed API for biometric image standards
+              Choose the surface that fits your runtime
             </h2>
             <p className="text-lg leading-8 text-[var(--color-on-surface-variant)]">
-              The library keeps the operational surface direct and explicit: records, codecs, metrics, and exports
-              instead of layers of image-processing indirection.
+              OpenNist is split into focused packages so you can take only the NIST, WSQ, NFIQ, or browser surface you
+              need.
             </p>
           </div>
           <div className="h-1.5 w-28 rounded-full bg-[var(--color-primary)]" />
@@ -240,8 +238,8 @@ function EngineeringSection() {
                   npm-ready browser surface
                 </CardTitle>
                 <CardDescription className="text-[var(--color-on-surface-variant)]">
-                  The browser story is not just a demo app. OpenNist.Wasm and the TypeScript interop layer are being
-                  shaped as first-class npm distribution targets.
+                  OpenNist.Wasm and the TypeScript interop layer are intended for direct browser integration, not only
+                  the demo app.
                 </CardDescription>
               </div>
             </div>
@@ -250,8 +248,7 @@ function EngineeringSection() {
             <div className="rounded-[var(--radius-xl)] bg-[var(--color-surface-container-high)] p-5">
               <p className="font-display text-lg tracking-[-0.03em] text-[var(--color-primary)]">OpenNist.Wasm</p>
               <p className="mt-2 leading-7 text-[var(--color-on-surface-variant)]">
-                WebAssembly runtime packaging for in-browser NIST inspection, WSQ operations, and managed quality
-                workflows without shipping native binaries.
+                Browser runtime packaging for in-browser NIST inspection, WSQ operations, and NFIQ 2 workflows.
               </p>
             </div>
             <div className="rounded-[var(--radius-xl)] bg-[var(--color-surface-container-high)] p-5">
@@ -275,14 +272,14 @@ function RuntimeSection() {
         <div className="space-y-7">
           <div className="space-y-4">
             <p className="font-mono text-[0.74rem] uppercase tracking-[0.24em] text-[var(--color-primary-fixed)]">
-              Technical Implementation
+              Runtime coverage
             </p>
             <h2 className="font-display text-4xl font-semibold tracking-[-0.05em] md:text-5xl">
-              Managed internals, standards-facing API
+              Standards-facing API across .NET and WASM
             </h2>
             <p className="text-lg leading-8 text-[var(--color-primary-fixed)]">
-              OpenNist hides the messy parts of biometric packaging and image interchange while keeping the important
-              structures accessible to application code.
+              Use the same workflows for transaction parsing, WSQ processing, and NFIQ 2 scoring across server and
+              browser environments.
             </p>
           </div>
 
@@ -301,7 +298,6 @@ function RuntimeSection() {
           <CodeSnippet
             code={codeSampleLines.join("\n")}
             lang="csharp"
-            filename="Nfiq2Algorithm.cs"
             className="relative rounded-[calc(var(--radius-xl)+6px)] border border-white/10 bg-[#081120] shadow-[var(--effect-modal-shadow)]"
           />
         </div>
@@ -322,15 +318,17 @@ function InstallSection() {
             Ready to integrate?
           </h2>
           <p className="mx-auto max-w-2xl text-lg leading-8 text-[var(--color-on-surface-variant)]">
-            Install the core library today, open the engineering app shell, and track the npm-focused browser surface
-            for OpenNist.Wasm and TypeScript interop.
+            Start with the package that matches your runtime, then use the app and docs to inspect formats and validate
+            your integration.
           </p>
         </div>
 
         <Card className="surface-module ghost-outline w-full max-w-3xl border-0 shadow-[var(--effect-modal-shadow)]">
           <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
             <div className="overflow-x-auto rounded-[var(--radius-lg)] bg-[var(--color-surface-container-high)] px-4 py-3 text-left font-mono text-sm text-[var(--color-primary)]">
-              dotnet add package OpenNist
+              <div>dotnet add package OpenNist.Nist</div>
+              <div>dotnet add package OpenNist.Wsq</div>
+              <div>dotnet add package OpenNist.Nfiq</div>
             </div>
             <div className="flex flex-wrap justify-center gap-3">
               <Button

@@ -8,6 +8,7 @@
     "wasm:sync:debug": "bun scripts/sync-opennist-wasm.mjs debug",
     "dev": "bun run wasm:sync:debug && vite",
     "build": "bun run wasm:sync && tsc -b && vite build",
+    "build:cloudflare": "tsc -b && vite build",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "lint": "oxlint -c .oxlintrc.json --react-plugin --jsx-a11y-plugin src scripts",

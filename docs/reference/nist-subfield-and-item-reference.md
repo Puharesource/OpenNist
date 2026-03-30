@@ -1,8 +1,8 @@
 # Reference: NIST Subfield and Item Reference
 
-This page documents how OpenNist parses subfields and items inside ANSI/NIST-style textual fields.
+This page documents how OpenNist parses subfields and items inside ANSI/NIST-style textual fields.[^nist-draft][^nist-program]
 
-It is focused on the OpenNist object model and browser inspector behavior rather than reproducing every profile-specific subfield schema from the full ANSI/NIST standard.
+It is focused on the OpenNist object model and browser inspector behavior rather than reproducing every profile-specific subfield schema from the full ANSI/NIST standard. Where this page describes repeated fields such as `CNT` and `MIN`, it is using the official ANSI/NIST terminology as the reference point and then explaining how OpenNist materializes that structure in code and in the browser.[^nist-draft]
 
 ## Parsing model
 
@@ -59,9 +59,9 @@ Some fields may contain multiple items inside a single subfield. OpenNist preser
 
 ## Field-specific subfield patterns
 
-## `1.003 CNT` Transaction Content
+### `1.003 CNT` Transaction Content
 
-`CNT` is the most important repeated subfield field in the base transaction model.
+`CNT` is the most important repeated subfield field in the base transaction model.[^nist-draft]
 
 OpenNist interprets it as:
 
@@ -77,9 +77,9 @@ Practical meaning:
 
 This is why `CNT` matters for decoding opaque binary records: it tells the decoder which record type to expect next.
 
-## `9.010 MIN` Minutiae Data
+### `9.010 MIN` Minutiae Data
 
-`MIN` is treated as repeated minutiae item groups.
+`MIN` is treated as repeated minutiae item groups.[^nist-draft]
 
 OpenNist currently documents it at the field level as:
 
@@ -90,7 +90,7 @@ The precise item meaning depends on the minutiae format declared by `9.003 FMT` 
 
 Because of that, OpenNist currently preserves and displays the parsed item groups generically instead of assigning fixed item names for every possible minutiae schema.
 
-## Finger and position lists
+### Finger and position lists
 
 Fields such as `FGP` may encode one or more position values.
 
@@ -126,3 +126,6 @@ The docs and app provide:
 - specific guidance for the most important repeated fields such as `CNT` and `MIN`
 
 When a field is defined positionally by a profile or interchange format, OpenNist keeps the parsed item order intact and presents those items by position rather than inventing item names.
+
+[^nist-draft]: [NIST SP 500-290e4, ANSI/NIST-ITL 1-2025 Balloted Draft](https://www.nist.gov/document/ansi-nist-itl-1-2025-balloted-draft)
+[^nist-program]: [ANSI/NIST-ITL Standard Working Groups](https://www.nist.gov/itl/iad/image-group/ansinist-itl-standard-working-groups)

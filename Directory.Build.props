@@ -4,6 +4,8 @@
         <LangVersion>14</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <Version>0.0.1</Version>
+        <PackageVersion>$(Version)</PackageVersion>
         <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
@@ -19,7 +21,7 @@
         <Copyright>Copyright (c) Tarkan Nielsen</Copyright>
         <Description>OpenNist is a reusable .NET library suite for biometric and NIST-related tooling.</Description>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-        <PackageProjectUrl>https://tarkan.dev</PackageProjectUrl>
+        <PackageProjectUrl>https://opennist.tarkan.dev</PackageProjectUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
         <PackageTags>biometrics;nist;ansi-nist;wsq;jpeg2000;nfiq</PackageTags>
@@ -29,8 +31,6 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="
-        '$(MSBuildProjectName)' == 'OpenNist.Core' or
-        '$(MSBuildProjectName)' == 'OpenNist.Jp2000' or
         '$(MSBuildProjectName)' == 'OpenNist.Primitives' or
         '$(MSBuildProjectName)' == 'OpenNist.Nfiq' or
         '$(MSBuildProjectName)' == 'OpenNist.Nist' or

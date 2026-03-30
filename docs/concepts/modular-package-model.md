@@ -9,7 +9,7 @@ The project handles several distinct concerns:
 - ANSI/NIST transaction parsing and encoding
 - WSQ image compression and expansion
 - NFIQ 2 quality scoring
-- browser-hosted interop
+- browser interop
 
 Those concerns do not need to ship as one dependency bundle. Keeping them separate makes it easier to:
 
@@ -20,6 +20,7 @@ Those concerns do not need to ship as one dependency bundle. Keeping them separa
 
 ## Current package set
 
+- `OpenNist.Primitives`
 - `OpenNist.Nist`
 - `OpenNist.Wsq`
 - `OpenNist.Nfiq`
@@ -33,11 +34,12 @@ The main library packages are peers, not a deep inheritance stack. That keeps in
 
 In practice:
 
+- `OpenNist.Primitives` holds shared low-level result, error, validation, exception, and documentation-link building blocks
 - `OpenNist.Nist` focuses on transaction structure
 - `OpenNist.Wsq` focuses on WSQ
-- `OpenNist.Nfiq` focuses on managed scoring
+- `OpenNist.Nfiq` focuses on scoring
 - `OpenNist.Wasm` exposes browser-facing interop over those capabilities
 
 ## What this means for consumers
 
-If you only need one workflow, you should be able to depend on one package. If you need a browser-hosted experience, use the WebAssembly interop layer rather than rebuilding the bridge yourself.
+If you only need one workflow, you should be able to depend on one package. Most consumers should start with `OpenNist.Nist`, `OpenNist.Wsq`, `OpenNist.Nfiq`, or `OpenNist.Wasm` rather than depending on `OpenNist.Primitives` directly. If you need a browser experience, use the WebAssembly interop layer rather than rebuilding the bridge yourself.

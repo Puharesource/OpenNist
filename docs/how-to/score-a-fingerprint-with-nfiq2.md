@@ -10,7 +10,7 @@ using OpenNist.Nfiq;
 var algorithm = new Nfiq2Algorithm();
 var result = await algorithm.AnalyzeFileAsync("fingerprint.pgm");
 
-Console.WriteLine($"Score: {result.Score}");
+Console.WriteLine($"Score: {result.QualityScore}");
 ```
 
 ## Use the non-throwing API when validation failures are expected
@@ -56,12 +56,12 @@ var result = await algorithm.AnalyzeAsync(
         BitsPerPixel: 8,
         PixelsPerInch: 500));
 
-Console.WriteLine($"Score: {result.Score}");
+Console.WriteLine($"Score: {result.QualityScore}");
 ```
 
 ## Important input rules
 
-Managed NFIQ 2 analysis currently expects:
+OpenNist.Nfiq currently expects:
 
 - 8-bit grayscale pixels
 - 500 PPI input

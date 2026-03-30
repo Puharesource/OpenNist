@@ -12,7 +12,7 @@ export const sharedNavItems = [
 ] as const
 
 export const landingStats = [
-  { value: "Managed", label: "Pure .NET implementation" },
+  { value: ".NET", label: "Library-first API" },
   { value: "WASM", label: "Browser-safe runtime target" },
   { value: "Apache-2.0", label: "Open source licensing" }
 ] as const
@@ -26,14 +26,12 @@ export const landingCapabilities = [
   },
   {
     title: "NIST record workflows",
-    description:
-      "Decode, inspect, and eventually edit record sets for modern biometric interchange without dropping into unmanaged code.",
+    description: "Decode, inspect, and round-trip record sets used in biometric interchange workflows.",
     icon: Boxes
   },
   {
     title: "Quality scoring",
-    description:
-      "Run the managed NFIQ 2 pipeline directly in .NET and WebAssembly without shelling out to external binaries.",
+    description: "Run NFIQ 2 scoring directly in .NET and WASM without external tools.",
     icon: ScanSearch
   }
 ] as const
@@ -41,15 +39,13 @@ export const landingCapabilities = [
 export const landingFeatures = [
   {
     title: "Native Performance",
-    description:
-      "Core biometric formats are implemented in C# for high-throughput services, back-office processing, and browser-hosted runtimes.",
+    description: "Use the same API from backend services, desktop tooling, and browser runtimes.",
     icon: Cpu,
     tone: "bg-[var(--color-primary-container)] text-[var(--color-on-primary-container)]"
   },
   {
     title: "WebAssembly Ready",
-    description:
-      "The same stack can run in the browser, including managed NFIQ, WSQ encode/decode, and the OpenNist runtime bridge.",
+    description: "Run the same workflows in the browser for NIST inspection, WSQ processing, and NFIQ 2 scoring.",
     icon: Globe,
     tone: "bg-[var(--color-secondary-container)] text-[var(--color-secondary)]"
   },
@@ -65,7 +61,7 @@ export const landingFeatures = [
 export const runtimePoints = [
   "NIST package parsing and record access",
   "WSQ compression and expansion",
-  "Managed NFIQ 2 scoring and reporting"
+  "NFIQ 2 scoring and reporting"
 ] as const
 
 export const workspaceViews: Array<{
@@ -106,7 +102,7 @@ export function getSiteSeo(pathname: string): SiteSeo {
       return {
         title: "OpenNist Documentation for .NET, WSQ, NIST and NFIQ 2",
         description:
-          "Read OpenNist documentation for biometric image conversion, NIST record parsing, WSQ workflows, structured error handling, and managed NFIQ 2 scoring.",
+          "Read OpenNist documentation for biometric image conversion, NIST record parsing, WSQ workflows, structured error handling, and NFIQ 2 scoring.",
         canonicalUrl: `${siteBaseUrl}/docs`
       }
     case "/subjects":
@@ -127,7 +123,7 @@ export function getSiteSeo(pathname: string): SiteSeo {
       return {
         title: "OpenNist NFIQ 2 Review",
         description:
-          "Score fingerprint images in the browser with the OpenNist managed NFIQ 2 workflow, supporting WSQ input, image normalization, and detailed quality measures.",
+          "Score fingerprint images in the browser with OpenNist NFIQ 2 workflows, supporting WSQ input, image normalization, and detailed quality measures.",
         canonicalUrl: `${siteBaseUrl}/app/nfiq`
       }
     case "/app":
@@ -149,20 +145,24 @@ export function getSiteSeo(pathname: string): SiteSeo {
       return {
         title: "OpenNist: .NET and WebAssembly Toolkit for NIST, WSQ and NFIQ 2",
         description:
-          "OpenNist is an open source biometric toolkit for .NET and WebAssembly with managed NIST parsing, WSQ codecs, and NFIQ 2 scoring.",
+          "OpenNist is an open source biometric toolkit for .NET and WebAssembly with NIST parsing, WSQ codecs, and NFIQ 2 scoring.",
         canonicalUrl: normalizedPath === "/" ? siteBaseUrl : `${siteBaseUrl}${normalizedPath}`
       }
   }
 }
 
 export const codeSampleLines = [
-  "using OpenNist;",
+  "using OpenNist.Nist;",
+  "using OpenNist.Nfiq;",
   "",
-  'byte[] bytes = await File.ReadAllBytesAsync("sample.nist");',
-  "var file = NistDecoder.Decode(bytes);",
-  "var image = file.Records[0].AsFingerprintImage();",
-  "var score = Nfiq2Algorithm.Default.Assess(image);",
-  'Console.WriteLine($"NFIQ: {score.Score}");'
+  'await using var transactionStream = File.OpenRead("sample.an2");',
+  "var file = NistDecoder.Decode(transactionStream);",
+  "",
+  "var algorithm = new Nfiq2Algorithm();",
+  'var result = await algorithm.AnalyzeFileAsync("fingerprint.pgm");',
+  "",
+  'Console.WriteLine($"Records: {file.Records.Count}");',
+  'Console.WriteLine($"NFIQ 2: {result.QualityScore}");'
 ] as const
 
 export type WorkspaceContent = {

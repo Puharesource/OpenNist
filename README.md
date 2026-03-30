@@ -1,14 +1,15 @@
 # OpenNist
 
-OpenNist is an Apache-2.0 biometric toolkit for .NET and WebAssembly. The repository currently focuses on three modular libraries:
+OpenNist is an Apache-2.0 biometric toolkit for .NET and WebAssembly. The repository currently focuses on modular libraries for transaction parsing, WSQ, NFIQ 2, and shared primitives:
 
+- `OpenNist.Primitives` for shared low-level result, error, validation, and documentation-link types
 - `OpenNist.Nist` for ANSI/NIST-style transaction files
 - `OpenNist.Wsq` for WSQ inspection, decode, and encode workflows
-- `OpenNist.Nfiq` for managed NFIQ 2 scoring
+- `OpenNist.Nfiq` for NFIQ 2 scoring
 
 The repo also includes:
 
-- `OpenNist.Wasm` for browser-hosted interop
+- `OpenNist.Wasm` for browser interop
 - a React-based web app for NIST inspection, image codec workflows, and NFIQ review
 - benchmark coverage for NIST, WSQ, and NFIQ hot paths
 
@@ -17,16 +18,11 @@ The repo also includes:
 Start here:
 
 - [Documentation hub](docs/README.md)
+- [Changelog](CHANGELOG.md)
 - [Quickstart](docs/quickstart.md)
 - [Package reference](docs/reference/package-reference.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [Glossary](docs/glossary.md)
-
-Specialized WSQ notes:
-
-- [WSQ implementation notes](docs/wsq.md)
-- [WSQ NBIS stage oracle notes](docs/wsq-nbis-stage-oracle.md)
-- [WSQ NBIS corpus comparison](docs/wsq-nbis-corpus-comparison.md)
 
 ## Repository layout
 
@@ -37,6 +33,7 @@ Specialized WSQ notes:
     /interop
       /OpenNist.Wasm
     /libraries
+      /OpenNist.Primitives
       /OpenNist.Nfiq
       /OpenNist.Nist
       /OpenNist.Wsq
@@ -82,6 +79,11 @@ bun run dev
 
 ## Current scope
 
+### `OpenNist.Primitives`
+
+- provide shared low-level result, error, validation, exception, and documentation-link primitives
+- support the higher-level OpenNist libraries without turning `Common` into a catch-all package
+
 ### `OpenNist.Nist`
 
 - decode ANSI/NIST-style fielded and mixed binary transactions
@@ -99,7 +101,7 @@ bun run dev
 
 - score 500 PPI 8-bit grayscale fingerprint images
 - expose mapped quality measures
-- run in both .NET and browser-hosted WebAssembly flows
+- run in both .NET and WASM flows
 
 ## Development notes
 

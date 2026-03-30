@@ -11,6 +11,8 @@ Use the smallest surface that matches your runtime:
 - `.NET`: use `OpenNist.Nist`, `OpenNist.Wsq`, and `OpenNist.Nfiq`
 - browser or TypeScript: use `OpenNist.Wasm` through the browser-facing TypeScript package surface
 
+`OpenNist.Primitives` underpins the shared error, result, validation, and documentation-link model across the .NET packages, but most consumers do not need to reference it directly.
+
 ## Quickstart for .NET
 
 Install only the packages you need:
@@ -53,7 +55,7 @@ using OpenNist.Nfiq;
 var algorithm = new Nfiq2Algorithm();
 var result = await algorithm.AnalyzeFileAsync("fingerprint.pgm");
 
-Console.WriteLine($"NFIQ 2 score: {result.Score}");
+Console.WriteLine($"NFIQ 2 score: {result.QualityScore}");
 ```
 
 ## Quickstart for TypeScript

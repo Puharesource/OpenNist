@@ -1,8 +1,8 @@
 # Reference: NIST Record and Field Reference
 
-This page documents the built-in ANSI/NIST record and field catalog shipped in OpenNist.
+This page documents the built-in ANSI/NIST record and field catalog shipped in OpenNist.[^nist-draft][^nist-program]
 
-It is aligned with the metadata used by the browser NIST explorer, so the labels in the docs match the labels you see in the app.
+It is aligned with the metadata used by the browser NIST explorer, so the labels in the docs match the labels you see in the app. The intent is to stay consistent with the official NIST ANSI/NIST materials while still reflecting the current OpenNist browser metadata catalog.[^nist-draft]
 
 ## Scope
 
@@ -44,7 +44,7 @@ Top-level transaction header with version, content summary, and routing metadata
 
 ## Type-2: User-Defined Descriptive Text
 
-Free-form descriptive text attached to the transaction.
+Free-form descriptive text attached to the transaction. In ANSI/NIST practice, Type-2 is where implementation domains and application profiles often define additional transaction-specific semantics.[^nist-draft]
 
 | Tag | Mnemonic | Name | Value type | Notes |
 | --- | --- | --- | --- | --- |
@@ -129,7 +129,7 @@ OpenNist exposes the fixed binary header as derived fields in the app, plus a de
 
 ## Type-7: User-Defined Image
 
-Traditional binary user-defined image record.
+Traditional binary user-defined image record. Its detailed semantics are generally defined by the active application profile rather than by one universal base schema.[^nist-draft]
 
 OpenNist exposes the fixed binary header as derived fields in the app, plus a derived `DATA` payload field.
 
@@ -304,7 +304,7 @@ Fielded variable-resolution palmprint image record.
 
 ## Type-16: Test Image
 
-Fielded record used for testing and diagnostics.
+Fielded record used for testing and diagnostics. Like other profile-sensitive record families, Type-16 is often further constrained by implementation-domain or application-profile documentation.[^nist-draft]
 
 | Tag | Mnemonic | Name | Value type | Notes |
 | --- | --- | --- | --- | --- |
@@ -343,3 +343,6 @@ Fielded iris image record.
 | `17.012` | `BPX` | Bits per pixel | Integer bits-per-pixel value | Bit depth used by the image payload. |
 | `17.013` | `CSP` | Color space | Color space code | Color space or channel interpretation used by the iris image payload. |
 | `17.999` | `DATA` | Image data | Binary image payload | Binary iris image payload. |
+
+[^nist-draft]: [NIST SP 500-290e4, ANSI/NIST-ITL 1-2025 Balloted Draft](https://www.nist.gov/document/ansi-nist-itl-1-2025-balloted-draft)
+[^nist-program]: [ANSI/NIST-ITL Standard Working Groups](https://www.nist.gov/itl/iad/image-group/ansinist-itl-standard-working-groups)

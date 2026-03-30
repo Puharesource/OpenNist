@@ -1,7 +1,9 @@
+import changelogMarkdown from "../../../../../CHANGELOG.md?raw"
 import ansiNistTransactionsMarkdown from "../../../../../docs/concepts/ansi-nist-transactions.md?raw"
 import modularPackageModelMarkdown from "../../../../../docs/concepts/modular-package-model.md?raw"
 import glossaryMarkdown from "../../../../../docs/glossary.md?raw"
 import decodeWsqMarkdown from "../../../../../docs/how-to/decode-wsq.md?raw"
+import deployCloudflarePagesMarkdown from "../../../../../docs/how-to/deploy-the-site-to-cloudflare-pages.md?raw"
 import inspectNistFileMarkdown from "../../../../../docs/how-to/inspect-a-nist-file.md?raw"
 import scoreFingerprintMarkdown from "../../../../../docs/how-to/score-a-fingerprint-with-nfiq2.md?raw"
 import useOpenNistFromDotnetMarkdown from "../../../../../docs/how-to/use-opennist-from-dotnet.md?raw"
@@ -41,11 +43,11 @@ export const documentationSections: Array<{ id: DocumentationSectionId; title: s
 
 export const documentationHome = {
   title: "Documentation",
-  description: "Guides, concepts, and reference docs for OpenNist on .NET and WebAssembly.",
+  description: "Guides, concepts, and reference docs for OpenNist on .NET and WASM.",
   markdown: stripLeadingHeading(docsIndexMarkdown),
   seoTitle: "OpenNist Documentation",
   seoDescription:
-    "Browse OpenNist documentation for NIST transactions, WSQ workflows, managed NFIQ 2 scoring, browser interop, and repository reference material."
+    "Browse OpenNist documentation for NIST transactions, WSQ workflows, NFIQ 2 scoring, browser interop, and package reference material."
 } as const
 
 export const documentationPages: DocumentationPage[] = [
@@ -59,6 +61,16 @@ export const documentationPages: DocumentationPage[] = [
     seoTitle: "OpenNist Quickstart",
     seoDescription:
       "Choose between the .NET and browser surfaces in OpenNist, then make a first successful NIST, WSQ, or NFIQ call."
+  },
+  {
+    slug: "changelog",
+    title: "Changelog",
+    description: "Release history for the public OpenNist packages and docs.",
+    section: "support",
+    sourcePath: "CHANGELOG.md",
+    markdown: stripLeadingHeading(changelogMarkdown),
+    seoTitle: "OpenNist Changelog",
+    seoDescription: "Read release notes and change history for OpenNist packages, docs, and browser tooling."
   },
   {
     slug: "troubleshooting",
@@ -91,7 +103,7 @@ export const documentationPages: DocumentationPage[] = [
     markdown: stripLeadingHeading(modularPackageModelMarkdown),
     seoTitle: "OpenNist Modular Package Model",
     seoDescription:
-      "Understand the modular package structure behind OpenNist, including OpenNist.Nist, OpenNist.Wsq, OpenNist.Nfiq, and OpenNist.Wasm."
+      "Understand the modular package structure behind OpenNist, including OpenNist.Primitives, OpenNist.Nist, OpenNist.Wsq, OpenNist.Nfiq, and OpenNist.Wasm."
   },
   {
     slug: "ansi-nist-transactions",
@@ -113,7 +125,7 @@ export const documentationPages: DocumentationPage[] = [
     markdown: stripLeadingHeading(useOpenNistFromDotnetMarkdown),
     seoTitle: "Use OpenNist from .NET",
     seoDescription:
-      "Consume OpenNist.Nist, OpenNist.Wsq, and OpenNist.Nfiq directly from a .NET application for transaction parsing, WSQ handling, and NFIQ 2 scoring."
+      "Consume OpenNist.Nist, OpenNist.Wsq, and OpenNist.Nfiq directly from a .NET application, with OpenNist.Primitives providing the shared failure model under those packages."
   },
   {
     slug: "use-opennist-from-typescript",
@@ -126,6 +138,17 @@ export const documentationPages: DocumentationPage[] = [
     seoDescription:
       "Consume OpenNist.Wasm from TypeScript in the browser, either directly on the runtime or through a dedicated worker.",
     showWasmInstallTabs: true
+  },
+  {
+    slug: "deploy-the-site-to-cloudflare-pages",
+    title: "Deploy the site to Cloudflare Pages",
+    description: "Deploy the website and app to Cloudflare Pages with external FFmpeg runtime assets.",
+    section: "support",
+    sourcePath: "how-to/deploy-the-site-to-cloudflare-pages.md",
+    markdown: stripLeadingHeading(deployCloudflarePagesMarkdown),
+    seoTitle: "Deploy OpenNist to Cloudflare Pages",
+    seoDescription:
+      "Deploy the OpenNist website and app to Cloudflare Pages, configure the custom domain, and externalize FFmpeg runtime assets."
   },
   {
     slug: "decode-wsq",
@@ -151,13 +174,12 @@ export const documentationPages: DocumentationPage[] = [
   {
     slug: "score-a-fingerprint-with-nfiq2",
     title: "Score a fingerprint with NFIQ 2",
-    description: "Run managed NFIQ 2 scoring on supported grayscale fingerprint images.",
+    description: "Run NFIQ 2 scoring on supported grayscale fingerprint images.",
     section: "dotnet",
     sourcePath: "how-to/score-a-fingerprint-with-nfiq2.md",
     markdown: stripLeadingHeading(scoreFingerprintMarkdown),
     seoTitle: "Score a Fingerprint with NFIQ 2 in OpenNist",
-    seoDescription:
-      "Use OpenNist.Nfiq to score 500 PPI 8-bit grayscale fingerprint images and retrieve managed NFIQ 2 results."
+    seoDescription: "Use OpenNist.Nfiq to score 500 PPI 8-bit grayscale fingerprint images and retrieve NFIQ 2 results."
   },
   {
     slug: "package-reference",
@@ -168,7 +190,7 @@ export const documentationPages: DocumentationPage[] = [
     markdown: stripLeadingHeading(packageReferenceMarkdown),
     seoTitle: "OpenNist Package Reference",
     seoDescription:
-      "Reference the OpenNist package set, including OpenNist.Nist, OpenNist.Wsq, OpenNist.Nfiq, and OpenNist.Wasm."
+      "Reference the OpenNist package set, including OpenNist.Primitives, OpenNist.Nist, OpenNist.Wsq, OpenNist.Nfiq, and OpenNist.Wasm."
   },
   {
     slug: "error-codes",
@@ -179,7 +201,7 @@ export const documentationPages: DocumentationPage[] = [
     markdown: stripLeadingHeading(errorCodesMarkdown),
     seoTitle: "OpenNist Error Codes",
     seoDescription:
-      "Reference OpenNist NFIQ 2 error codes, grouped validation failures, retry guidance, and the strict versus non-throwing failure model."
+      "Reference OpenNist error codes, grouped validation failures, retry guidance, and the strict versus non-throwing failure model."
   },
   {
     slug: "nist-record-and-field-reference",

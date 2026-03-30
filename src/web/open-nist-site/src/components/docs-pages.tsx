@@ -12,7 +12,7 @@ import {
   ScanSearch,
   Search
 } from "lucide-react"
-import { isValidElement, type ReactNode, useEffect, useMemo, useRef, useState } from "react"
+import { Children, createElement, isValidElement, type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import Markdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { siSharp, siTypescript } from "simple-icons"
@@ -122,12 +122,14 @@ export function LibraryDocumentationPage() {
         }
       }}
     >
-      <Card className="surface-module border-0 shadow-none ring-1 ring-[color:var(--effect-ghost-border)]">
-        <CardContent className="px-6 py-6 md:px-8 md:py-8">
-          <DocumentationContentHeader title={documentationHome.title} description={documentationHome.description} />
-          <MarkdownDocument currentSourcePath="README.md" markdown={documentationHome.markdown} />
-        </CardContent>
-      </Card>
+      {(_articleScrollRef) => (
+        <Card className="surface-module border-0 shadow-none ring-1 ring-[color:var(--effect-ghost-border)]">
+          <CardContent className="px-6 py-6 md:px-8 md:py-8">
+            <DocumentationContentHeader title={documentationHome.title} description={documentationHome.description} />
+            <MarkdownDocument currentSourcePath="README.md" markdown={documentationHome.markdown} />
+          </CardContent>
+        </Card>
+      )}
     </DocumentationShell>
   )
 }
@@ -161,22 +163,23 @@ export function DocumentationArticlePage() {
         void navigateToDoc(nextValue, navigate)
       }}
     >
-      <Card className="surface-module border-0 shadow-none ring-1 ring-[color:var(--effect-ghost-border)]">
-        <CardContent className="px-6 py-6 md:px-8 md:py-8">
-          <DocumentationContentHeader title={page.title} description={page.description} />
-          {page.showWasmInstallTabs ? (
-            <div className="mb-8">
-              <InstallCommandTabs
-                title="WASM interop install"
-                description="Choose the package manager you want to document for the browser-facing OpenNist package surface."
-                packageName="opennist-wasm"
-                note="This uses the planned browser package name so the docs UI is ready before npm publication is finalized."
-              />
-            </div>
-          ) : null}
-          <MarkdownDocument currentSourcePath={page.sourcePath} markdown={page.markdown} />
-        </CardContent>
-      </Card>
+      {(_articleScrollRef) => (
+        <Card className="surface-module border-0 shadow-none ring-1 ring-[color:var(--effect-ghost-border)]">
+          <CardContent className="px-6 py-6 md:px-8 md:py-8">
+            <DocumentationContentHeader title={page.title} description={page.description} />
+            {page.showWasmInstallTabs ? (
+              <div className="mb-8">
+                <InstallCommandTabs
+                  title="WASM interop install"
+                  description="Install the browser-facing TypeScript package with the package manager you already use."
+                  packageName="opennist-wasm"
+                />
+              </div>
+            ) : null}
+            <MarkdownDocument currentSourcePath={page.sourcePath} markdown={page.markdown} />
+          </CardContent>
+        </Card>
+      )}
     </DocumentationShell>
   )
 }
@@ -262,7 +265,7 @@ function DocumentationShell({
   eyebrow: string
   title: string
   description: string
-  children: ReactNode
+  children: (scrollContainerRef: React.RefObject<HTMLDivElement | null>) => ReactNode
   breadcrumbs: Array<{ label: string; to?: string }>
   tocItems: DocumentationTocItem[]
   activeSlug?: string
@@ -319,6 +322,45 @@ function DocumentationShell({
       })
     )
   }, [normalizedSearchQuery])
+
+  useEffect(() => {
+    const scrollContainer = articleScrollRef.current
+    if (!scrollContainer) {
+      return
+    }
+
+    const onClickCapture = (event: MouseEvent) => {
+      const clickTarget = event.target
+      if (!(clickTarget instanceof Element)) {
+        return
+      }
+
+      const interactiveTarget = clickTarget.closest<HTMLElement>("a[href^='#'], button[data-doc-anchor-href]")
+      if (!(interactiveTarget instanceof HTMLElement) || !scrollContainer.contains(interactiveTarget)) {
+        return
+      }
+
+      const anchorHref =
+        interactiveTarget instanceof HTMLAnchorElement
+          ? interactiveTarget.getAttribute("href")
+          : interactiveTarget.dataset.docAnchorHref
+
+      if (!anchorHref?.startsWith("#")) {
+        return
+      }
+
+      if (scrollToAnchorWithinContainer(scrollContainer, anchorHref)) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+    }
+
+    scrollContainer.addEventListener("click", onClickCapture, true)
+
+    return () => {
+      scrollContainer.removeEventListener("click", onClickCapture, true)
+    }
+  }, [])
 
   return (
     <section className="px-6 py-18 md:px-10 md:py-22 xl:h-[calc(100dvh-81px)] xl:overflow-hidden xl:px-0 xl:py-0">
@@ -448,10 +490,10 @@ function DocumentationShell({
           </SidebarContent>
         </Sidebar>
 
-        <div ref={articleScrollRef} className="scroll-smooth xl:h-full xl:min-h-0 xl:overflow-y-auto">
+        <div ref={articleScrollRef} className="doc-scroll-container xl:h-full xl:min-h-0 xl:overflow-y-auto">
           <div className="space-y-6 xl:mx-auto xl:w-full xl:max-w-[1200px] xl:px-10 xl:pt-6 xl:pb-10 2xl:px-14">
             <DocumentationBreadcrumbs items={breadcrumbs} />
-            {children}
+            {children(articleScrollRef)}
           </div>
         </div>
 
@@ -506,121 +548,161 @@ function DocumentationContentHeader({ title, description }: { title: string; des
 
 function MarkdownDocument({ markdown, currentSourcePath }: { markdown: string; currentSourcePath: string }) {
   const headingIdFor = createHeadingIdFactory()
+  const minimumHeadingLevel = useMemo(() => getMinimumMarkdownHeadingLevel(markdown), [markdown])
+
+  const renderHeading = (rawLevel: number, children: ReactNode, className: string) => {
+    const id = headingIdFor(extractNodeText(children))
+    const normalizedLevel = Math.min(6, Math.max(2, rawLevel - minimumHeadingLevel + 2))
+    const tagName = `h${normalizedLevel}` as const
+
+    return createElement(
+      tagName,
+      {
+        id,
+        "data-doc-heading": "true",
+        className
+      },
+      children
+    )
+  }
 
   return (
     <div className="space-y-5 text-[var(--color-on-surface)]">
       <Markdown
         remarkPlugins={[remarkGfm]}
         components={{
-          h1: ({ children }) => {
-            const id = headingIdFor(extractNodeText(children))
+          h1: ({ children }) =>
+            renderHeading(
+              1,
+              children,
+              "scroll-mt-28 font-display text-3xl font-semibold leading-tight tracking-[-0.05em] text-[var(--color-primary)]"
+            ),
+          h2: ({ children }) =>
+            renderHeading(
+              2,
+              children,
+              "scroll-mt-28 pt-4 font-display text-[1.7rem] font-semibold leading-tight tracking-[-0.045em] text-[var(--color-primary)]"
+            ),
+          h3: ({ children }) =>
+            renderHeading(
+              3,
+              children,
+              "scroll-mt-28 pt-3 font-display text-[1.28rem] font-medium leading-snug tracking-[-0.03em] text-[color:color-mix(in_srgb,var(--color-primary)_92%,black_8%)]"
+            ),
+          h4: ({ children }) =>
+            renderHeading(
+              4,
+              children,
+              "scroll-mt-28 pt-3 text-[1.05rem] font-semibold leading-snug text-[var(--color-primary)]"
+            ),
+          h5: ({ children }) =>
+            renderHeading(
+              5,
+              children,
+              "scroll-mt-28 pt-2 text-base font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+            ),
+          h6: ({ children }) =>
+            renderHeading(
+              6,
+              children,
+              "scroll-mt-28 pt-2 text-sm font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]"
+            ),
+          sup: ({ children }) => (
+            <sup className="ml-0.5 align-super text-[0.72em] font-semibold leading-none text-[var(--color-primary)]">
+              {children}
+            </sup>
+          ),
+          section: ({ node, children }) => {
+            const properties = (node?.properties ?? {}) as Record<string, unknown>
+            const isFootnotesSection =
+              properties.dataFootnotes === true ||
+              properties["data-footnotes"] === true ||
+              properties.className === "footnotes" ||
+              (Array.isArray(properties.className) && properties.className.includes("footnotes"))
+
+            if (!isFootnotesSection) {
+              return <section>{children}</section>
+            }
+
+            const content = Children.toArray(children).filter((child) => {
+              if (!isValidElement<{ id?: string }>(child)) {
+                return true
+              }
+
+              return child.props.id !== "footnote-label"
+            })
 
             return (
-              <h2
-                id={id}
-                data-doc-heading="true"
-                className="scroll-mt-28 font-display text-3xl font-semibold tracking-[-0.05em] text-[var(--color-primary)]"
-              >
-                {children}
-              </h2>
+              <section className="mt-10 border-t border-[color:var(--effect-ghost-border)] pt-6">
+                <h2 className="font-display text-[1.7rem] font-semibold leading-tight tracking-[-0.045em] text-[var(--color-primary)]">
+                  References
+                </h2>
+                <div className="mt-4 space-y-4">{content}</div>
+              </section>
             )
           },
-          h2: ({ children }) => {
-            const id = headingIdFor(extractNodeText(children))
-
-            return (
-              <h2
-                id={id}
-                data-doc-heading="true"
-                className="scroll-mt-28 pt-2 font-display text-3xl font-semibold tracking-[-0.05em] text-[var(--color-primary)]"
-              >
-                {children}
-              </h2>
-            )
-          },
-          h3: ({ children }) => {
-            const id = headingIdFor(extractNodeText(children))
-
-            return (
-              <h3
-                id={id}
-                data-doc-heading="true"
-                className="scroll-mt-28 pt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-[var(--color-primary)]"
-              >
-                {children}
-              </h3>
-            )
-          },
-          h4: ({ children }) => {
-            const id = headingIdFor(extractNodeText(children))
-
-            return (
-              <h4
-                id={id}
-                data-doc-heading="true"
-                className="scroll-mt-28 pt-2 text-xl font-semibold tracking-[-0.03em] text-[var(--color-primary)]"
-              >
-                {children}
-              </h4>
-            )
-          },
-          h5: ({ children }) => {
-            const id = headingIdFor(extractNodeText(children))
-
-            return (
-              <h5
-                id={id}
-                data-doc-heading="true"
-                className="scroll-mt-28 pt-2 text-lg font-semibold text-[var(--color-primary)]"
-              >
-                {children}
-              </h5>
-            )
-          },
-          h6: ({ children }) => {
-            const id = headingIdFor(extractNodeText(children))
-
-            return (
-              <h6
-                id={id}
-                data-doc-heading="true"
-                className="scroll-mt-28 pt-2 text-base font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
-              >
-                {children}
-              </h6>
-            )
-          },
-          p: ({ children }) => <p className="text-base leading-8 text-[var(--color-on-surface)]">{children}</p>,
-          ul: ({ children }) => (
-            <ul className="list-disc space-y-3 pl-5 text-base leading-8 marker:text-[var(--color-primary)]">
+          p: ({ children, ...props }) => (
+            <p {...props} className="text-base leading-8 text-[var(--color-on-surface)]">
+              {children}
+            </p>
+          ),
+          ul: ({ children, ...props }) => (
+            <ul {...props} className="list-disc space-y-3 pl-5 text-base leading-8 marker:text-[var(--color-primary)]">
               {children}
             </ul>
           ),
-          ol: ({ children }) => (
-            <ol className="list-decimal space-y-3 pl-5 text-base leading-8 marker:text-[var(--color-primary)]">
+          ol: ({ children, ...props }) => (
+            <ol
+              {...props}
+              className="list-decimal space-y-3 pl-5 text-base leading-8 marker:text-[var(--color-primary)]"
+            >
               {children}
             </ol>
           ),
-          li: ({ children }) => <li className="pl-1 text-[var(--color-on-surface)]">{children}</li>,
-          blockquote: ({ children }) => (
-            <blockquote className="rounded-[var(--radius-xl)] border-l-4 border-[var(--color-primary)] bg-[var(--color-surface-container-low)] px-5 py-4 text-[var(--color-on-surface)]/90">
+          li: ({ children, ...props }) => (
+            <li {...props} className="pl-1 text-[var(--color-on-surface)]">
+              {children}
+            </li>
+          ),
+          blockquote: ({ children, ...props }) => (
+            <blockquote
+              {...props}
+              className="rounded-[var(--radius-xl)] border-l-4 border-[var(--color-primary)] bg-[var(--color-surface-container-low)] px-5 py-4 text-[var(--color-on-surface)]/90"
+            >
               {children}
             </blockquote>
           ),
-          table: ({ children }) => (
+          table: ({ children, ...props }) => (
             <div className="overflow-x-auto">
-              <table className="min-w-full border-collapse text-left text-sm">{children}</table>
+              <table {...props} className="min-w-full border-collapse text-left text-sm">
+                {children}
+              </table>
             </div>
           ),
-          thead: ({ children }) => (
-            <thead className="border-b border-[color:var(--effect-ghost-border)] bg-[var(--color-surface-container-low)]">
+          thead: ({ children, ...props }) => (
+            <thead
+              {...props}
+              className="border-b border-[color:var(--effect-ghost-border)] bg-[var(--color-surface-container-low)]"
+            >
               {children}
             </thead>
           ),
-          tbody: ({ children }) => <tbody>{children}</tbody>,
-          tr: ({ children }) => <tr className="border-b border-[color:var(--effect-ghost-border)]/60">{children}</tr>,
-          th: ({ children }) => <th className="px-3 py-3 font-semibold text-[var(--color-primary)]">{children}</th>,
-          td: ({ children }) => <td className="px-3 py-3 align-top text-[var(--color-on-surface)]">{children}</td>,
+          tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
+          tr: ({ children, ...props }) => (
+            <tr {...props} className="border-b border-[color:var(--effect-ghost-border)]/60">
+              {children}
+            </tr>
+          ),
+          th: ({ children, ...props }) => (
+            <th {...props} className="px-3 py-3 font-semibold text-[var(--color-primary)]">
+              {children}
+            </th>
+          ),
+          td: ({ children, ...props }) => (
+            <td {...props} className="px-3 py-3 align-top text-[var(--color-on-surface)]">
+              {children}
+            </td>
+          ),
           hr: () => <hr className="border-0 border-t border-[color:var(--effect-ghost-border)]" />,
           img: ({ src, alt }) => (
             // eslint-disable-next-line jsx-a11y/alt-text
@@ -663,9 +745,35 @@ function MarkdownDocument({ markdown, currentSourcePath }: { markdown: string; c
               {children}
             </code>
           ),
-          a: ({ href, children }) => {
+          a: ({ href, children, ...props }) => {
             if (!href) {
               return <span>{children}</span>
+            }
+
+            const isFootnoteReference = href.startsWith("#fn") || href.startsWith("#user-content-fn")
+            const isFootnoteBackReference =
+              href.startsWith("#fnref") || href.startsWith("#user-content-fnref") || href.includes("footnote-backref")
+
+            if (isFootnoteReference || isFootnoteBackReference) {
+              return (
+                <button
+                  type="button"
+                  id={typeof props.id === "string" ? props.id : undefined}
+                  title={typeof props.title === "string" ? props.title : undefined}
+                  aria-label={typeof props["aria-label"] === "string" ? props["aria-label"] : undefined}
+                  aria-describedby={
+                    typeof props["aria-describedby"] === "string" ? props["aria-describedby"] : undefined
+                  }
+                  data-doc-anchor-href={href}
+                  className={
+                    isFootnoteReference
+                      ? "cursor-pointer font-semibold text-[var(--color-primary)] no-underline"
+                      : "cursor-pointer font-medium text-[var(--color-primary)] no-underline"
+                  }
+                >
+                  {children}
+                </button>
+              )
             }
 
             const internalHref = resolveDocumentationHref(currentSourcePath, href)
@@ -707,7 +815,16 @@ function MarkdownDocument({ markdown, currentSourcePath }: { markdown: string; c
 
             if (internalHref?.startsWith("#")) {
               return (
-                <a href={internalHref} className="font-medium text-[var(--color-primary)] underline underline-offset-4">
+                <a
+                  href={internalHref}
+                  className={
+                    isFootnoteReference
+                      ? "font-semibold text-[var(--color-primary)] no-underline"
+                      : isFootnoteBackReference
+                        ? "font-medium text-[var(--color-primary)] no-underline"
+                        : "font-medium text-[var(--color-primary)] underline underline-offset-4"
+                  }
+                >
                   {children}
                 </a>
               )
@@ -715,6 +832,7 @@ function MarkdownDocument({ markdown, currentSourcePath }: { markdown: string; c
 
             return (
               <a
+                {...props}
                 href={href}
                 target="_blank"
                 rel="noreferrer"
@@ -815,27 +933,22 @@ function DocumentationTableOfContents({
       return
     }
 
-    const top = Math.max(0, getElementTopWithinScrollContainer(heading, scrollContainer) - 24)
-
-    scrollContainer.scrollTo({
-      top,
-      behavior: "smooth"
-    })
+    scrollElementIntoContainer(heading, scrollContainer)
     setActiveId(headingId)
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${headingId}`)
   }
 
   return (
-    <aside className="hidden xl:flex xl:h-full xl:flex-col xl:overflow-hidden xl:border-l xl:border-[color:var(--effect-ghost-border)] xl:bg-[color:color-mix(in_srgb,var(--color-surface)_92%,white_8%)] xl:p-4">
+    <aside className="hidden xl:flex xl:h-full xl:flex-col xl:overflow-hidden xl:border-l xl:border-[color:var(--effect-ghost-border)] xl:bg-[color:color-mix(in_srgb,var(--color-surface)_90%,white_10%)] xl:px-4 xl:py-5">
       <div className="min-h-0 flex-1">
         <div className="custom-scrollbar h-full overflow-y-auto pr-1">
-          <div className="mb-4 px-3">
-            <p className="font-display text-base font-semibold tracking-[-0.02em] text-[var(--color-primary)]">
+          <div className="mb-3 px-3">
+            <p className="font-display text-[1.02rem] font-semibold tracking-[-0.02em] text-[var(--color-primary)]">
               In this article
             </p>
           </div>
 
-          <nav aria-label="In this article" className="space-y-1">
+          <nav aria-label="In this article" className="space-y-0.5">
             {resolvedItems.map((item) => (
               <button
                 key={item.id}
@@ -843,14 +956,14 @@ function DocumentationTableOfContents({
                 onClick={() => {
                   scrollToHeading(item.id)
                 }}
-                className={`block w-full rounded-[var(--radius-lg)] px-3 py-2 text-left text-sm leading-6 transition-colors hover:bg-[var(--color-surface-container-low)] hover:text-[var(--color-primary)] ${
+                className={`block w-full border-l px-3 py-1 text-left text-[0.82rem] leading-5 transition-colors ${
                   activeId === item.id
-                    ? "bg-[var(--color-primary-fixed)]/35 text-[var(--color-primary)]"
+                    ? "border-[var(--color-primary)] text-[var(--color-primary)]"
                     : item.level <= 2
-                      ? "font-medium text-[var(--color-on-surface)]"
-                      : "text-[var(--color-on-surface-variant)]"
+                      ? "border-transparent font-medium text-[var(--color-on-surface)] hover:border-[color:color-mix(in_srgb,var(--color-primary)_35%,transparent)] hover:text-[var(--color-primary)]"
+                      : "border-transparent text-[var(--color-on-surface-variant)] hover:border-[color:color-mix(in_srgb,var(--color-primary)_25%,transparent)] hover:text-[var(--color-primary)]"
                 }`}
-                style={{ paddingLeft: `${0.75 + Math.max(item.level - 1, 0) * 0.75}rem` }}
+                style={{ paddingLeft: `${0.75 + Math.max(item.level - 2, 0) * 0.7}rem` }}
               >
                 {item.label}
               </button>
@@ -894,6 +1007,7 @@ function navigateToDoc(docSlug: string, navigate?: ReturnType<typeof useNavigate
 function extractMarkdownHeadings(markdown: string): DocumentationTocItem[] {
   const lines = markdown.split(/\r?\n/)
   const headingIdFor = createHeadingIdFactory()
+  const minimumHeadingLevel = getMinimumMarkdownHeadingLevel(markdown)
   const items: DocumentationTocItem[] = []
   let inFence = false
 
@@ -921,11 +1035,37 @@ function extractMarkdownHeadings(markdown: string): DocumentationTocItem[] {
     items.push({
       id: headingIdFor(label),
       label,
-      level
+      level: Math.min(6, Math.max(2, level - minimumHeadingLevel + 2))
     })
   }
 
   return items
+}
+
+function getMinimumMarkdownHeadingLevel(markdown: string) {
+  const lines = markdown.split(/\r?\n/)
+  let inFence = false
+  let minimumLevel = 6
+
+  for (const line of lines) {
+    if (/^\s*(```|~~~)/.test(line)) {
+      inFence = !inFence
+      continue
+    }
+
+    if (inFence) {
+      continue
+    }
+
+    const match = line.match(/^(#{1,6})\s+(.+?)\s*#*\s*$/)
+    if (!match) {
+      continue
+    }
+
+    minimumLevel = Math.min(minimumLevel, match[1].length)
+  }
+
+  return minimumLevel === 6 ? 1 : minimumLevel
 }
 
 function createHeadingIdFactory() {
@@ -964,12 +1104,89 @@ function getElementTopWithinScrollContainer(element: HTMLElement, scrollContaine
 }
 
 function findHeadingWithinContainer(scrollContainer: HTMLDivElement, headingId: string) {
-  const element = document.getElementById(headingId)
+  const element = findAnchorTargetWithinContainer(scrollContainer, headingId)
   if (!(element instanceof HTMLElement)) {
     return null
   }
 
   return scrollContainer.contains(element) && element.dataset.docHeading === "true" ? element : null
+}
+
+function findAnchorTargetWithinContainer(scrollContainer: HTMLDivElement, anchorId: string) {
+  const normalizedAnchorId = anchorId.replace(/^user-content-/, "")
+
+  return Array.from(scrollContainer.querySelectorAll<HTMLElement>("[id]")).find((element) => {
+    const elementId = element.id
+    const normalizedElementId = elementId.replace(/^user-content-/, "")
+
+    return elementId === anchorId || elementId === normalizedAnchorId || normalizedElementId === normalizedAnchorId
+  })
+}
+
+function scrollElementIntoContainer(element: HTMLElement, scrollContainer: HTMLDivElement) {
+  const top = Math.max(0, getElementTopWithinScrollContainer(element, scrollContainer) - 24)
+  animateScrollContainerTo(scrollContainer, top)
+}
+
+function scrollToAnchorWithinContainer(scrollContainer: HTMLDivElement, anchorHref: string) {
+  const anchorId = anchorHref.replace(/^#/, "")
+  const target = findAnchorTargetWithinContainer(scrollContainer, anchorId)
+
+  if (!(target instanceof HTMLElement)) {
+    return false
+  }
+
+  scrollElementIntoContainer(target, scrollContainer)
+  window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${anchorHref}`)
+  return true
+}
+
+const scrollAnimations = new WeakMap<HTMLDivElement, number>()
+
+function animateScrollContainerTo(scrollContainer: HTMLDivElement, top: number) {
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  const targetTop = Math.max(0, Math.min(top, scrollContainer.scrollHeight - scrollContainer.clientHeight))
+
+  const existingAnimationFrame = scrollAnimations.get(scrollContainer)
+  if (existingAnimationFrame) {
+    window.cancelAnimationFrame(existingAnimationFrame)
+    scrollAnimations.delete(scrollContainer)
+  }
+
+  if (reducedMotion) {
+    scrollContainer.scrollTop = targetTop
+    return
+  }
+
+  const startTop = scrollContainer.scrollTop
+  const distance = targetTop - startTop
+
+  if (Math.abs(distance) < 1) {
+    scrollContainer.scrollTop = targetTop
+    return
+  }
+
+  const durationMs = Math.min(450, Math.max(220, Math.abs(distance) * 0.12))
+  const startTime = performance.now()
+
+  const tick = (now: number) => {
+    const elapsed = now - startTime
+    const progress = Math.min(elapsed / durationMs, 1)
+    const easedProgress = 1 - (1 - progress) * (1 - progress)
+    scrollContainer.scrollTop = startTop + distance * easedProgress
+
+    if (progress < 1) {
+      const nextAnimationFrame = window.requestAnimationFrame(tick)
+      scrollAnimations.set(scrollContainer, nextAnimationFrame)
+      return
+    }
+
+    scrollContainer.scrollTop = targetTop
+    scrollAnimations.delete(scrollContainer)
+  }
+
+  const initialAnimationFrame = window.requestAnimationFrame(tick)
+  scrollAnimations.set(scrollContainer, initialAnimationFrame)
 }
 
 function extractNodeText(node: ReactNode): string {

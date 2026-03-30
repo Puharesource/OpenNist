@@ -59,9 +59,9 @@ Use it when you need WSQ-specific image workflows from .NET without bringing in 
 
 Purpose:
 
-- run managed NFIQ 2 analysis
+- run NFIQ 2 analysis
 - return typed assessment results and mapped quality measures
-- support both .NET and browser-hosted flows
+- support both .NET and browser flows
 
 Key types:
 
@@ -78,16 +78,17 @@ Use it when you need fingerprint quality scoring on supported grayscale inputs f
 
 Purpose:
 
-- expose browser-safe entry points over the managed libraries
+- expose browser-safe entry points over the .NET libraries
 - support the web app and external browser integrations
 
 Use it when you need OpenNist functionality inside the browser from JavaScript or TypeScript.
 
 ## Typical choices
 
+- Choose `OpenNist.Primitives` only when you are extending OpenNist itself or intentionally sharing the same low-level error/result contracts.
 - Choose `OpenNist.Nist` when your app needs transaction parsing or round-tripping.
 - Choose `OpenNist.Wsq` when your app needs WSQ inspection, decode, or encode.
-- Choose `OpenNist.Nfiq` when your app needs managed NFIQ 2 scoring.
+- Choose `OpenNist.Nfiq` when your app needs NFIQ 2 scoring.
 - Choose `OpenNist.Wasm` when your app runs in the browser and you want a TypeScript-facing surface over OpenNist.
 
 See also:

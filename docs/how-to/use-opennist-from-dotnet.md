@@ -16,7 +16,9 @@ Typical split:
 
 - `OpenNist.Nist` for ANSI/NIST transaction parsing and encoding
 - `OpenNist.Wsq` for WSQ inspection, decode, and encode
-- `OpenNist.Nfiq` for managed NFIQ 2 scoring
+- `OpenNist.Nfiq` for NFIQ 2 scoring
+
+`OpenNist.Primitives` provides the shared low-level error, result, validation, and documentation-link types used by those packages. Most application code should not need to install it directly.
 
 ## Decode a NIST transaction
 
@@ -78,7 +80,7 @@ using OpenNist.Nfiq;
 var algorithm = new Nfiq2Algorithm();
 var result = await algorithm.AnalyzeFileAsync("fingerprint.pgm");
 
-Console.WriteLine($"Score: {result.Score}");
+Console.WriteLine($"Score: {result.QualityScore}");
 ```
 
 ## When to stay in .NET

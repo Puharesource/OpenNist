@@ -248,7 +248,7 @@ function SiteFooter() {
             OpenNist Project
           </p>
           <p className="text-sm text-[var(--color-on-surface)]/76">
-            Managed biometric formats and quality tooling for .NET and WebAssembly.
+            Biometric formats and quality tooling for .NET and WASM.
           </p>
         </div>
 

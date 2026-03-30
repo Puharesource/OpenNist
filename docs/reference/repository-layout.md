@@ -22,13 +22,14 @@ This repository is split by concern so library code, browser interop, web UI, te
 
 Contains the core .NET packages:
 
+- `OpenNist.Primitives`
 - `OpenNist.Nist`
 - `OpenNist.Wsq`
 - `OpenNist.Nfiq`
 
 ### `src/dotnet/interop/OpenNist.Wasm`
 
-Contains the browser-facing .NET WebAssembly bridge used by the web app and other browser-hosted flows.
+Contains the browser-facing .NET WebAssembly bridge used by the web app and other browser integrations.
 
 ### `src/web/open-nist-site`
 
